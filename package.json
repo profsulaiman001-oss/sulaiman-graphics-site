@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && echo 'Build successful'",
+    "build": "vite build",
     "serve": "vite preview"
   },
   "devDependencies": {
