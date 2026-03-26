@@ -1,0 +1,19 @@
+packages:
+  "framer-motion": "For premium page transitions, scroll reveals, and complex hover animations required for the agency feel"
+  "clsx": "Utility for constructing className strings conditionally"
+  "tailwind-merge": "Utility function to efficiently merge Tailwind CSS classes"
+  "react-hook-form": "For robust contact form state management"
+  "@hookform/resolvers": "Zod integration for react-hook-form"
+  "zod": "Schema validation for the contact form"
+
+images:
+  - path: "artifacts/portfolio/public/images/hero-abstract.png"
+    description: "Dark, moody, abstract 3D geometric shapes floating, with striking vibrant neon purple and cyan lighting. High-end professional graphic design aesthetic, sleek and modern."
+    aspect_ratio: "16:9"
+  - path: "artifacts/portfolio/public/images/avatar.png"
+    description: "Stylized, modern minimal vector portrait silhouette of a creative person. Dark background with subtle glowing neon edge lighting. Premium, artistic, and mysterious."
+    aspect_ratio: "1:1"
+
+notes:
+  - Since no backend routes or schema were provided, data is managed via TanStack Query hooks that return static mock data to ensure a fully functional and complete frontend demonstration.
+  - The design uses a forced dark-mode aesthetic to achieve the requested "premium agency feel" with vibrant accents.
