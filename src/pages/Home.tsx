@@ -90,8 +90,8 @@ export default function Home() {
               },
               {
                 icon: <Star className="text-primary mb-4 w-8 h-8" />,
-                num: "12",
-                label: "Design Awards",
+                num: "100%",
+                label: "Satisfaction Rate",
               },
             ].map((stat, i) => (
               <AnimatedSection
