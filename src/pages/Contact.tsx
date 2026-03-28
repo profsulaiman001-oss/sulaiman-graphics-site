@@ -177,18 +177,7 @@ export default function Contact() {
       description: error?.text || "Something went wrong.",
     });
   }
-}; 
-      },
-      onError: (err) => {
-        toast({
-          variant: "destructive",
-          title: "Send failed",
-          description: err.message || "Something went wrong. Please try again.",
-        });
-      },
-    });
-  };
-
+};
   return (
     <main className="pt-32 pb-24 min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
