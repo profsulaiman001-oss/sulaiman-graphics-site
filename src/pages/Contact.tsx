@@ -1,3 +1,4 @@
+import emailjs from "@emailjs/browser";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -147,15 +148,36 @@ export default function Contact() {
     defaultValues: { name: "", email: "", subject: "", message: "" },
   });
 
-  const onSubmit = (data: ContactValues) => {
-    submitMutation.mutate(data, {
-      onSuccess: () => {
-        setSent(true);
-        form.reset();
-        toast({
-          title: "Message sent!",
-          description: "I'll get back to you as soon as possible.",
-        });
+ const onSubmit = async (data: ContactValues) => {
+  try {
+    await emailjs.send(
+      "service_1wi49sw",
+      "template_uuozh8g",
+      {
+        from_name: data.name,
+        from_email: data.email,
+        subject: data.subject,
+        message: data.message,
+      },
+      "YY5KUYU6ko7ajjl1D"
+    );
+
+    setSent(true);
+    form.reset();
+
+    toast({
+      title: "Message sent!",
+      description: "I'll get back to you as soon as possible.",
+    });
+
+  } catch (error: any) {
+    toast({
+      variant: "destructive",
+      title: "Send failed",
+      description: error?.text || "Something went wrong.",
+    });
+  }
+}; 
       },
       onError: (err) => {
         toast({
