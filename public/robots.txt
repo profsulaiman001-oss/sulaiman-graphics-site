@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://www.sulaimangraphics.com.ng/sitemap.xml
