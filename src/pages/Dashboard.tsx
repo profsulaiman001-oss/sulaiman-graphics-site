@@ -9,7 +9,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     checkUser();
-  }, [setLocation]);
+  }, []);
 
   const checkUser = async () => {
     const {
@@ -20,6 +20,8 @@ export default function Dashboard() {
       setLocation("/login");
       return;
     }
+
+    console.log("USER ID:", user.id); // 👈 ADD THIS LINE
 
     setUser(user);
     fetchProjects(user);
@@ -44,7 +46,6 @@ export default function Dashboard() {
         Client Dashboard
       </h1>
 
-      {/* 👤 Logged-in user */}
       {user && (
         <p className="text-gray-400 mb-4 text-sm">
           Logged in as: {user.email}
