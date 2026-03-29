@@ -1,20 +1,24 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { supabase } from "@/lib/supabase";
 
 export default function Login() {
   const [, setLocation] = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Simple demo login
-    if (email === "client@sulaiman.com" && password === "123456") {
-      localStorage.setItem("auth", "true");
-      setLocation("/dashboard");
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      alert("Login failed: " + error.message);
     } else {
-      alert("Invalid credentials");
+      setLocation("/dashboard");
     }
   };
 
