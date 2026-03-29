@@ -16,7 +16,7 @@ export default async function handler(req, res) {
   });
 
   try {
-    // ✅ EMAIL TO YOU (Styled)
+    //  EMAIL TO YOU (Styled)
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: process.env.EMAIL_USER,
@@ -41,7 +41,7 @@ export default async function handler(req, res) {
       `,
     });
 
-    // ✅ AUTO-REPLY (Styled)
+    //  AUTO-REPLY (Styled)
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
