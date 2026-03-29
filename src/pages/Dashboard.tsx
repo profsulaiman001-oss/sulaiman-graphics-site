@@ -5,19 +5,27 @@ import { supabase } from "@/lib/supabase";
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [projects, setProjects] = useState<any[]>([]);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    const isAuth = localStorage.getItem("auth");
+    checkUser();
+  }, [setLocation]);
 
-    if (!isAuth) {
+  const checkUser = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
       setLocation("/login");
       return;
     }
 
-    fetchProjects();
-  }, [setLocation]);
+    setUser(user);
+    fetchProjects(user);
+  };
 
-  const fetchProjects = async () => {
+  const fetchProjects = async (user: any) => {
     const { data, error } = await supabase
       .from("projects")
       .select("*");
@@ -32,9 +40,16 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-black text-white p-6">
-      <h1 className="text-2xl text-blue-500 mb-4">
+      <h1 className="text-2xl text-blue-500 mb-2">
         Client Dashboard
       </h1>
+
+      {/* 👤 Logged-in user */}
+      {user && (
+        <p className="text-gray-400 mb-4 text-sm">
+          Logged in as: {user.email}
+        </p>
+      )}
 
       <div className="space-y-4">
         {projects.map((project: any) => (
