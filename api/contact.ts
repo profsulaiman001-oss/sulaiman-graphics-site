@@ -16,6 +16,7 @@ export default async function handler(req, res) {
   });
 
   try {
+    // Email to you
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: process.env.EMAIL_USER,
@@ -29,8 +30,27 @@ ${message}
       `,
     });
 
+    // Auto-reply to user
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Thank you for contacting Sulaiman Graphics",
+      text: `
+Hi ${name},
+
+Thank you for reaching out to Sulaiman Graphics.
+
+We have received your message and will get back to you shortly.
+
+Best regards,
+Sulaiman Graphics
+Creativity Without Limits
+      `,
+    });
+
     return res.status(200).json({ message: "Message sent successfully" });
   } catch (error) {
+    console.error(error);
     return res.status(500).json({ message: "Error sending message" });
   }
 }
