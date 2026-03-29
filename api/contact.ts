@@ -16,39 +16,69 @@ export default async function handler(req, res) {
   });
 
   try {
-    // Email to you
+    // ✅ EMAIL TO YOU (Styled)
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: process.env.EMAIL_USER,
       subject: subject || "New Message",
-      text: `
-Name: ${name}
-Email: ${email}
+      html: `
+      <div style="background:#000; padding:20px; font-family:Arial;">
+        <div style="max-width:500px; margin:auto; background:#111; border-radius:10px; overflow:hidden;">
 
-Message:
-${message}
+          <div style="background:#0d6efd; color:#fff; padding:20px; text-align:center;">
+            <h2 style="margin:0;">New Message</h2>
+          </div>
+
+          <div style="padding:20px; color:#fff;">
+            <p><strong style="color:#0d6efd;">Name:</strong> ${name}</p>
+            <p><strong style="color:#0d6efd;">Email:</strong> ${email}</p>
+            <p><strong style="color:#0d6efd;">Message:</strong></p>
+            <p>${message}</p>
+          </div>
+
+        </div>
+      </div>
       `,
     });
 
-    // Auto-reply to user
+    // ✅ AUTO-REPLY (Styled)
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
       subject: "Thank you for contacting Sulaiman Graphics",
-      text: `
-Hi ${name},
+      html: `
+      <div style="background:#000; padding:20px; font-family:Arial;">
+        <div style="max-width:500px; margin:auto; background:#111; border-radius:10px; overflow:hidden;">
 
-Thank you for reaching out to Sulaiman Graphics.
+          <div style="background:#0d6efd; color:#fff; padding:20px; text-align:center;">
+            <h2 style="margin:0;">Sulaiman Graphics</h2>
+            <p style="margin:5px 0 0;">Creativity Without Limits</p>
+          </div>
 
-We have received your message and will get back to you shortly.
+          <div style="padding:20px; color:#fff;">
+            <p>Hi ${name},</p>
 
-Best regards,
-Sulaiman Graphics
-Creativity Without Limits
+            <p>Thank you for reaching out to <strong style="color:#0d6efd;">Sulaiman Graphics</strong>.</p>
+
+            <p>We have received your message and will get back to you shortly.</p>
+
+            <br/>
+
+            <p>Best regards,<br/>
+            <strong>Sulaiman Graphics</strong></p>
+          </div>
+
+          <div style="background:#000; text-align:center; padding:15px; font-size:12px; color:#aaa;">
+            © 2026 Sulaiman Graphics
+          </div>
+
+        </div>
+      </div>
       `,
     });
 
     return res.status(200).json({ message: "Message sent successfully" });
+
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Error sending message" });
