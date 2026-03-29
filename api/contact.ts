@@ -16,7 +16,7 @@ export default async function handler(req, res) {
   });
 
   try {
-    //  EMAIL TO YOU (Styled)
+    // EMAIL TO YOU (Styled)
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: process.env.EMAIL_USER,
@@ -41,7 +41,7 @@ export default async function handler(req, res) {
       `,
     });
 
-    //  AUTO-REPLY (Styled)
+    // AUTO-REPLY (Styled + Buttons + Tracking)
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
@@ -63,6 +63,21 @@ export default async function handler(req, res) {
             <p>We have received your message and will get back to you shortly.</p>
 
             <br/>
+
+            <!-- BUTTONS -->
+            <div style="text-align:center; margin:20px 0;">
+              
+              <a href="https://www.sulaimangraphics.com.ng/?utm_source=email&utm_medium=autoreply&utm_campaign=portfolio"
+                 style="display:inline-block; padding:12px 20px; margin:5px; background:#0d6efd; color:#fff; text-decoration:none; border-radius:5px;">
+                 View Portfolio
+              </a>
+
+              <a href="https://wa.me/2349060410369?text=Hello%20Sulaiman%20Graphics&utm_source=email&utm_medium=autoreply&utm_campaign=whatsapp"
+                 style="display:inline-block; padding:12px 20px; margin:5px; background:#25D366; color:#fff; text-decoration:none; border-radius:5px;">
+                 Chat on WhatsApp
+              </a>
+
+            </div>
 
             <p>Best regards,<br/>
             <strong>Sulaiman Graphics</strong></p>
