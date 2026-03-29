@@ -4,16 +4,18 @@ import { supabase } from "@/lib/supabase";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
-  const [projects, setProjects] = useState([]);
+  const [projects, setProjects] = useState<any[]>([]);
 
   useEffect(() => {
     const isAuth = localStorage.getItem("auth");
+
     if (!isAuth) {
       setLocation("/login");
-    } else {
-      fetchProjects();
+      return;
     }
-  }, []);
+
+    fetchProjects();
+  }, [setLocation]);
 
   const fetchProjects = async () => {
     const { data, error } = await supabase
@@ -34,17 +36,4 @@ export default function Dashboard() {
         Client Dashboard
       </h1>
 
-      <div className="space-y-4">
-        {projects.map((project: any, index) => (
-          <div
-            key={index}
-            className="bg-[#111] p-4 rounded flex justify-between"
-          >
-            <span>{project.title}</span>
-            <span className="text-blue-400">{project.status}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+      <div className="space-y
