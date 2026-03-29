@@ -2,6 +2,8 @@ import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 
 // Layout Components
 import { Navbar } from "@/components/Navbar";
@@ -42,6 +44,22 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+/* 👉 TEMPORARY TEST WRAPPER */
+function DashboardWithTest() {
+  useEffect(() => {
+    const checkSupabase = async () => {
+      const { data, error } = await supabase.from("projects").select("*");
+
+      console.log("SUPABASE DATA:", data);
+      console.log("SUPABASE ERROR:", error);
+    };
+
+    checkSupabase();
+  }, []);
+
+  return <Dashboard />;
+}
+
 function Router() {
   return (
     <div className="flex flex-col min-h-screen">
@@ -58,9 +76,10 @@ function Router() {
 
           {/* 👉 NEW ROUTES */}
           <Route path="/login" component={Login} />
+
           <Route path="/dashboard">
             <ProtectedRoute>
-              <Dashboard />
+              <DashboardWithTest />
             </ProtectedRoute>
           </Route>
 
