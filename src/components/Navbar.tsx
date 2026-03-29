@@ -11,6 +11,9 @@ const links = [
   { name: "About", path: "/#about", hash: true },
   { name: "Services", path: "/services" },
   { name: "Contact", path: "/contact" },
+
+  // 👉 ADDED LOGIN
+  { name: "Login", path: "/login" },
 ];
 
 export function Navbar() {
@@ -47,38 +50,60 @@ export function Navbar() {
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-8">
             {links.map((link) => {
-              const isActive = !link.hash && (location === link.path || (link.path !== "/" && location.startsWith(link.path)));
+              const isActive =
+                !link.hash &&
+                (location === link.path ||
+                  (link.path !== "/" && location.startsWith(link.path)));
+
               const isAboutActive = link.hash && location === "/";
+
               if (link.hash) {
                 return (
                   <a key={link.path} href={link.path} className="relative py-2">
-                    <span className={cn(
-                      "text-sm font-medium transition-colors hover:text-primary",
-                      isAboutActive ? "text-muted-foreground" : "text-muted-foreground"
-                    )}>
+                    <span
+                      className={cn(
+                        "text-sm font-medium transition-colors hover:text-primary",
+                        isAboutActive
+                          ? "text-muted-foreground"
+                          : "text-muted-foreground"
+                      )}
+                    >
                       {link.name}
                     </span>
                   </a>
                 );
               }
+
               return (
-                <Link key={link.path} href={link.path} className="relative py-2">
-                  <span className={cn(
-                    "text-sm font-medium transition-colors hover:text-primary",
-                    isActive ? "text-primary" : "text-muted-foreground"
-                  )}>
+                <Link
+                  key={link.path}
+                  href={link.path}
+                  className="relative py-2"
+                >
+                  <span
+                    className={cn(
+                      "text-sm font-medium transition-colors hover:text-primary",
+                      isActive ? "text-primary" : "text-muted-foreground"
+                    )}
+                  >
                     {link.name}
                   </span>
+
                   {isActive && (
                     <motion.div
                       layoutId="nav-indicator"
                       className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
-                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 300,
+                        damping: 30,
+                      }}
                     />
                   )}
                 </Link>
               );
             })}
+
             <Link href="/contact">
               <Button size="sm">Let's Talk</Button>
             </Link>
@@ -106,7 +131,11 @@ export function Navbar() {
           >
             <div className="flex flex-col space-y-4">
               {links.map((link) => {
-                const isActive = !link.hash && (location === link.path || (link.path !== "/" && location.startsWith(link.path)));
+                const isActive =
+                  !link.hash &&
+                  (location === link.path ||
+                    (link.path !== "/" && location.startsWith(link.path)));
+
                 if (link.hash) {
                   return (
                     <a
@@ -119,13 +148,16 @@ export function Navbar() {
                     </a>
                   );
                 }
+
                 return (
                   <Link
                     key={link.path}
                     href={link.path}
                     className={cn(
                       "px-4 py-3 rounded-xl text-lg font-medium transition-colors",
-                      isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                      isActive
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
                     )}
                   >
                     {link.name}
@@ -138,4 +170,4 @@ export function Navbar() {
       </AnimatePresence>
     </header>
   );
-}
+                      }
