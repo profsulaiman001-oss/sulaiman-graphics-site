@@ -36,4 +36,19 @@ export default function Dashboard() {
         Client Dashboard
       </h1>
 
-      <div className="space-y
+      <div className="space-y-4">
+        {projects.map((project: any) => (
+          <div
+            key={project.id}
+            className="bg-[#111] p-4 rounded flex justify-between"
+          >
+            <span>{project.title}</span>
+            <span className="text-blue-400">
+              {project.status}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
