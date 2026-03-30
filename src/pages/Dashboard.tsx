@@ -11,6 +11,9 @@ export default function Dashboard() {
   const [title, setTitle] = useState("");
   const [creating, setCreating] = useState(false);
 
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+
   useEffect(() => {
     checkUser();
   }, []);
@@ -35,9 +38,7 @@ export default function Dashboard() {
       .select("*")
       .eq("user_id", user.id);
 
-    if (error) {
-      console.error(error);
-    } else {
+    if (!error) {
       setProjects(data || []);
     }
 
@@ -57,14 +58,32 @@ export default function Dashboard() {
       },
     ]);
 
-    if (error) {
-      console.error("CREATE ERROR:", error);
-    } else {
+    if (!error) {
       setTitle("");
-      fetchProjects(user); // refresh list
+      fetchProjects(user);
     }
 
     setCreating(false);
+  };
+
+  const startEdit = (project: any) => {
+    setEditingId(project.id);
+    setEditTitle(project.title);
+  };
+
+  const saveEdit = async () => {
+    if (!editTitle.trim()) return;
+
+    const { error } = await supabase
+      .from("projects")
+      .update({ title: editTitle })
+      .eq("id", editingId);
+
+    if (!error) {
+      setEditingId(null);
+      setEditTitle("");
+      fetchProjects(user);
+    }
   };
 
   const handleLogout = async () => {
@@ -95,7 +114,7 @@ export default function Dashboard() {
         </p>
       )}
 
-      {/* CREATE PROJECT */}
+      {/* CREATE */}
       <div className="bg-[#111] p-4 rounded mb-6">
         <h2 className="text-lg mb-3 text-blue-400">
           Create New Project
@@ -119,27 +138,50 @@ export default function Dashboard() {
       </div>
 
       {/* LOADING */}
-      {loading && (
-        <p className="text-gray-400">Loading projects...</p>
-      )}
+      {loading && <p className="text-gray-400">Loading...</p>}
 
-      {/* PROJECT LIST */}
+      {/* PROJECTS */}
       <div className="space-y-4">
-        {projects.length === 0 && !loading && (
-          <p className="text-gray-500">
-            No projects yet.
-          </p>
-        )}
-
         {projects.map((project: any) => (
           <div
             key={project.id}
-            className="bg-[#111] p-4 rounded flex justify-between"
+            className="bg-[#111] p-4 rounded flex justify-between items-center"
           >
-            <span>{project.title}</span>
-            <span className="text-blue-400">
-              {project.status}
-            </span>
+            {/* LEFT SIDE */}
+            <div>
+              {editingId === project.id ? (
+                <input
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="p-1 bg-black border border-gray-600 rounded"
+                />
+              ) : (
+                <span>{project.title}</span>
+              )}
+            </div>
+
+            {/* RIGHT SIDE */}
+            <div className="flex gap-2 items-center">
+              <span className="text-blue-400 text-sm">
+                {project.status}
+              </span>
+
+              {editingId === project.id ? (
+                <button
+                  onClick={saveEdit}
+                  className="bg-green-500 px-3 py-1 rounded text-sm"
+                >
+                  Save
+                </button>
+              ) : (
+                <button
+                  onClick={() => startEdit(project)}
+                  className="bg-yellow-500 px-3 py-1 rounded text-sm"
+                >
+                  Edit
+                </button>
+              )}
+            </div>
           </div>
         ))}
       </div>
