@@ -6,20 +6,31 @@ export default function Login() {
   const [, setLocation] = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
     if (error) {
       alert("Login failed: " + error.message);
-    } else {
-      setLocation("/dashboard");
+      setLoading(false);
+      return;
     }
+
+    // 🔥 IMPORTANT: Ensure session exists
+    if (data.session) {
+      setLocation("/dashboard");
+    } else {
+      alert("Login successful but no session found.");
+    }
+
+    setLoading(false);
   };
 
   return (
@@ -38,6 +49,7 @@ export default function Login() {
           className="w-full mb-3 p-2 bg-black border border-gray-700 rounded"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          required
         />
 
         <input
@@ -46,10 +58,15 @@ export default function Login() {
           className="w-full mb-4 p-2 bg-black border border-gray-700 rounded"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          required
         />
 
-        <button className="w-full bg-blue-600 p-2 rounded">
-          Login
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-blue-600 p-2 rounded"
+        >
+          {loading ? "Logging in..." : "Login"}
         </button>
       </form>
     </div>
