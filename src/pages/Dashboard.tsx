@@ -17,13 +17,29 @@ export default function Dashboard() {
 
   useEffect(() => {
     checkUser();
+
+    // 🔥 REAL-TIME AUTH LISTENER (VERY IMPORTANT)
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (!session) {
+          setLocation("/login");
+        } else {
+          setUser(session.user);
+        }
+      }
+    );
+
+    return () => {
+      listener?.subscription.unsubscribe();
+    };
   }, []);
 
-  // ✅ FIXED SESSION CHECK (VERY IMPORTANT)
   const checkUser = async () => {
-    const { data } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
-    const user = data?.session?.user;
+    const user = session?.user;
 
     if (!user) {
       setLocation("/login");
@@ -32,11 +48,15 @@ export default function Dashboard() {
 
     setUser(user);
 
-    const { data: profile } = await supabase
+    const { data: profile, error } = await supabase
       .from("profiles")
       .select("is_admin")
       .eq("id", user.id)
       .single();
+
+    if (error) {
+      console.error("PROFILE ERROR:", error);
+    }
 
     const admin = profile?.is_admin || false;
     setIsAdmin(admin);
@@ -69,7 +89,7 @@ export default function Dashboard() {
 
     const { error } = await supabase.from("projects").insert([
       {
-        title: title,
+        title,
         status: "pending",
         user_id: user.id,
       },
@@ -91,7 +111,7 @@ export default function Dashboard() {
   };
 
   const saveEdit = async () => {
-    if (!editTitle.trim()) return;
+    if (!editTitle.trim() || !editingId) return;
 
     const { error } = await supabase
       .from("projects")
@@ -122,21 +142,21 @@ export default function Dashboard() {
     }
   };
 
-  // ✅ FINAL LOGOUT FIX (GUARANTEED)
+  // 🔥 FIXED LOGOUT (PROPER SESSION CLEAR)
   const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
+    await supabase.auth.signOut();
 
-      // 🔥 CLEAR EVERYTHING
-      localStorage.clear();
-      sessionStorage.clear();
+    // Force UI reset
+    setUser(null);
+    setProjects([]);
 
-      // 🔥 FORCE HARD RESET
-      window.location.replace("/login");
-    } catch (err) {
-      console.error("Logout failed:", err);
-    }
+    // Redirect
+    setLocation("/login");
   };
+
+  if (loading) {
+    return <p className="text-white p-6">Loading...</p>;
+  }
 
   return (
     <div className="min-h-screen bg-black text-white p-6">
@@ -163,9 +183,7 @@ export default function Dashboard() {
 
       {/* CREATE */}
       <div className="bg-[#111] p-4 rounded mb-6">
-        <h2 className="text-lg mb-3 text-blue-400">
-          Create New Project
-        </h2>
+        <h2 className="text-lg mb-3 text-blue-400">Create New Project</h2>
 
         <input
           type="text"
@@ -183,9 +201,6 @@ export default function Dashboard() {
           {creating ? "Creating..." : "Create Project"}
         </button>
       </div>
-
-      {/* LOADING */}
-      {loading && <p className="text-gray-400">Loading...</p>}
 
       {/* PROJECTS */}
       <div className="space-y-4">
@@ -241,4 +256,4 @@ export default function Dashboard() {
       </div>
     </div>
   );
-      }
+              }
