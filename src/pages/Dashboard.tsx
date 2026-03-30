@@ -19,10 +19,11 @@ export default function Dashboard() {
     checkUser();
   }, []);
 
+  // ✅ FIXED SESSION CHECK (VERY IMPORTANT)
   const checkUser = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { data } = await supabase.auth.getSession();
+
+    const user = data?.session?.user;
 
     if (!user) {
       setLocation("/login");
@@ -107,8 +108,7 @@ export default function Dashboard() {
   };
 
   const handleDelete = async (id: string) => {
-    const confirmDelete = confirm("Delete this project?");
-    if (!confirmDelete) return;
+    if (!confirm("Delete this project?")) return;
 
     const { error } = await supabase
       .from("projects")
@@ -122,17 +122,20 @@ export default function Dashboard() {
     }
   };
 
-  // ✅ FIXED LOGOUT (STRONG VERSION)
+  // ✅ FINAL LOGOUT FIX (GUARANTEED)
   const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
 
-    if (error) {
-      console.error("LOGOUT ERROR:", error);
-      return;
+      // 🔥 CLEAR EVERYTHING
+      localStorage.clear();
+      sessionStorage.clear();
+
+      // 🔥 FORCE HARD RESET
+      window.location.replace("/login");
+    } catch (err) {
+      console.error("Logout failed:", err);
     }
-
-    localStorage.clear(); // clear any cached data
-    window.location.href = "/login"; // force reload
   };
 
   return (
@@ -238,4 +241,4 @@ export default function Dashboard() {
       </div>
     </div>
   );
-}
+      }
