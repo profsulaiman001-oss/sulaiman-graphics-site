@@ -22,8 +22,6 @@ export default function Dashboard() {
       return;
     }
 
-    console.log("USER ID:", user.id);
-
     setUser(user);
     fetchProjects(user);
   };
@@ -41,7 +39,7 @@ export default function Dashboard() {
     }
   };
 
-  // 🔥 CREATE PROJECT FUNCTION
+  // 🔥 CREATE PROJECT
   const createProject = async () => {
     if (!user || !title.trim()) return;
 
@@ -57,7 +55,22 @@ export default function Dashboard() {
       console.error("CREATE ERROR:", error);
     } else {
       setTitle("");
-      fetchProjects(user); // refresh list
+      fetchProjects(user);
+    }
+  };
+
+  // 🔥 DELETE PROJECT
+  const deleteProject = async (id: string) => {
+    const { error } = await supabase
+      .from("projects")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      console.error("DELETE ERROR:", error);
+    } else {
+      // Refresh list
+      fetchProjects(user);
     }
   };
 
@@ -73,7 +86,7 @@ export default function Dashboard() {
         </p>
       )}
 
-      {/* CREATE PROJECT SECTION */}
+      {/* CREATE PROJECT */}
       <div className="mb-6 flex gap-2">
         <input
           type="text"
@@ -95,12 +108,22 @@ export default function Dashboard() {
         {projects.map((project: any) => (
           <div
             key={project.id}
-            className="bg-[#111] p-4 rounded flex justify-between"
+            className="bg-[#111] p-4 rounded flex justify-between items-center"
           >
-            <span>{project.title}</span>
-            <span className="text-blue-400">
-              {project.status}
-            </span>
+            <div>
+              <p>{project.title}</p>
+              <p className="text-blue-400 text-sm">
+                {project.status}
+              </p>
+            </div>
+
+            {/* DELETE BUTTON */}
+            <button
+              onClick={() => deleteProject(project.id)}
+              className="bg-red-500 px-3 py-1 rounded text-sm"
+            >
+              Delete
+            </button>
           </div>
         ))}
       </div>
