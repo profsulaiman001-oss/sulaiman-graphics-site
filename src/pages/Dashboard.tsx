@@ -6,9 +6,7 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [projects, setProjects] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
-  const [title, setTitle] = useState("");
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editTitle, setEditTitle] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     checkUser();
@@ -34,163 +32,65 @@ export default function Dashboard() {
       .select("*")
       .eq("user_id", user.id);
 
-    if (!error) {
-      setProjects(data || []);
+    if (error) {
+      console.error("SUPABASE ERROR:", error);
     } else {
-      console.error(error);
+      setProjects(data || []);
     }
+
+    setLoading(false);
   };
 
-  // 🔥 CREATE
-  const createProject = async () => {
-    if (!user || !title.trim()) return;
-
-    const { error } = await supabase.from("projects").insert([
-      {
-        title: title,
-        status: "Pending",
-        user_id: user.id,
-      },
-    ]);
-
-    if (!error) {
-      setTitle("");
-      fetchProjects(user);
-    }
-  };
-
-  // 🔥 DELETE
-  const deleteProject = async (id: string) => {
-    const { error } = await supabase
-      .from("projects")
-      .delete()
-      .eq("id", id);
-
-    if (!error) {
-      fetchProjects(user);
-    }
-  };
-
-  // 🔥 START EDIT
-  const startEdit = (project: any) => {
-    setEditingId(project.id);
-    setEditTitle(project.title);
-  };
-
-  // 🔥 SAVE EDIT
-  const saveEdit = async (id: string) => {
-    if (!editTitle.trim()) return;
-
-    const { error } = await supabase
-      .from("projects")
-      .update({ title: editTitle })
-      .eq("id", id);
-
-    if (!error) {
-      setEditingId(null);
-      setEditTitle("");
-      fetchProjects(user);
-    }
-  };
-
-  // 🔥 UPDATE STATUS
-  const updateStatus = async (id: string, status: string) => {
-    const { error } = await supabase
-      .from("projects")
-      .update({ status })
-      .eq("id", id);
-
-    if (!error) {
-      fetchProjects(user);
-    }
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setLocation("/login");
   };
 
   return (
     <div className="min-h-screen bg-black text-white p-6">
-      <h1 className="text-2xl text-blue-500 mb-2">
-        Client Dashboard
-      </h1>
+      {/* HEADER */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl text-blue-500">
+          Client Dashboard
+        </h1>
 
+        <button
+          onClick={handleLogout}
+          className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded text-sm"
+        >
+          Logout
+        </button>
+      </div>
+
+      {/* USER INFO */}
       {user && (
         <p className="text-gray-400 mb-4 text-sm">
           Logged in as: {user.email}
         </p>
       )}
 
-      {/* CREATE */}
-      <div className="mb-6 flex gap-2">
-        <input
-          type="text"
-          placeholder="Enter project title..."
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="px-3 py-2 bg-[#111] border border-gray-700 rounded w-full"
-        />
-        <button
-          onClick={createProject}
-          className="bg-blue-500 px-4 py-2 rounded"
-        >
-          Add
-        </button>
-      </div>
+      {/* LOADING */}
+      {loading && (
+        <p className="text-gray-400">Loading projects...</p>
+      )}
 
-      {/* PROJECT LIST */}
+      {/* PROJECTS */}
       <div className="space-y-4">
+        {projects.length === 0 && !loading && (
+          <p className="text-gray-500">
+            No projects found.
+          </p>
+        )}
+
         {projects.map((project: any) => (
           <div
             key={project.id}
-            className="bg-[#111] p-4 rounded flex justify-between items-center"
+            className="bg-[#111] p-4 rounded flex justify-between"
           >
-            <div className="w-full">
-              {/* TITLE */}
-              {editingId === project.id ? (
-                <input
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  className="px-2 py-1 bg-black border border-gray-600 rounded w-full"
-                />
-              ) : (
-                <p>{project.title}</p>
-              )}
-
-              {/* STATUS DROPDOWN */}
-              <select
-                value={project.status}
-                onChange={(e) =>
-                  updateStatus(project.id, e.target.value)
-                }
-                className="mt-2 bg-black border border-gray-600 text-sm px-2 py-1 rounded"
-              >
-                <option value="Pending">Pending</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Completed">Completed</option>
-              </select>
-            </div>
-
-            <div className="flex gap-2 ml-4">
-              {editingId === project.id ? (
-                <button
-                  onClick={() => saveEdit(project.id)}
-                  className="bg-green-500 px-3 py-1 rounded text-sm"
-                >
-                  Save
-                </button>
-              ) : (
-                <button
-                  onClick={() => startEdit(project)}
-                  className="bg-yellow-500 px-3 py-1 rounded text-sm"
-                >
-                  Edit
-                </button>
-              )}
-
-              <button
-                onClick={() => deleteProject(project.id)}
-                className="bg-red-500 px-3 py-1 rounded text-sm"
-              >
-                Delete
-              </button>
-            </div>
+            <span>{project.title}</span>
+            <span className="text-blue-400">
+              {project.status}
+            </span>
           </div>
         ))}
       </div>
