@@ -31,29 +31,30 @@ export default function Dashboard() {
 
     setUser(user);
 
-    // 🔥 CHECK IF ADMIN
     const { data: profile } = await supabase
       .from("profiles")
       .select("is_admin")
       .eq("id", user.id)
       .single();
 
-    setIsAdmin(profile?.is_admin || false);
+    const admin = profile?.is_admin || false;
+    setIsAdmin(admin);
 
-    fetchProjects(user, profile?.is_admin || false);
+    fetchProjects(user, admin);
   };
 
   const fetchProjects = async (user: any, admin: boolean) => {
     let query = supabase.from("projects").select("*");
 
-    // 🔐 if NOT admin, filter by user
     if (!admin) {
       query = query.eq("user_id", user.id);
     }
 
     const { data, error } = await query;
 
-    if (!error) {
+    if (error) {
+      console.error("FETCH ERROR:", error);
+    } else {
       setProjects(data || []);
     }
 
@@ -61,7 +62,7 @@ export default function Dashboard() {
   };
 
   const handleCreateProject = async () => {
-    if (!title.trim()) return;
+    if (!title.trim() || !user) return;
 
     setCreating(true);
 
@@ -73,7 +74,9 @@ export default function Dashboard() {
       },
     ]);
 
-    if (!error) {
+    if (error) {
+      console.error("CREATE ERROR:", error);
+    } else {
       setTitle("");
       fetchProjects(user, isAdmin);
     }
@@ -94,7 +97,9 @@ export default function Dashboard() {
       .update({ title: editTitle })
       .eq("id", editingId);
 
-    if (!error) {
+    if (error) {
+      console.error("UPDATE ERROR:", error);
+    } else {
       setEditingId(null);
       setEditTitle("");
       fetchProjects(user, isAdmin);
@@ -102,21 +107,32 @@ export default function Dashboard() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this project?")) return;
+    const confirmDelete = confirm("Delete this project?");
+    if (!confirmDelete) return;
 
     const { error } = await supabase
       .from("projects")
       .delete()
       .eq("id", id);
 
-    if (!error) {
+    if (error) {
+      console.error("DELETE ERROR:", error);
+    } else {
       fetchProjects(user, isAdmin);
     }
   };
 
+  // ✅ FIXED LOGOUT (STRONG VERSION)
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setLocation("/login");
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      console.error("LOGOUT ERROR:", error);
+      return;
+    }
+
+    localStorage.clear(); // clear any cached data
+    window.location.href = "/login"; // force reload
   };
 
   return (
