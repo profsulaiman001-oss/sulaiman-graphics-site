@@ -160,6 +160,12 @@ export default function Dashboard() {
 
   if (loading) return <p className="text-white p-6">Loading...</p>;
 
+  // 🔥 ANALYTICS DATA
+  const totalProjects = projects.length;
+  const pending = projects.filter(p => p.status === "pending").length;
+  const inProgress = projects.filter(p => p.status === "in progress").length;
+  const completed = projects.filter(p => p.status === "completed").length;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-[#0a0a0a] to-[#111] text-white p-4 md:p-8">
 
@@ -224,6 +230,29 @@ export default function Dashboard() {
           >
             {creating ? "..." : "Create"}
           </button>
+        </div>
+      </div>
+
+      {/* 🔥 ANALYTICS SECTION (ADDED - NO REMOVALS) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="bg-gradient-to-br from-blue-600/20 to-blue-900/20 border border-blue-500/20 rounded-xl p-4">
+          <p className="text-sm text-gray-400">Total</p>
+          <h3 className="text-2xl font-bold text-blue-400">{totalProjects}</h3>
+        </div>
+
+        <div className="bg-gradient-to-br from-blue-600/20 to-blue-900/20 border border-blue-500/20 rounded-xl p-4">
+          <p className="text-sm text-gray-400">Pending</p>
+          <h3 className="text-2xl font-bold text-blue-400">{pending}</h3>
+        </div>
+
+        <div className="bg-gradient-to-br from-blue-600/20 to-blue-900/20 border border-blue-500/20 rounded-xl p-4">
+          <p className="text-sm text-gray-400">In Progress</p>
+          <h3 className="text-2xl font-bold text-blue-400">{inProgress}</h3>
+        </div>
+
+        <div className="bg-gradient-to-br from-blue-600/20 to-blue-900/20 border border-blue-500/20 rounded-xl p-4">
+          <p className="text-sm text-gray-400">Completed</p>
+          <h3 className="text-2xl font-bold text-blue-400">{completed}</h3>
         </div>
       </div>
 
@@ -325,4 +354,4 @@ export default function Dashboard() {
       )}
     </div>
   );
-      }
+    }
