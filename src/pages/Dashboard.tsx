@@ -93,6 +93,18 @@ export default function Dashboard() {
     }
   };
 
+  // 🔥 UPDATE STATUS
+  const updateStatus = async (id: string, status: string) => {
+    const { error } = await supabase
+      .from("projects")
+      .update({ status })
+      .eq("id", id);
+
+    if (!error) {
+      fetchProjects(user);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black text-white p-6">
       <h1 className="text-2xl text-blue-500 mb-2">
@@ -130,7 +142,7 @@ export default function Dashboard() {
             className="bg-[#111] p-4 rounded flex justify-between items-center"
           >
             <div className="w-full">
-              {/* EDIT MODE */}
+              {/* TITLE */}
               {editingId === project.id ? (
                 <input
                   value={editTitle}
@@ -141,9 +153,18 @@ export default function Dashboard() {
                 <p>{project.title}</p>
               )}
 
-              <p className="text-blue-400 text-sm">
-                {project.status}
-              </p>
+              {/* STATUS DROPDOWN */}
+              <select
+                value={project.status}
+                onChange={(e) =>
+                  updateStatus(project.id, e.target.value)
+                }
+                className="mt-2 bg-black border border-gray-600 text-sm px-2 py-1 rounded"
+              >
+                <option value="Pending">Pending</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+              </select>
             </div>
 
             <div className="flex gap-2 ml-4">
