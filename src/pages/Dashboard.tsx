@@ -86,6 +86,23 @@ export default function Dashboard() {
     }
   };
 
+  const handleDelete = async (id: string) => {
+    const confirmDelete = confirm("Are you sure you want to delete this project?");
+
+    if (!confirmDelete) return;
+
+    const { error } = await supabase
+      .from("projects")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      console.error("DELETE ERROR:", error);
+    } else {
+      fetchProjects(user);
+    }
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setLocation("/login");
@@ -147,7 +164,7 @@ export default function Dashboard() {
             key={project.id}
             className="bg-[#111] p-4 rounded flex justify-between items-center"
           >
-            {/* LEFT SIDE */}
+            {/* LEFT */}
             <div>
               {editingId === project.id ? (
                 <input
@@ -160,7 +177,7 @@ export default function Dashboard() {
               )}
             </div>
 
-            {/* RIGHT SIDE */}
+            {/* RIGHT */}
             <div className="flex gap-2 items-center">
               <span className="text-blue-400 text-sm">
                 {project.status}
@@ -174,12 +191,21 @@ export default function Dashboard() {
                   Save
                 </button>
               ) : (
-                <button
-                  onClick={() => startEdit(project)}
-                  className="bg-yellow-500 px-3 py-1 rounded text-sm"
-                >
-                  Edit
-                </button>
+                <>
+                  <button
+                    onClick={() => startEdit(project)}
+                    className="bg-yellow-500 px-3 py-1 rounded text-sm"
+                  >
+                    Edit
+                  </button>
+
+                  <button
+                    onClick={() => handleDelete(project.id)}
+                    className="bg-red-500 px-3 py-1 rounded text-sm"
+                  >
+                    Delete
+                  </button>
+                </>
               )}
             </div>
           </div>
