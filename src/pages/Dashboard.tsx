@@ -4,9 +4,9 @@ import { supabase } from "@/lib/supabase";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
+
   const [projects, setProjects] = useState<any[]>([]);
-  const [users, setUsers] = useState<any[]>([]); // 🔥 NEW
-  const [selectedUser, setSelectedUser] = useState(""); // 🔥 NEW
+  const [users, setUsers] = useState<any[]>([]);
 
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -33,9 +33,7 @@ export default function Dashboard() {
       }
     );
 
-    return () => {
-      listener.subscription.unsubscribe();
-    };
+    return () => listener.subscription.unsubscribe();
   }, []);
 
   const checkUser = async () => {
@@ -60,24 +58,15 @@ export default function Dashboard() {
     const admin = profile?.is_admin || false;
     setIsAdmin(admin);
 
-    // 🔥 FETCH USERS IF ADMIN
-    if (admin) {
-      fetchUsers();
-    }
-
     fetchProjects(user, admin);
-  };
 
-  // 🔥 NEW: FETCH USERS
-  const fetchUsers = async () => {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("id, email");
+    // 🔥 GET ALL USERS (for assignment dropdown)
+    if (admin) {
+      const { data: allUsers } = await supabase
+        .from("profiles")
+        .select("id, email");
 
-    if (error) {
-      console.error("USERS ERROR:", error);
-    } else {
-      setUsers(data || []);
+      setUsers(allUsers || []);
     }
   };
 
@@ -93,47 +82,37 @@ export default function Dashboard() {
     setLoading(false);
   };
 
-  // 🔥 STATUS UPDATE
+  // 🔥 STATUS
   const updateStatus = async (id: string, status: string) => {
-    const { error } = await supabase
-      .from("projects")
-      .update({ status })
-      .eq("id", id);
+    await supabase.from("projects").update({ status }).eq("id", id);
+    fetchProjects(user, isAdmin);
+  };
 
-    if (error) {
-      console.error("STATUS ERROR:", error);
-    } else {
-      fetchProjects(user, isAdmin);
-    }
+  // 🔥 ASSIGN USER
+  const assignUser = async (projectId: string, assignedTo: string) => {
+    await supabase
+      .from("projects")
+      .update({ assigned_to: assignedTo })
+      .eq("id", projectId);
+
+    fetchProjects(user, isAdmin);
   };
 
   const handleCreateProject = async () => {
     if (!title.trim() || !user) return;
 
-    // 🔥 REQUIRE USER SELECTION FOR ADMIN
-    if (isAdmin && !selectedUser) {
-      alert("Please select a client");
-      return;
-    }
-
     setCreating(true);
 
-    const { error } = await supabase.from("projects").insert([
+    await supabase.from("projects").insert([
       {
         title,
         status: "pending",
-        user_id: isAdmin ? selectedUser : user.id, // 🔥 FIXED
+        user_id: user.id,
       },
     ]);
 
-    if (error) {
-      console.error("CREATE ERROR:", error);
-    } else {
-      setTitle("");
-      setSelectedUser(""); // reset
-      fetchProjects(user, isAdmin);
-    }
-
+    setTitle("");
+    fetchProjects(user, isAdmin);
     setCreating(false);
   };
 
@@ -145,29 +124,22 @@ export default function Dashboard() {
   const saveEdit = async () => {
     if (!editTitle.trim() || !editingId) return;
 
-    const { error } = await supabase
+    await supabase
       .from("projects")
       .update({ title: editTitle })
       .eq("id", editingId);
 
-    if (!error) {
-      setEditingId(null);
-      setEditTitle("");
-      fetchProjects(user, isAdmin);
-    }
+    setEditingId(null);
+    setEditTitle("");
+    fetchProjects(user, isAdmin);
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this project?")) return;
 
-    const { error } = await supabase
-      .from("projects")
-      .delete()
-      .eq("id", id);
+    await supabase.from("projects").delete().eq("id", id);
 
-    if (!error) {
-      fetchProjects(user, isAdmin);
-    }
+    fetchProjects(user, isAdmin);
   };
 
   const handleLogout = async () => {
@@ -177,9 +149,7 @@ export default function Dashboard() {
     window.location.href = "/login";
   };
 
-  if (loading) {
-    return <p className="text-white p-6">Loading...</p>;
-  }
+  if (loading) return <p className="text-white p-6">Loading...</p>;
 
   return (
     <div className="min-h-screen bg-black text-white p-6">
@@ -197,41 +167,13 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {/* USER */}
-      {user && (
-        <p className="text-gray-400 mb-4 text-sm">
-          Logged in as: {user.email}
-        </p>
-      )}
-
       {/* CREATE */}
       <div className="bg-[#111] p-4 rounded mb-6">
-        <h2 className="text-lg mb-3 text-blue-400">
-          Create New Project
-        </h2>
-
-        {/* 🔥 USER SELECT (ADMIN ONLY) */}
-        {isAdmin && (
-          <select
-            value={selectedUser}
-            onChange={(e) => setSelectedUser(e.target.value)}
-            className="w-full p-2 mb-3 rounded bg-black border border-gray-700"
-          >
-            <option value="">Select Client</option>
-            {users.map((u: any) => (
-              <option key={u.id} value={u.id}>
-                {u.email}
-              </option>
-            ))}
-          </select>
-        )}
-
         <input
-          type="text"
-          placeholder="Project title..."
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full p-2 mb-3 rounded bg-black border border-gray-700"
+          placeholder="Project title..."
+          className="w-full p-2 mb-3 bg-black border border-gray-700 rounded"
         />
 
         <button
@@ -239,7 +181,7 @@ export default function Dashboard() {
           disabled={creating}
           className="bg-blue-500 px-4 py-2 rounded"
         >
-          {creating ? "Creating..." : "Create Project"}
+          {creating ? "Creating..." : "Create"}
         </button>
       </div>
 
@@ -258,28 +200,46 @@ export default function Dashboard() {
                   className="p-1 bg-black border border-gray-600 rounded"
                 />
               ) : (
-                <span>{project.title}</span>
+                <div>{project.title}</div>
               )}
+
+              {/* 🔥 SHOW ASSIGNED USER */}
+              <div className="text-xs text-gray-400">
+                Assigned to: {project.assigned_to || "None"}
+              </div>
             </div>
 
             <div className="flex gap-2 items-center">
-              {/* STATUS */}
-              {isAdmin ? (
+
+              {/* 🔥 STATUS */}
+              <select
+                value={project.status}
+                onChange={(e) =>
+                  updateStatus(project.id, e.target.value)
+                }
+                className="bg-black border border-gray-600 text-sm rounded px-2 py-1"
+              >
+                <option value="pending">Pending</option>
+                <option value="in progress">In Progress</option>
+                <option value="completed">Completed</option>
+              </select>
+
+              {/* 🔥 ASSIGN USER (ADMIN ONLY) */}
+              {isAdmin && (
                 <select
-                  value={project.status}
+                  value={project.assigned_to || ""}
                   onChange={(e) =>
-                    updateStatus(project.id, e.target.value)
+                    assignUser(project.id, e.target.value)
                   }
                   className="bg-black border border-gray-600 text-sm rounded px-2 py-1"
                 >
-                  <option value="pending">Pending</option>
-                  <option value="in progress">In Progress</option>
-                  <option value="completed">Completed</option>
+                  <option value="">Unassigned</option>
+                  {users.map((u: any) => (
+                    <option key={u.id} value={u.id}>
+                      {u.email}
+                    </option>
+                  ))}
                 </select>
-              ) : (
-                <span className="text-blue-400 text-sm">
-                  {project.status}
-                </span>
               )}
 
               {editingId === project.id ? (
