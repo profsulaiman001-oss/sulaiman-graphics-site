@@ -6,6 +6,7 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [projects, setProjects] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const [title, setTitle] = useState("");
@@ -29,14 +30,28 @@ export default function Dashboard() {
     }
 
     setUser(user);
-    fetchProjects(user);
+
+    // 🔥 CHECK IF ADMIN
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", user.id)
+      .single();
+
+    setIsAdmin(profile?.is_admin || false);
+
+    fetchProjects(user, profile?.is_admin || false);
   };
 
-  const fetchProjects = async (user: any) => {
-    const { data, error } = await supabase
-      .from("projects")
-      .select("*")
-      .eq("user_id", user.id);
+  const fetchProjects = async (user: any, admin: boolean) => {
+    let query = supabase.from("projects").select("*");
+
+    // 🔐 if NOT admin, filter by user
+    if (!admin) {
+      query = query.eq("user_id", user.id);
+    }
+
+    const { data, error } = await query;
 
     if (!error) {
       setProjects(data || []);
@@ -60,7 +75,7 @@ export default function Dashboard() {
 
     if (!error) {
       setTitle("");
-      fetchProjects(user);
+      fetchProjects(user, isAdmin);
     }
 
     setCreating(false);
@@ -82,24 +97,20 @@ export default function Dashboard() {
     if (!error) {
       setEditingId(null);
       setEditTitle("");
-      fetchProjects(user);
+      fetchProjects(user, isAdmin);
     }
   };
 
   const handleDelete = async (id: string) => {
-    const confirmDelete = confirm("Are you sure you want to delete this project?");
-
-    if (!confirmDelete) return;
+    if (!confirm("Delete this project?")) return;
 
     const { error } = await supabase
       .from("projects")
       .delete()
       .eq("id", id);
 
-    if (error) {
-      console.error("DELETE ERROR:", error);
-    } else {
-      fetchProjects(user);
+    if (!error) {
+      fetchProjects(user, isAdmin);
     }
   };
 
@@ -113,7 +124,7 @@ export default function Dashboard() {
       {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl text-blue-500">
-          Client Dashboard
+          Dashboard {isAdmin && "👑 ADMIN"}
         </h1>
 
         <button
@@ -164,7 +175,6 @@ export default function Dashboard() {
             key={project.id}
             className="bg-[#111] p-4 rounded flex justify-between items-center"
           >
-            {/* LEFT */}
             <div>
               {editingId === project.id ? (
                 <input
@@ -177,7 +187,6 @@ export default function Dashboard() {
               )}
             </div>
 
-            {/* RIGHT */}
             <div className="flex gap-2 items-center">
               <span className="text-blue-400 text-sm">
                 {project.status}
