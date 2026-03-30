@@ -37,16 +37,14 @@ export default function Dashboard() {
   }, []);
 
   const checkUser = async () => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    const { data } = await supabase.auth.getSession();
 
-    if (!session) {
+    if (!data.session) {
       setLocation("/login");
       return;
     }
 
-    const user = session.user;
+    const user = data.session.user;
     setUser(user);
 
     const { data: profile } = await supabase
@@ -60,11 +58,13 @@ export default function Dashboard() {
 
     fetchProjects(user, admin);
 
-    // 🔥 GET ALL USERS (for assignment dropdown)
+    // 🔥 GET USERS FOR ASSIGNMENT
     if (admin) {
-      const { data: allUsers } = await supabase
+      const { data: allUsers, error } = await supabase
         .from("profiles")
         .select("id, email");
+
+      console.log("USERS:", allUsers, error);
 
       setUsers(allUsers || []);
     }
@@ -77,25 +77,46 @@ export default function Dashboard() {
       query = query.eq("user_id", user.id);
     }
 
-    const { data } = await query;
+    const { data, error } = await query;
+
+    console.log("PROJECTS:", data, error);
+
     setProjects(data || []);
     setLoading(false);
   };
 
-  // 🔥 STATUS
+  // 🔥 STATUS UPDATE
   const updateStatus = async (id: string, status: string) => {
-    await supabase.from("projects").update({ status }).eq("id", id);
+    const { error } = await supabase
+      .from("projects")
+      .update({ status })
+      .eq("id", id);
+
+    if (error) {
+      console.error("STATUS ERROR:", error);
+    }
+
     fetchProjects(user, isAdmin);
   };
 
-  // 🔥 ASSIGN USER
+  // 🔥 ASSIGN USER (FIXED)
   const assignUser = async (projectId: string, assignedTo: string) => {
-    await supabase
-      .from("projects")
-      .update({ assigned_to: assignedTo })
-      .eq("id", projectId);
+    console.log("Assigning:", projectId, assignedTo);
 
-    fetchProjects(user, isAdmin);
+    const { data, error } = await supabase
+      .from("projects")
+      .update({
+        assigned_to: assignedTo || null, // ✅ handle unassigned
+      })
+      .eq("id", projectId)
+      .select();
+
+    console.log("ASSIGN RESULT:", data);
+    console.log("ASSIGN ERROR:", error);
+
+    if (!error) {
+      fetchProjects(user, isAdmin);
+    }
   };
 
   const handleCreateProject = async () => {
@@ -103,13 +124,17 @@ export default function Dashboard() {
 
     setCreating(true);
 
-    await supabase.from("projects").insert([
+    const { error } = await supabase.from("projects").insert([
       {
         title,
         status: "pending",
         user_id: user.id,
       },
     ]);
+
+    if (error) {
+      console.error("CREATE ERROR:", error);
+    }
 
     setTitle("");
     fetchProjects(user, isAdmin);
@@ -124,10 +149,14 @@ export default function Dashboard() {
   const saveEdit = async () => {
     if (!editTitle.trim() || !editingId) return;
 
-    await supabase
+    const { error } = await supabase
       .from("projects")
       .update({ title: editTitle })
       .eq("id", editingId);
+
+    if (error) {
+      console.error("UPDATE ERROR:", error);
+    }
 
     setEditingId(null);
     setEditTitle("");
@@ -137,7 +166,14 @@ export default function Dashboard() {
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this project?")) return;
 
-    await supabase.from("projects").delete().eq("id", id);
+    const { error } = await supabase
+      .from("projects")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      console.error("DELETE ERROR:", error);
+    }
 
     fetchProjects(user, isAdmin);
   };
@@ -147,6 +183,12 @@ export default function Dashboard() {
     setUser(null);
     setProjects([]);
     window.location.href = "/login";
+  };
+
+  // 🔥 GET USER EMAIL FROM ID
+  const getUserEmail = (id: string) => {
+    const found = users.find((u) => u.id === id);
+    return found ? found.email : "Unassigned";
   };
 
   if (loading) return <p className="text-white p-6">Loading...</p>;
@@ -203,15 +245,17 @@ export default function Dashboard() {
                 <div>{project.title}</div>
               )}
 
-              {/* 🔥 SHOW ASSIGNED USER */}
+              {/* ✅ FIXED DISPLAY */}
               <div className="text-xs text-gray-400">
-                Assigned to: {project.assigned_to || "None"}
+                Assigned to:{" "}
+                {project.assigned_to
+                  ? getUserEmail(project.assigned_to)
+                  : "Unassigned"}
               </div>
             </div>
 
             <div className="flex gap-2 items-center">
-
-              {/* 🔥 STATUS */}
+              {/* STATUS */}
               <select
                 value={project.status}
                 onChange={(e) =>
@@ -224,7 +268,7 @@ export default function Dashboard() {
                 <option value="completed">Completed</option>
               </select>
 
-              {/* 🔥 ASSIGN USER (ADMIN ONLY) */}
+              {/* ASSIGN */}
               {isAdmin && (
                 <select
                   value={project.assigned_to || ""}
@@ -272,4 +316,4 @@ export default function Dashboard() {
       </div>
     </div>
   );
-                }
+        }
