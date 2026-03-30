@@ -18,6 +18,9 @@ export default function Dashboard() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
 
+  const [showMenu, setShowMenu] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+
   useEffect(() => {
     checkUser();
 
@@ -58,13 +61,10 @@ export default function Dashboard() {
 
     fetchProjects(user, admin);
 
-    // 🔥 GET USERS FOR ASSIGNMENT
     if (admin) {
-      const { data: allUsers, error } = await supabase
+      const { data: allUsers } = await supabase
         .from("profiles")
         .select("id, email");
-
-      console.log("USERS:", allUsers, error);
 
       setUsers(allUsers || []);
     }
@@ -77,46 +77,23 @@ export default function Dashboard() {
       query = query.eq("user_id", user.id);
     }
 
-    const { data, error } = await query;
-
-    console.log("PROJECTS:", data, error);
-
+    const { data } = await query;
     setProjects(data || []);
     setLoading(false);
   };
 
-  // 🔥 STATUS UPDATE
   const updateStatus = async (id: string, status: string) => {
-    const { error } = await supabase
-      .from("projects")
-      .update({ status })
-      .eq("id", id);
-
-    if (error) {
-      console.error("STATUS ERROR:", error);
-    }
-
+    await supabase.from("projects").update({ status }).eq("id", id);
     fetchProjects(user, isAdmin);
   };
 
-  // 🔥 ASSIGN USER (FIXED)
   const assignUser = async (projectId: string, assignedTo: string) => {
-    console.log("Assigning:", projectId, assignedTo);
-
-    const { data, error } = await supabase
+    await supabase
       .from("projects")
-      .update({
-        assigned_to: assignedTo || null, // ✅ handle unassigned
-      })
-      .eq("id", projectId)
-      .select();
+      .update({ assigned_to: assignedTo || null })
+      .eq("id", projectId);
 
-    console.log("ASSIGN RESULT:", data);
-    console.log("ASSIGN ERROR:", error);
-
-    if (!error) {
-      fetchProjects(user, isAdmin);
-    }
+    fetchProjects(user, isAdmin);
   };
 
   const handleCreateProject = async () => {
@@ -124,17 +101,13 @@ export default function Dashboard() {
 
     setCreating(true);
 
-    const { error } = await supabase.from("projects").insert([
+    await supabase.from("projects").insert([
       {
         title,
         status: "pending",
         user_id: user.id,
       },
     ]);
-
-    if (error) {
-      console.error("CREATE ERROR:", error);
-    }
 
     setTitle("");
     fetchProjects(user, isAdmin);
@@ -149,14 +122,10 @@ export default function Dashboard() {
   const saveEdit = async () => {
     if (!editTitle.trim() || !editingId) return;
 
-    const { error } = await supabase
+    await supabase
       .from("projects")
       .update({ title: editTitle })
       .eq("id", editingId);
-
-    if (error) {
-      console.error("UPDATE ERROR:", error);
-    }
 
     setEditingId(null);
     setEditTitle("");
@@ -166,118 +135,136 @@ export default function Dashboard() {
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this project?")) return;
 
-    const { error } = await supabase
-      .from("projects")
-      .delete()
-      .eq("id", id);
-
-    if (error) {
-      console.error("DELETE ERROR:", error);
-    }
-
+    await supabase.from("projects").delete().eq("id", id);
     fetchProjects(user, isAdmin);
   };
 
   const handleLogout = async () => {
+    const confirmLogout = confirm("Are you sure you want to logout?");
+    if (!confirmLogout) return;
+
     await supabase.auth.signOut();
     setUser(null);
     setProjects([]);
     window.location.href = "/login";
   };
 
-  // 🔥 GET USER EMAIL FROM ID
   const getUserEmail = (id: string) => {
     const found = users.find((u) => u.id === id);
     return found ? found.email : "Unassigned";
   };
 
+  const getInitials = (email: string) => {
+    return email ? email.substring(0, 2).toUpperCase() : "U";
+  };
+
   if (loading) return <p className="text-white p-6">Loading...</p>;
 
   return (
-    <div className="min-h-screen bg-black text-white p-6">
+    <div className="min-h-screen bg-gradient-to-br from-black via-[#0a0a0a] to-[#111] text-white p-4 md:p-8">
+
       {/* HEADER */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl text-blue-500">
-          Dashboard {isAdmin && "👑 ADMIN"}
+      <div className="flex justify-between items-center mb-8 relative">
+        <h1 className="text-3xl font-bold">
+          Dashboard {isAdmin && <span className="text-blue-500">Admin</span>}
         </h1>
 
-        <button
-          onClick={handleLogout}
-          className="bg-red-500 px-4 py-2 rounded text-sm"
-        >
-          Logout
-        </button>
+        {/* PROFILE */}
+        <div className="relative">
+          <button
+            onClick={() => setShowMenu(!showMenu)}
+            className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold"
+          >
+            {getInitials(user?.email)}
+          </button>
+
+          {showMenu && (
+            <div className="absolute right-0 mt-2 w-52 bg-[#111] border border-gray-700 rounded-xl shadow-lg z-50">
+
+              <div className="px-4 py-3 border-b border-gray-700 text-sm text-gray-300">
+                {user?.email}
+              </div>
+
+              <button
+                onClick={() => {
+                  setShowSettings(true);
+                  setShowMenu(false);
+                }}
+                className="w-full text-left px-4 py-3 hover:bg-white/10"
+              >
+                ⚙️ Settings
+              </button>
+
+              <button
+                onClick={handleLogout}
+                className="w-full text-left px-4 py-3 text-red-400 hover:bg-red-500/10"
+              >
+                Logout
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* CREATE */}
-      <div className="bg-[#111] p-4 rounded mb-6">
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Project title..."
-          className="w-full p-2 mb-3 bg-black border border-gray-700 rounded"
-        />
+      <div className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 mb-8">
+        <h2 className="text-lg mb-3 text-blue-400">Create Project</h2>
 
-        <button
-          onClick={handleCreateProject}
-          disabled={creating}
-          className="bg-blue-500 px-4 py-2 rounded"
-        >
-          {creating ? "Creating..." : "Create"}
-        </button>
+        <div className="flex gap-3">
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Project title..."
+            className="flex-1 p-3 rounded-lg bg-black/60 border border-gray-700"
+          />
+
+          <button
+            onClick={handleCreateProject}
+            className="bg-blue-600 px-6 rounded-lg"
+          >
+            {creating ? "..." : "Create"}
+          </button>
+        </div>
       </div>
 
       {/* PROJECTS */}
-      <div className="space-y-4">
+      <div className="grid gap-6">
         {projects.map((project: any) => (
           <div
             key={project.id}
-            className="bg-[#111] p-4 rounded flex justify-between items-center"
+            className="bg-white/5 border border-white/10 rounded-xl p-5"
           >
-            <div>
-              {editingId === project.id ? (
-                <input
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  className="p-1 bg-black border border-gray-600 rounded"
-                />
-              ) : (
-                <div>{project.title}</div>
-              )}
-
-              {/* ✅ FIXED DISPLAY */}
-              <div className="text-xs text-gray-400">
-                Assigned to:{" "}
-                {project.assigned_to
-                  ? getUserEmail(project.assigned_to)
-                  : "Unassigned"}
+            <div className="flex justify-between mb-3">
+              <div>
+                <h3 className="font-semibold">{project.title}</h3>
+                <p className="text-xs text-gray-400">
+                  {getUserEmail(project.assigned_to)}
+                </p>
               </div>
-            </div>
 
-            <div className="flex gap-2 items-center">
-              {/* STATUS */}
               <select
                 value={project.status}
                 onChange={(e) =>
                   updateStatus(project.id, e.target.value)
                 }
-                className="bg-black border border-gray-600 text-sm rounded px-2 py-1"
+                className="bg-black border border-gray-600 rounded px-2"
               >
                 <option value="pending">Pending</option>
                 <option value="in progress">In Progress</option>
                 <option value="completed">Completed</option>
               </select>
+            </div>
 
-              {/* ASSIGN */}
+            <div className="flex justify-between">
               {isAdmin && (
                 <select
                   value={project.assigned_to || ""}
                   onChange={(e) =>
                     assignUser(project.id, e.target.value)
                   }
-                  className="bg-black border border-gray-600 text-sm rounded px-2 py-1"
+                  className="bg-black border border-gray-600 rounded px-2"
                 >
-                  <option value="">Unassigned</option>
+                  <option value="">Assign</option>
                   {users.map((u: any) => (
                     <option key={u.id} value={u.id}>
                       {u.email}
@@ -286,34 +273,56 @@ export default function Dashboard() {
                 </select>
               )}
 
-              {editingId === project.id ? (
-                <button
-                  onClick={saveEdit}
-                  className="bg-green-500 px-3 py-1 rounded text-sm"
-                >
-                  Save
-                </button>
-              ) : (
-                <>
+              <div className="flex gap-2">
+                {editingId === project.id ? (
                   <button
-                    onClick={() => startEdit(project)}
-                    className="bg-yellow-500 px-3 py-1 rounded text-sm"
+                    onClick={saveEdit}
+                    className="bg-green-500 px-3 rounded"
                   >
-                    Edit
+                    Save
                   </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => startEdit(project)}
+                      className="bg-yellow-500 px-3 rounded"
+                    >
+                      Edit
+                    </button>
 
-                  <button
-                    onClick={() => handleDelete(project.id)}
-                    className="bg-red-500 px-3 py-1 rounded text-sm"
-                  >
-                    Delete
-                  </button>
-                </>
-              )}
+                    <button
+                      onClick={() => handleDelete(project.id)}
+                      className="bg-red-500 px-3 rounded"
+                    >
+                      Delete
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         ))}
       </div>
+
+      {/* SETTINGS MODAL */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center">
+          <div className="bg-[#111] p-6 rounded-xl w-80">
+            <h2 className="text-lg mb-4">Settings</h2>
+
+            <p className="text-sm text-gray-400 mb-4">
+              More features coming soon...
+            </p>
+
+            <button
+              onClick={() => setShowSettings(false)}
+              className="bg-blue-500 px-4 py-2 rounded"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
-        }
+      }
