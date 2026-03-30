@@ -5,6 +5,9 @@ import { supabase } from "@/lib/supabase";
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [projects, setProjects] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]); // 🔥 NEW
+  const [selectedUser, setSelectedUser] = useState(""); // 🔥 NEW
+
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -57,7 +60,25 @@ export default function Dashboard() {
     const admin = profile?.is_admin || false;
     setIsAdmin(admin);
 
+    // 🔥 FETCH USERS IF ADMIN
+    if (admin) {
+      fetchUsers();
+    }
+
     fetchProjects(user, admin);
+  };
+
+  // 🔥 NEW: FETCH USERS
+  const fetchUsers = async () => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, email");
+
+    if (error) {
+      console.error("USERS ERROR:", error);
+    } else {
+      setUsers(data || []);
+    }
   };
 
   const fetchProjects = async (user: any, admin: boolean) => {
@@ -72,7 +93,7 @@ export default function Dashboard() {
     setLoading(false);
   };
 
-  // 🔥 NEW: STATUS UPDATE FUNCTION
+  // 🔥 STATUS UPDATE
   const updateStatus = async (id: string, status: string) => {
     const { error } = await supabase
       .from("projects")
@@ -89,18 +110,27 @@ export default function Dashboard() {
   const handleCreateProject = async () => {
     if (!title.trim() || !user) return;
 
+    // 🔥 REQUIRE USER SELECTION FOR ADMIN
+    if (isAdmin && !selectedUser) {
+      alert("Please select a client");
+      return;
+    }
+
     setCreating(true);
 
     const { error } = await supabase.from("projects").insert([
       {
         title,
         status: "pending",
-        user_id: user.id,
+        user_id: isAdmin ? selectedUser : user.id, // 🔥 FIXED
       },
     ]);
 
-    if (!error) {
+    if (error) {
+      console.error("CREATE ERROR:", error);
+    } else {
       setTitle("");
+      setSelectedUser(""); // reset
       fetchProjects(user, isAdmin);
     }
 
@@ -180,6 +210,22 @@ export default function Dashboard() {
           Create New Project
         </h2>
 
+        {/* 🔥 USER SELECT (ADMIN ONLY) */}
+        {isAdmin && (
+          <select
+            value={selectedUser}
+            onChange={(e) => setSelectedUser(e.target.value)}
+            className="w-full p-2 mb-3 rounded bg-black border border-gray-700"
+          >
+            <option value="">Select Client</option>
+            {users.map((u: any) => (
+              <option key={u.id} value={u.id}>
+                {u.email}
+              </option>
+            ))}
+          </select>
+        )}
+
         <input
           type="text"
           placeholder="Project title..."
@@ -217,7 +263,7 @@ export default function Dashboard() {
             </div>
 
             <div className="flex gap-2 items-center">
-              {/* 🔥 STATUS CONTROL */}
+              {/* STATUS */}
               {isAdmin ? (
                 <select
                   value={project.status}
@@ -266,4 +312,4 @@ export default function Dashboard() {
       </div>
     </div>
   );
-}
+                }
