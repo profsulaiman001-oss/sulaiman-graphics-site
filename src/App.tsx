@@ -2,7 +2,7 @@ import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 // Layout Components
@@ -18,7 +18,7 @@ import Services from "@/pages/Services";
 import Contact from "@/pages/Contact";
 import NotFound from "@/pages/not-found";
 
-// 👉 NEW
+// Auth Pages
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 
@@ -33,31 +33,25 @@ const queryClient = new QueryClient({
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [, setLocation] = useLocation();
+  const [loading, setLoading] = useState(true);
 
-  const isAuth = localStorage.getItem("auth");
-
-  if (!isAuth) {
-    setLocation("/login");
-    return null;
-  }
-
-  return <>{children}</>;
-}
-
-/* 👉 TEMPORARY TEST WRAPPER */
-function DashboardWithTest() {
   useEffect(() => {
-    const checkSupabase = async () => {
-      const { data, error } = await supabase.from("projects").select("*");
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
 
-      console.log("SUPABASE DATA:", data);
-      console.log("SUPABASE ERROR:", error);
+      if (!data.session) {
+        setLocation("/login");
+      }
+
+      setLoading(false);
     };
 
-    checkSupabase();
-  }, []);
+    checkAuth();
+  }, [setLocation]);
 
-  return <Dashboard />;
+  if (loading) return null;
+
+  return <>{children}</>;
 }
 
 function Router() {
@@ -67,6 +61,7 @@ function Router() {
 
       <div className="flex-grow">
         <Switch>
+          {/* PUBLIC ROUTES */}
           <Route path="/" component={Home} />
           <Route path="/portfolio" component={Portfolio} />
           <Route path="/portfolio/:id" component={ProjectDetail} />
@@ -74,12 +69,12 @@ function Router() {
           <Route path="/services" component={Services} />
           <Route path="/contact" component={Contact} />
 
-          {/* 👉 NEW ROUTES */}
+          {/* AUTH ROUTES */}
           <Route path="/login" component={Login} />
 
           <Route path="/dashboard">
             <ProtectedRoute>
-              <DashboardWithTest />
+              <Dashboard />
             </ProtectedRoute>
           </Route>
 
