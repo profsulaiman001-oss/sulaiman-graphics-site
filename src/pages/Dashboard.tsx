@@ -2,6 +2,19 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
 
+/* 🔥 ADDED IMPORTS (APPENDED ONLY) */
+import { motion } from "framer-motion";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
+
 export default function Dashboard() {
   const [, setLocation] = useLocation();
 
@@ -166,6 +179,13 @@ export default function Dashboard() {
   const inProgress = projects.filter(p => p.status === "in progress").length;
   const completed = projects.filter(p => p.status === "completed").length;
 
+  /* 🔥 ADDED CHART DATA */
+  const chartData = [
+    { name: "Pending", value: pending },
+    { name: "In Progress", value: inProgress },
+    { name: "Completed", value: completed },
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-[#0a0a0a] to-[#111] text-white p-4 md:p-8">
 
@@ -233,7 +253,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* 🔥 ANALYTICS SECTION (ADDED - NO REMOVALS) */}
+      {/* 🔥 ANALYTICS SECTION (YOUR ORIGINAL — UNTOUCHED) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div className="bg-gradient-to-br from-blue-600/20 to-blue-900/20 border border-blue-500/20 rounded-xl p-4">
           <p className="text-sm text-gray-400">Total</p>
@@ -255,6 +275,45 @@ export default function Dashboard() {
           <h3 className="text-2xl font-bold text-blue-400">{completed}</h3>
         </div>
       </div>
+
+      {/* 🔥 NEW: CHARTS + ANIMATION (APPENDED ONLY) */}
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="grid md:grid-cols-2 gap-6 mb-10"
+      >
+        {/* BAR CHART */}
+        <div className="bg-white/5 border border-white/10 rounded-xl p-5 backdrop-blur-lg">
+          <h3 className="text-sm text-gray-400 mb-4">Project Overview</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={chartData}>
+              <XAxis dataKey="name" stroke="#aaa" />
+              <Tooltip />
+              <Bar dataKey="value" fill="#3b82f6" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* PIE CHART */}
+        <div className="bg-white/5 border border-white/10 rounded-xl p-5 backdrop-blur-lg">
+          <h3 className="text-sm text-gray-400 mb-4">Distribution</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <PieChart>
+              <Pie
+                data={chartData}
+                dataKey="value"
+                outerRadius={80}
+                label
+              >
+                <Cell fill="#3b82f6" />
+                <Cell fill="#60a5fa" />
+                <Cell fill="#93c5fd" />
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </motion.div>
 
       {/* PROJECTS */}
       <div className="grid gap-6">
@@ -354,4 +413,4 @@ export default function Dashboard() {
       )}
     </div>
   );
-    }
+        }
