@@ -18,10 +18,12 @@ export default function Dashboard() {
   useEffect(() => {
     checkUser();
 
-    // 🔥 REAL-TIME AUTH LISTENER (VERY IMPORTANT)
+    // 🔥 REAL-TIME AUTH LISTENER (CRITICAL FIX)
     const { data: listener } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (!session) {
+          setUser(null);
+          setProjects([]);
           setLocation("/login");
         } else {
           setUser(session.user);
@@ -30,7 +32,7 @@ export default function Dashboard() {
     );
 
     return () => {
-      listener?.subscription.unsubscribe();
+      listener.subscription.unsubscribe();
     };
   }, []);
 
@@ -39,13 +41,12 @@ export default function Dashboard() {
       data: { session },
     } = await supabase.auth.getSession();
 
-    const user = session?.user;
-
-    if (!user) {
+    if (!session) {
       setLocation("/login");
       return;
     }
 
+    const user = session.user;
     setUser(user);
 
     const { data: profile, error } = await supabase
@@ -142,16 +143,16 @@ export default function Dashboard() {
     }
   };
 
-  // 🔥 FIXED LOGOUT (PROPER SESSION CLEAR)
+  // 🔥 FIXED LOGOUT (FORCE FULL RESET)
   const handleLogout = async () => {
     await supabase.auth.signOut();
 
-    // Force UI reset
+    // Clear state
     setUser(null);
     setProjects([]);
 
-    // Redirect
-    setLocation("/login");
+    // 🔥 FORCE FULL PAGE RELOAD (MOST IMPORTANT FIX)
+    window.location.href = "/login";
   };
 
   if (loading) {
@@ -256,4 +257,4 @@ export default function Dashboard() {
       </div>
     </div>
   );
-              }
+    }
