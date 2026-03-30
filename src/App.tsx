@@ -31,22 +31,39 @@ const queryClient = new QueryClient({
   },
 });
 
+/* ✅ FIXED PROTECTED ROUTE */
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [, setLocation] = useLocation();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data } = await supabase.auth.getSession();
+    // Initial session check
+    const checkSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-      if (!data.session) {
+      if (!session) {
         setLocation("/login");
       }
 
       setLoading(false);
     };
 
-    checkAuth();
+    checkSession();
+
+    // 🔥 Listen to auth changes (LOGIN / LOGOUT)
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (!session) {
+          setLocation("/login");
+        }
+      }
+    );
+
+    return () => {
+      listener.subscription.unsubscribe();
+    };
   }, [setLocation]);
 
   if (loading) return null;
