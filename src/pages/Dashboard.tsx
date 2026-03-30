@@ -18,7 +18,6 @@ export default function Dashboard() {
   useEffect(() => {
     checkUser();
 
-    // 🔥 REAL-TIME AUTH LISTENER (CRITICAL FIX)
     const { data: listener } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (!session) {
@@ -49,15 +48,11 @@ export default function Dashboard() {
     const user = session.user;
     setUser(user);
 
-    const { data: profile, error } = await supabase
+    const { data: profile } = await supabase
       .from("profiles")
       .select("is_admin")
       .eq("id", user.id)
       .single();
-
-    if (error) {
-      console.error("PROFILE ERROR:", error);
-    }
 
     const admin = profile?.is_admin || false;
     setIsAdmin(admin);
@@ -72,15 +67,23 @@ export default function Dashboard() {
       query = query.eq("user_id", user.id);
     }
 
-    const { data, error } = await query;
+    const { data } = await query;
+    setProjects(data || []);
+    setLoading(false);
+  };
+
+  // 🔥 NEW: STATUS UPDATE FUNCTION
+  const updateStatus = async (id: string, status: string) => {
+    const { error } = await supabase
+      .from("projects")
+      .update({ status })
+      .eq("id", id);
 
     if (error) {
-      console.error("FETCH ERROR:", error);
+      console.error("STATUS ERROR:", error);
     } else {
-      setProjects(data || []);
+      fetchProjects(user, isAdmin);
     }
-
-    setLoading(false);
   };
 
   const handleCreateProject = async () => {
@@ -96,9 +99,7 @@ export default function Dashboard() {
       },
     ]);
 
-    if (error) {
-      console.error("CREATE ERROR:", error);
-    } else {
+    if (!error) {
       setTitle("");
       fetchProjects(user, isAdmin);
     }
@@ -119,9 +120,7 @@ export default function Dashboard() {
       .update({ title: editTitle })
       .eq("id", editingId);
 
-    if (error) {
-      console.error("UPDATE ERROR:", error);
-    } else {
+    if (!error) {
       setEditingId(null);
       setEditTitle("");
       fetchProjects(user, isAdmin);
@@ -136,22 +135,15 @@ export default function Dashboard() {
       .delete()
       .eq("id", id);
 
-    if (error) {
-      console.error("DELETE ERROR:", error);
-    } else {
+    if (!error) {
       fetchProjects(user, isAdmin);
     }
   };
 
-  // 🔥 FIXED LOGOUT (FORCE FULL RESET)
   const handleLogout = async () => {
     await supabase.auth.signOut();
-
-    // Clear state
     setUser(null);
     setProjects([]);
-
-    // 🔥 FORCE FULL PAGE RELOAD (MOST IMPORTANT FIX)
     window.location.href = "/login";
   };
 
@@ -184,7 +176,9 @@ export default function Dashboard() {
 
       {/* CREATE */}
       <div className="bg-[#111] p-4 rounded mb-6">
-        <h2 className="text-lg mb-3 text-blue-400">Create New Project</h2>
+        <h2 className="text-lg mb-3 text-blue-400">
+          Create New Project
+        </h2>
 
         <input
           type="text"
@@ -223,9 +217,24 @@ export default function Dashboard() {
             </div>
 
             <div className="flex gap-2 items-center">
-              <span className="text-blue-400 text-sm">
-                {project.status}
-              </span>
+              {/* 🔥 STATUS CONTROL */}
+              {isAdmin ? (
+                <select
+                  value={project.status}
+                  onChange={(e) =>
+                    updateStatus(project.id, e.target.value)
+                  }
+                  className="bg-black border border-gray-600 text-sm rounded px-2 py-1"
+                >
+                  <option value="pending">Pending</option>
+                  <option value="in progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                </select>
+              ) : (
+                <span className="text-blue-400 text-sm">
+                  {project.status}
+                </span>
+              )}
 
               {editingId === project.id ? (
                 <button
@@ -257,4 +266,4 @@ export default function Dashboard() {
       </div>
     </div>
   );
-    }
+}
