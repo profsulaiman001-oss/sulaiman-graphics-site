@@ -21,7 +21,7 @@ export default function Dashboard() {
       return;
     }
 
-    console.log("USER ID:", user.id); // 👈 ADD THIS LINE
+    console.log("USER ID:", user.id);
 
     setUser(user);
     fetchProjects(user);
@@ -30,12 +30,13 @@ export default function Dashboard() {
   const fetchProjects = async (user: any) => {
     const { data, error } = await supabase
       .from("projects")
-      .select("*");
+      .select("*")
+      .eq("user_id", user.id); // 🔥 FILTER BY USER
 
     if (error) {
       console.error("SUPABASE ERROR:", error);
     } else {
-      console.log("SUPABASE DATA:", data);
+      console.log("FILTERED DATA:", data);
       setProjects(data || []);
     }
   };
