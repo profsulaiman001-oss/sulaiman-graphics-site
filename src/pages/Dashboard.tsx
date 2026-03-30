@@ -7,6 +7,8 @@ export default function Dashboard() {
   const [projects, setProjects] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
   const [title, setTitle] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
 
   useEffect(() => {
     checkUser();
@@ -32,14 +34,14 @@ export default function Dashboard() {
       .select("*")
       .eq("user_id", user.id);
 
-    if (error) {
-      console.error("SUPABASE ERROR:", error);
-    } else {
+    if (!error) {
       setProjects(data || []);
+    } else {
+      console.error(error);
     }
   };
 
-  // 🔥 CREATE PROJECT
+  // 🔥 CREATE
   const createProject = async () => {
     if (!user || !title.trim()) return;
 
@@ -51,25 +53,42 @@ export default function Dashboard() {
       },
     ]);
 
-    if (error) {
-      console.error("CREATE ERROR:", error);
-    } else {
+    if (!error) {
       setTitle("");
       fetchProjects(user);
     }
   };
 
-  // 🔥 DELETE PROJECT
+  // 🔥 DELETE
   const deleteProject = async (id: string) => {
     const { error } = await supabase
       .from("projects")
       .delete()
       .eq("id", id);
 
-    if (error) {
-      console.error("DELETE ERROR:", error);
-    } else {
-      // Refresh list
+    if (!error) {
+      fetchProjects(user);
+    }
+  };
+
+  // 🔥 START EDIT
+  const startEdit = (project: any) => {
+    setEditingId(project.id);
+    setEditTitle(project.title);
+  };
+
+  // 🔥 SAVE EDIT
+  const saveEdit = async (id: string) => {
+    if (!editTitle.trim()) return;
+
+    const { error } = await supabase
+      .from("projects")
+      .update({ title: editTitle })
+      .eq("id", id);
+
+    if (!error) {
+      setEditingId(null);
+      setEditTitle("");
       fetchProjects(user);
     }
   };
@@ -86,7 +105,7 @@ export default function Dashboard() {
         </p>
       )}
 
-      {/* CREATE PROJECT */}
+      {/* CREATE */}
       <div className="mb-6 flex gap-2">
         <input
           type="text"
@@ -110,20 +129,47 @@ export default function Dashboard() {
             key={project.id}
             className="bg-[#111] p-4 rounded flex justify-between items-center"
           >
-            <div>
-              <p>{project.title}</p>
+            <div className="w-full">
+              {/* EDIT MODE */}
+              {editingId === project.id ? (
+                <input
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="px-2 py-1 bg-black border border-gray-600 rounded w-full"
+                />
+              ) : (
+                <p>{project.title}</p>
+              )}
+
               <p className="text-blue-400 text-sm">
                 {project.status}
               </p>
             </div>
 
-            {/* DELETE BUTTON */}
-            <button
-              onClick={() => deleteProject(project.id)}
-              className="bg-red-500 px-3 py-1 rounded text-sm"
-            >
-              Delete
-            </button>
+            <div className="flex gap-2 ml-4">
+              {editingId === project.id ? (
+                <button
+                  onClick={() => saveEdit(project.id)}
+                  className="bg-green-500 px-3 py-1 rounded text-sm"
+                >
+                  Save
+                </button>
+              ) : (
+                <button
+                  onClick={() => startEdit(project)}
+                  className="bg-yellow-500 px-3 py-1 rounded text-sm"
+                >
+                  Edit
+                </button>
+              )}
+
+              <button
+                onClick={() => deleteProject(project.id)}
+                className="bg-red-500 px-3 py-1 rounded text-sm"
+              >
+                Delete
+              </button>
+            </div>
           </div>
         ))}
       </div>
