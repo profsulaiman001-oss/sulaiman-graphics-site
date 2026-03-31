@@ -55,7 +55,12 @@ export default function Dashboard() {
         }
       }
     );
-    useEffect(() => {
+    
+
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
   const closeNotifications = () => {
     setShowNotifications(false);
   };
@@ -66,10 +71,7 @@ export default function Dashboard() {
     window.removeEventListener("click", closeNotifications);
   };
 }, []);
-
-    return () => listener.subscription.unsubscribe();
-  }, []);
-
+  
   const resetState = () => {
     setUser(null);
     setProjects([]);
