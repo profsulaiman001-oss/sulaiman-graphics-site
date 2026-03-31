@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
 
 /* 🔥 PREMIUM UI IMPORTS */
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart,
   Bar,
@@ -14,6 +14,9 @@ import {
   Pie,
   Cell,
 } from "recharts";
+
+/* 🔥 Premium Icons (Requires installing lucide-react, or you can use emojis) */
+import { Edit3, Trash2, Save, XCircle, Plus, MoreVertical } from "lucide-react";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
@@ -109,7 +112,7 @@ export default function Dashboard() {
      DATA FETCHING
   ========================== */
   const fetchProjects = async (userData: any, admin: boolean) => {
-    let query = supabase.from("projects").select("*");
+    let query = supabase.from("projects").select("*").order('created_at', { ascending: false });
 
     if (!admin && userData) {
       query = query.eq("user_id", userData.id);
@@ -176,7 +179,7 @@ export default function Dashboard() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this project?")) return;
+    if (!confirm("Delete this project permanently?")) return;
 
     await supabase.from("projects").delete().eq("id", id);
     setNotifications(prev => ["Project deleted", ...prev]);
@@ -203,10 +206,19 @@ export default function Dashboard() {
     return email ? email.substring(0, 2).toUpperCase() : "U";
   };
 
+  const statusColors = {
+    pending: "text-blue-300 bg-blue-500/10 border border-blue-500/30",
+    "in progress": "text-yellow-300 bg-yellow-500/10 border border-yellow-500/30",
+    completed: "text-green-300 bg-green-500/10 border border-green-500/30",
+  };
+
   if (loading)
     return (
-      <div className="text-white p-6 text-center animate-pulse">
-        Loading dashboard...
+      <div className="text-white min-h-screen flex items-center justify-center animate-pulse">
+        <div className="flex flex-col items-center gap-2">
+            <div className="w-12 h-12 rounded-full border-2 border-blue-500 border-t-transparent animate-spin"></div>
+            Loading dashboard...
+        </div>
       </div>
     );
 
@@ -225,45 +237,50 @@ export default function Dashboard() {
   ];
 
   return (
-    // 🔥 Added mt-16 to push the entire dashboard down below your website's main navbar
-    <div className="min-h-screen bg-gradient-to-br from-black via-[#0a0a0a] to-[#111] text-white p-4 md:p-8 mt-16">
+    <div className="min-h-screen bg-gradient-to-br from-black via-[#080808] to-[#010101] text-white p-4 md:p-12 mt-16">
 
       {/* HEADER */}
-      <div className="flex justify-between items-center mb-8 relative">
-        <h1 className="text-3xl font-bold">
-          Dashboard {isAdmin && <span className="text-blue-500">Admin</span>}
+      <div className="flex justify-between items-center mb-10 pb-6 border-b border-gray-800 relative z-50">
+        <h1 className="text-4xl font-extrabold tracking-tighter">
+          Dashboard <span className="text-blue-600">Admin</span>
         </h1>
         
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-5">
           {/* 🔔 Notification Bell */}
-          <div className="relative z-50">
+          <div className="relative">
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 setShowNotifications(!showNotifications);
               }}
-              className="bg-blue-600 px-3 py-2 rounded-lg relative hover:scale-105 transition"
+              className="w-11 h-11 rounded-full flex items-center justify-center bg-gray-900 border border-gray-700 relative hover:border-blue-500 transition-colors"
             >
-              🔔
+              <motion.span whileTap={{ scale: 1.1 }}>🔔</motion.span>
               {notifications.length > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-xs px-1 rounded-full">
+                <span className="absolute top-0 right-0 bg-red-600 text-[10px] w-4 h-4 flex items-center justify-center font-bold rounded-full border border-black shadow-lg">
                   {notifications.length}
                 </span>
               )}
             </button>
 
             {showNotifications && (
-              <div className="absolute right-0 top-12 w-64 bg-[#111] border border-gray-700 rounded-xl p-3 z-[999] shadow-xl">
-                <h3 className="text-sm mb-2">Notifications</h3>
+              <div className="absolute right-0 top-14 w-80 bg-[#111] border border-gray-700 rounded-2xl p-4 z-[999] shadow-2xl backdrop-blur-xl">
+                <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-sm font-semibold text-gray-400">Notifications</h3>
+                    <button onClick={() => setNotifications([])} className="text-xs text-blue-500">Clear</button>
+                </div>
+                
+                <div className="max-h-60 overflow-y-auto space-y-2">
                 {notifications.length === 0 ? (
-                  <p className="text-gray-400 text-sm">No notifications</p>
+                  <p className="text-gray-500 text-sm py-4 text-center">No new notifications</p>
                 ) : (
                   notifications.map((n, i) => (
-                    <p key={i} className="text-xs border-b border-gray-700 py-1">
+                    <p key={i} className="text-xs bg-gray-900/40 p-2 rounded border border-gray-800">
                       {n}
                     </p>
                   ))
                 )}
+                </div>
               </div>
             )}
           </div>
@@ -272,15 +289,16 @@ export default function Dashboard() {
           <div className="relative">
             <button
               onClick={() => setShowMenu(!showMenu)}
-              className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold hover:scale-110 transition"
+              className="w-12 h-12 rounded-full bg-blue-600/10 border-2 border-blue-600 flex items-center justify-center font-bold hover:shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-shadow"
             >
               {getInitials(user?.email)}
             </button>
 
             {showMenu && (
-              <div className="absolute right-0 mt-2 w-52 bg-[#111] border border-gray-700 rounded-xl shadow-lg z-50">
-                <div className="px-4 py-3 border-b border-gray-700 text-sm text-gray-300">
-                  {user?.email}
+              <div className="absolute right-0 mt-3 w-60 bg-[#111] border border-gray-700 rounded-2xl shadow-2xl z-50 backdrop-blur-xl">
+                <div className="px-5 py-4 border-b border-gray-700 text-sm text-gray-300">
+                  <div className="font-semibold text-white">Authenticated As:</div>
+                  <div className="text-xs break-all">{user?.email}</div>
                 </div>
 
                 <button
@@ -288,14 +306,14 @@ export default function Dashboard() {
                     setShowSettings(true);
                     setShowMenu(false);
                   }}
-                  className="w-full text-left px-4 py-3 hover:bg-white/10"
+                  className="w-full text-left px-5 py-3.5 flex items-center gap-3 hover:bg-white/5"
                 >
                   ⚙️ Settings
                 </button>
 
                 <button
                   onClick={handleLogout}
-                  className="w-full text-left px-4 py-3 text-red-400 hover:bg-red-500/10"
+                  className="w-full text-left px-5 py-3.5 text-red-400 flex items-center gap-3 hover:bg-red-500/10"
                 >
                   Logout
                 </button>
@@ -306,148 +324,208 @@ export default function Dashboard() {
       </div>
 
       {/* CREATE */}
-      <div className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 mb-8">
-        <h2 className="text-lg mb-3 text-blue-400">Create Project</h2>
+      <div className="bg-white/[0.03] backdrop-blur-lg border border-white/10 rounded-2xl p-6 mb-10 shadow-lg">
+        <h2 className="text-xl font-bold mb-4 text-blue-500 flex items-center gap-2"><Plus size={20}/> Create New Project</h2>
 
-        <div className="flex gap-3">
+        <div className="flex gap-4">
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Project title..."
-            className="flex-1 p-3 rounded-lg bg-black/60 border border-gray-700 focus:ring-2 focus:ring-blue-500"
+            placeholder="E.g., Brand Identity System, Social Media Ads..."
+            className="flex-1 p-4 rounded-xl bg-gray-950/40 border border-gray-800 text-gray-100 placeholder:text-gray-600 focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition"
           />
 
           <button
             onClick={handleCreateProject}
-            className="bg-blue-600 px-6 rounded-lg hover:bg-blue-700 transition"
+            disabled={creating}
+            className="bg-blue-600 px-8 rounded-xl font-semibold flex items-center gap-2 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg"
           >
-            {creating ? "..." : "Create"}
+            {creating ? <div className="w-5 h-5 border-2 border-white/30 border-t-white animate-spin rounded-full"/> : "Add Project"}
           </button>
         </div>
       </div>
 
       {/* ANALYTICS */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10 pb-6 border-b border-gray-800">
         {[{label:"Total",val:totalProjects},
           {label:"Pending",val:pending},
           {label:"In Progress",val:inProgress},
           {label:"Completed",val:completed}]
         .map((item, i) => (
-          <div key={i} className="bg-blue-600/10 border border-blue-500/20 rounded-xl p-4 hover:scale-105 transition">
-            <p className="text-sm text-gray-400">{item.label}</p>
-            <h3 className="text-2xl font-bold text-blue-400">{item.val}</h3>
+          <div key={i} className="bg-blue-600/10 border border-blue-500/30 rounded-2xl p-5 shadow-[0_4px_20px_-2px_rgba(59,130,246,0.1)] hover:scale-[1.03] transition-transform">
+            <p className="text-xs uppercase tracking-widest text-gray-500 mb-1">{item.label}</p>
+            <h3 className="text-3xl font-extrabold text-blue-400">{item.val}</h3>
           </div>
         ))}
       </div>
 
       {/* CHARTS */}
-      <motion.div className="grid md:grid-cols-2 gap-6 mb-10"
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}>
+      <motion.div className="grid md:grid-cols-2 gap-8 mb-12 pb-8 border-b border-gray-800"
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}>
         
-        <div className="bg-white/5 border border-white/10 rounded-xl p-5">
-          <h3 className="text-sm text-gray-400 mb-4">Project Overview</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={chartData}>
-              <XAxis dataKey="name" stroke="#aaa" />
-              <Tooltip />
-              <Bar dataKey="value" fill="#3b82f6" radius={[6,6,0,0]} />
+        <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-6 shadow-inner">
+          <h3 className="text-sm font-semibold uppercase tracking-widest text-gray-500 mb-6">Project Overview</h3>
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+              <XAxis dataKey="name" stroke="#555" tickLine={false} axisLine={false} fontSize={11}/>
+              <Tooltip 
+                cursor={{ fill: 'rgba(59,130,246,0.05)' }} 
+                contentStyle={{ background: '#111', border: '1px solid #333', borderRadius: '12px', padding: '12px' }}
+                itemStyle={{ color: '#fff' }}
+              />
+              <Bar dataKey="value" fill="#3b82f6" radius={[8,8,0,0]} barSize={40}/>
             </BarChart>
           </ResponsiveContainer>
         </div>
 
-        <div className="bg-white/5 border border-white/10 rounded-xl p-5">
-          <h3 className="text-sm text-gray-400 mb-4">Distribution</h3>
-          <ResponsiveContainer width="100%" height={250}>
+        <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-6 shadow-inner">
+          <h3 className="text-sm font-semibold uppercase tracking-widest text-gray-500 mb-6">Distribution</h3>
+          <ResponsiveContainer width="100%" height={260}>
             <PieChart>
-              <Pie data={chartData} dataKey="value" outerRadius={80} label>
+              <Pie data={chartData} dataKey="value" outerRadius={90} label={{fill: '#888', fontSize: 10}} stroke="#111" strokeWidth={3}>
                 <Cell fill="#3b82f6" />
                 <Cell fill="#60a5fa" />
                 <Cell fill="#93c5fd" />
               </Pie>
+              <Tooltip 
+                contentStyle={{ background: '#111', border: '1px solid #333', borderRadius: '12px', padding: '12px' }}
+                itemStyle={{ color: '#fff' }}
+              />
             </PieChart>
           </ResponsiveContainer>
         </div>
       </motion.div>
 
-      {/* PROJECTS */}
-      <div className="grid gap-6">
-        {projects.map((project: any) => (
-          <div key={project.id} className="bg-white/5 border border-white/10 rounded-xl p-5">
-            <div className="flex justify-between mb-3">
-              <div>
-                {/* 🔥 Fixed Edit input behavior */}
-                {editingId === project.id ? (
-                  <input
-                    value={editTitle}
-                    onChange={(e) => setEditTitle(e.target.value)}
-                    className="p-1 rounded bg-black/60 border border-gray-700 text-white"
-                  />
-                ) : (
-                  <h3 className="font-semibold">{project.title}</h3>
-                )}
-                <p className="text-xs text-gray-400">
-                  {getUserEmail(project.assigned_to)}
-                </p>
+      {/* 🔥 PREMIUM PROJECTS LIST REDESIGN */}
+      <div className="mb-8">
+        <h2 className="text-2xl font-extrabold tracking-tight mb-6">Project Pipeline</h2>
+        
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          {projects.map((project: any, index) => (
+            <motion.div 
+              key={project.id} 
+              className="bg-gray-950/40 backdrop-blur border border-gray-800 rounded-3xl p-6 flex flex-col gap-5 hover:border-blue-600/30 hover:shadow-[0_8px_30px_rgba(59,130,246,0.05)] transition-all group relative overflow-hidden"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 * index }}
+              whileHover={{ y: -5 }}
+            >
+              <div className="flex justify-between items-start gap-4">
+                <div className="flex-1">
+                  {/* 🔥 Editable input with premium styling */}
+                  {editingId === project.id ? (
+                    <input
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      className="p-3 rounded-lg w-full bg-black/60 border border-blue-600 focus:ring-1 focus:ring-blue-600 text-white font-medium mb-1"
+                      autoFocus
+                    />
+                  ) : (
+                    <h3 className="font-semibold text-lg tracking-tight line-clamp-2 leading-tight group-hover:text-blue-400 transition-colors">
+                      {project.title}
+                    </h3>
+                  )}
+                  <p className="text-xs text-gray-600 tracking-wide break-all mt-1 flex items-center gap-1.5">
+                    👤 {getUserEmail(project.assigned_to)}
+                  </p>
+                </div>
+                
+                {/* Custom Styled Status Indicator */}
+                <span className={`text-[11px] font-bold px-3 py-1 uppercase rounded-full tracking-wider ${statusColors[project.status]}`}>
+                    {project.status}
+                </span>
               </div>
 
-              <select
-                value={project.status}
-                onChange={(e) => updateStatus(project.id, e.target.value)}
-                className="bg-black border border-gray-600 rounded px-2"
-              >
-                <option value="pending">Pending</option>
-                <option value="in progress">In Progress</option>
-                <option value="completed">Completed</option>
-              </select>
-            </div>
+              {/* Status Update & Admin Actions Section */}
+              <div className="mt-auto pt-5 border-t border-gray-800 flex flex-wrap justify-between items-center gap-3">
+                
+                <div className="flex gap-2">
+                    <select
+                        value={project.status}
+                        onChange={(e) => updateStatus(project.id, e.target.value)}
+                        className="bg-black border border-gray-700 text-gray-300 text-xs rounded-lg px-2.5 py-1.5 focus:border-blue-600 transition"
+                    >
+                        <option value="pending">Pending</option>
+                        <option value="in progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                    </select>
 
-            <div className="flex justify-between">
-              {isAdmin && (
-                <select
-                  value={project.assigned_to || ""}
-                  onChange={(e) => assignUser(project.id, e.target.value)}
-                  className="bg-black border border-gray-600 rounded px-2"
-                >
-                  <option value="">Assign</option>
-                  {users.map((u: any) => (
-                    <option key={u.id} value={u.id}>{u.email}</option>
-                  ))}
-                </select>
-              )}
+                    {isAdmin && (
+                        <select
+                        value={project.assigned_to || ""}
+                        onChange={(e) => assignUser(project.id, e.target.value)}
+                        className="bg-black border border-gray-700 text-gray-300 text-xs rounded-lg px-2.5 py-1.5 focus:border-blue-600 transition"
+                        >
+                        <option value="">Client Assign</option>
+                        {users.map((u: any) => (
+                            <option key={u.id} value={u.id}>{u.email}</option>
+                        ))}
+                        </select>
+                    )}
+                </div>
 
-              <div className="flex gap-2">
-                {editingId === project.id ? (
-                  <button onClick={saveEdit} className="bg-green-500 px-3 rounded">Save</button>
-                ) : (
-                  <>
-                    <button onClick={() => startEdit(project)} className="bg-yellow-500 px-3 rounded">Edit</button>
-                    <button onClick={() => handleDelete(project.id)} className="bg-red-500 px-3 rounded">Delete</button>
-                  </>
-                )}
+                {/* 🔥 Premium, Colored-Outline Action Buttons */}
+                <div className="flex gap-2.5 ml-auto">
+                  {editingId === project.id ? (
+                    <>
+                      <button onClick={saveEdit} className="w-9 h-9 flex items-center justify-center rounded-lg border border-green-700 text-green-500 bg-black hover:bg-green-600/10 hover:border-green-600 transition">
+                        <Save size={18}/>
+                      </button>
+                      <button onClick={() => setEditingId(null)} className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-700 text-gray-500 bg-black hover:bg-gray-800 hover:border-gray-600 transition">
+                        <XCircle size={18}/>
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {/* YELLOW OUTLINE - ONLY Hover uses background */}
+                      <button onClick={() => startEdit(project)} className="w-9 h-9 flex items-center justify-center rounded-lg border border-yellow-700/60 text-yellow-500 bg-black hover:bg-yellow-600/10 hover:border-yellow-600 transition">
+                        <Edit3 size={18}/>
+                      </button>
+                      
+                      {/* RED OUTLINE - ONLY Hover uses background */}
+                      <button onClick={() => handleDelete(project.id)} className="w-9 h-9 flex items-center justify-center rounded-lg border border-red-700/60 text-red-500 bg-black hover:bg-red-600/10 hover:border-red-600 transition">
+                        <Trash2 size={18}/>
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
-          </div>
-        ))}
+            </motion.div>
+          ))}
+        </div>
       </div>
 
-      {/* SETTINGS */}
+      {/* SETTINGS (Modal logic unchanged, but styled more premium) */}
+      <AnimatePresence>
       {showSettings && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center">
-          <div className="bg-[#111] p-6 rounded-xl w-80">
-            <h2 className="text-lg mb-4">Settings</h2>
-            <p className="text-sm text-gray-400 mb-4">
-              More features coming soon...
-            </p>
+        <motion.div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[99999] backdrop-blur-sm"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={() => setShowSettings(false)}>
+          <motion.div className="bg-[#111] border border-gray-800 p-10 rounded-3xl w-[90%] max-w-lg shadow-2xl relative"
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              onClick={e => e.stopPropagation()}>
+            <h2 className="text-3xl font-extrabold mb-5 text-blue-500 tracking-tighter">Account Settings</h2>
+            <div className="border border-yellow-500/30 bg-yellow-500/10 rounded-2xl p-5 mb-8">
+                <p className="text-yellow-300 font-medium flex items-center gap-3">
+                  ⚠️ This area is under development.
+                </p>
+                <p className="text-sm text-yellow-100 mt-2">
+                  Profile editing and preference features are coming soon. The current dashboard focuses on client and project management.
+                </p>
+            </div>
+            
             <button
               onClick={() => setShowSettings(false)}
-              className="bg-blue-500 px-4 py-2 rounded"
+              className="w-full bg-blue-600 py-3 rounded-xl font-semibold hover:bg-blue-700 transition"
             >
-              Close
+              Got it, Close Settings
             </button>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </div>
   );
 }
