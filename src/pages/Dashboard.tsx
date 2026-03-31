@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
 
-/* 🔥 ADDED IMPORTS (APPENDED ONLY) */
+/* 🔥 PREMIUM UI IMPORTS */
 import { motion } from "framer-motion";
 import {
   BarChart,
@@ -20,8 +20,8 @@ export default function Dashboard() {
 
   const [projects, setProjects] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
-
   const [user, setUser] = useState<any>(null);
+
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -34,14 +34,16 @@ export default function Dashboard() {
   const [showMenu, setShowMenu] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
+  /* =========================
+     AUTH + SESSION
+  ========================== */
   useEffect(() => {
     checkUser();
 
     const { data: listener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      (_event, session) => {
         if (!session) {
-          setUser(null);
-          setProjects([]);
+          resetState();
           setLocation("/login");
         } else {
           setUser(session.user);
@@ -52,6 +54,11 @@ export default function Dashboard() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
+  const resetState = () => {
+    setUser(null);
+    setProjects([]);
+  };
+
   const checkUser = async () => {
     const { data } = await supabase.auth.getSession();
 
@@ -60,19 +67,19 @@ export default function Dashboard() {
       return;
     }
 
-    const user = data.session.user;
-    setUser(user);
+    const currentUser = data.session.user;
+    setUser(currentUser);
 
     const { data: profile } = await supabase
       .from("profiles")
       .select("is_admin")
-      .eq("id", user.id)
+      .eq("id", currentUser.id)
       .single();
 
     const admin = profile?.is_admin || false;
     setIsAdmin(admin);
 
-    fetchProjects(user, admin);
+    await fetchProjects(currentUser, admin);
 
     if (admin) {
       const { data: allUsers } = await supabase
@@ -83,11 +90,14 @@ export default function Dashboard() {
     }
   };
 
-  const fetchProjects = async (user: any, admin: boolean) => {
+  /* =========================
+     DATA FETCHING
+  ========================== */
+  const fetchProjects = async (userData: any, admin: boolean) => {
     let query = supabase.from("projects").select("*");
 
-    if (!admin) {
-      query = query.eq("user_id", user.id);
+    if (!admin && userData) {
+      query = query.eq("user_id", userData.id);
     }
 
     const { data } = await query;
@@ -95,6 +105,9 @@ export default function Dashboard() {
     setLoading(false);
   };
 
+  /* =========================
+     CRUD OPERATIONS
+  ========================== */
   const updateStatus = async (id: string, status: string) => {
     await supabase.from("projects").update({ status }).eq("id", id);
     fetchProjects(user, isAdmin);
@@ -153,15 +166,16 @@ export default function Dashboard() {
   };
 
   const handleLogout = async () => {
-    const confirmLogout = confirm("Are you sure you want to logout?");
-    if (!confirmLogout) return;
+    if (!confirm("Are you sure you want to logout?")) return;
 
     await supabase.auth.signOut();
-    setUser(null);
-    setProjects([]);
+    resetState();
     window.location.href = "/login";
   };
 
+  /* =========================
+     HELPERS
+  ========================== */
   const getUserEmail = (id: string) => {
     const found = users.find((u) => u.id === id);
     return found ? found.email : "Unassigned";
@@ -171,15 +185,21 @@ export default function Dashboard() {
     return email ? email.substring(0, 2).toUpperCase() : "U";
   };
 
-  if (loading) return <p className="text-white p-6">Loading...</p>;
+  if (loading)
+    return (
+      <div className="text-white p-6 text-center animate-pulse">
+        Loading dashboard...
+      </div>
+    );
 
-  // 🔥 ANALYTICS DATA
+  /* =========================
+     ANALYTICS
+  ========================== */
   const totalProjects = projects.length;
   const pending = projects.filter(p => p.status === "pending").length;
   const inProgress = projects.filter(p => p.status === "in progress").length;
   const completed = projects.filter(p => p.status === "completed").length;
 
-  /* 🔥 ADDED CHART DATA */
   const chartData = [
     { name: "Pending", value: pending },
     { name: "In Progress", value: inProgress },
@@ -199,14 +219,13 @@ export default function Dashboard() {
         <div className="relative">
           <button
             onClick={() => setShowMenu(!showMenu)}
-            className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold"
+            className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold hover:scale-110 transition"
           >
             {getInitials(user?.email)}
           </button>
 
           {showMenu && (
             <div className="absolute right-0 mt-2 w-52 bg-[#111] border border-gray-700 rounded-xl shadow-lg z-50">
-
               <div className="px-4 py-3 border-b border-gray-700 text-sm text-gray-300">
                 {user?.email}
               </div>
@@ -241,71 +260,53 @@ export default function Dashboard() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Project title..."
-            className="flex-1 p-3 rounded-lg bg-black/60 border border-gray-700"
+            className="flex-1 p-3 rounded-lg bg-black/60 border border-gray-700 focus:ring-2 focus:ring-blue-500"
           />
 
           <button
             onClick={handleCreateProject}
-            className="bg-blue-600 px-6 rounded-lg"
+            className="bg-blue-600 px-6 rounded-lg hover:bg-blue-700 transition"
           >
             {creating ? "..." : "Create"}
           </button>
         </div>
       </div>
 
-      {/* 🔥 ANALYTICS SECTION (YOUR ORIGINAL — UNTOUCHED) */}
+      {/* ANALYTICS */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-gradient-to-br from-blue-600/20 to-blue-900/20 border border-blue-500/20 rounded-xl p-4">
-          <p className="text-sm text-gray-400">Total</p>
-          <h3 className="text-2xl font-bold text-blue-400">{totalProjects}</h3>
-        </div>
-
-        <div className="bg-gradient-to-br from-blue-600/20 to-blue-900/20 border border-blue-500/20 rounded-xl p-4">
-          <p className="text-sm text-gray-400">Pending</p>
-          <h3 className="text-2xl font-bold text-blue-400">{pending}</h3>
-        </div>
-
-        <div className="bg-gradient-to-br from-blue-600/20 to-blue-900/20 border border-blue-500/20 rounded-xl p-4">
-          <p className="text-sm text-gray-400">In Progress</p>
-          <h3 className="text-2xl font-bold text-blue-400">{inProgress}</h3>
-        </div>
-
-        <div className="bg-gradient-to-br from-blue-600/20 to-blue-900/20 border border-blue-500/20 rounded-xl p-4">
-          <p className="text-sm text-gray-400">Completed</p>
-          <h3 className="text-2xl font-bold text-blue-400">{completed}</h3>
-        </div>
+        {[{label:"Total",val:totalProjects},
+          {label:"Pending",val:pending},
+          {label:"In Progress",val:inProgress},
+          {label:"Completed",val:completed}]
+        .map((item, i) => (
+          <div key={i} className="bg-blue-600/10 border border-blue-500/20 rounded-xl p-4 hover:scale-105 transition">
+            <p className="text-sm text-gray-400">{item.label}</p>
+            <h3 className="text-2xl font-bold text-blue-400">{item.val}</h3>
+          </div>
+        ))}
       </div>
 
-      {/* 🔥 NEW: CHARTS + ANIMATION (APPENDED ONLY) */}
-      <motion.div
+      {/* CHARTS */}
+      <motion.div className="grid md:grid-cols-2 gap-6 mb-10"
         initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="grid md:grid-cols-2 gap-6 mb-10"
-      >
-        {/* BAR CHART */}
-        <div className="bg-white/5 border border-white/10 rounded-xl p-5 backdrop-blur-lg">
+        animate={{ opacity: 1, y: 0 }}>
+        
+        <div className="bg-white/5 border border-white/10 rounded-xl p-5">
           <h3 className="text-sm text-gray-400 mb-4">Project Overview</h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={chartData}>
               <XAxis dataKey="name" stroke="#aaa" />
               <Tooltip />
-              <Bar dataKey="value" fill="#3b82f6" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="value" fill="#3b82f6" radius={[6,6,0,0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
-        {/* PIE CHART */}
-        <div className="bg-white/5 border border-white/10 rounded-xl p-5 backdrop-blur-lg">
+        <div className="bg-white/5 border border-white/10 rounded-xl p-5">
           <h3 className="text-sm text-gray-400 mb-4">Distribution</h3>
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
-              <Pie
-                data={chartData}
-                dataKey="value"
-                outerRadius={80}
-                label
-              >
+              <Pie data={chartData} dataKey="value" outerRadius={80} label>
                 <Cell fill="#3b82f6" />
                 <Cell fill="#60a5fa" />
                 <Cell fill="#93c5fd" />
@@ -318,10 +319,7 @@ export default function Dashboard() {
       {/* PROJECTS */}
       <div className="grid gap-6">
         {projects.map((project: any) => (
-          <div
-            key={project.id}
-            className="bg-white/5 border border-white/10 rounded-xl p-5"
-          >
+          <div key={project.id} className="bg-white/5 border border-white/10 rounded-xl p-5">
             <div className="flex justify-between mb-3">
               <div>
                 <h3 className="font-semibold">{project.title}</h3>
@@ -332,9 +330,7 @@ export default function Dashboard() {
 
               <select
                 value={project.status}
-                onChange={(e) =>
-                  updateStatus(project.id, e.target.value)
-                }
+                onChange={(e) => updateStatus(project.id, e.target.value)}
                 className="bg-black border border-gray-600 rounded px-2"
               >
                 <option value="pending">Pending</option>
@@ -347,43 +343,23 @@ export default function Dashboard() {
               {isAdmin && (
                 <select
                   value={project.assigned_to || ""}
-                  onChange={(e) =>
-                    assignUser(project.id, e.target.value)
-                  }
+                  onChange={(e) => assignUser(project.id, e.target.value)}
                   className="bg-black border border-gray-600 rounded px-2"
                 >
                   <option value="">Assign</option>
                   {users.map((u: any) => (
-                    <option key={u.id} value={u.id}>
-                      {u.email}
-                    </option>
+                    <option key={u.id} value={u.id}>{u.email}</option>
                   ))}
                 </select>
               )}
 
               <div className="flex gap-2">
                 {editingId === project.id ? (
-                  <button
-                    onClick={saveEdit}
-                    className="bg-green-500 px-3 rounded"
-                  >
-                    Save
-                  </button>
+                  <button onClick={saveEdit} className="bg-green-500 px-3 rounded">Save</button>
                 ) : (
                   <>
-                    <button
-                      onClick={() => startEdit(project)}
-                      className="bg-yellow-500 px-3 rounded"
-                    >
-                      Edit
-                    </button>
-
-                    <button
-                      onClick={() => handleDelete(project.id)}
-                      className="bg-red-500 px-3 rounded"
-                    >
-                      Delete
-                    </button>
+                    <button onClick={() => startEdit(project)} className="bg-yellow-500 px-3 rounded">Edit</button>
+                    <button onClick={() => handleDelete(project.id)} className="bg-red-500 px-3 rounded">Delete</button>
                   </>
                 )}
               </div>
@@ -392,16 +368,14 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* SETTINGS MODAL */}
+      {/* SETTINGS */}
       {showSettings && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center">
           <div className="bg-[#111] p-6 rounded-xl w-80">
             <h2 className="text-lg mb-4">Settings</h2>
-
             <p className="text-sm text-gray-400 mb-4">
               More features coming soon...
             </p>
-
             <button
               onClick={() => setShowSettings(false)}
               className="bg-blue-500 px-4 py-2 rounded"
@@ -413,4 +387,4 @@ export default function Dashboard() {
       )}
     </div>
   );
-        }
+    }
