@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
 
-/* 🔥 PREMIUM UI IMPORTS */
 import { motion } from "framer-motion";
 import {
   BarChart,
@@ -34,9 +33,6 @@ export default function Dashboard() {
   const [showMenu, setShowMenu] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
-  /* =========================
-     AUTH + SESSION
-  ========================== */
   useEffect(() => {
     checkUser();
 
@@ -90,9 +86,6 @@ export default function Dashboard() {
     }
   };
 
-  /* =========================
-     DATA FETCHING
-  ========================== */
   const fetchProjects = async (userData: any, admin: boolean) => {
     let query = supabase.from("projects").select("*");
 
@@ -105,9 +98,6 @@ export default function Dashboard() {
     setLoading(false);
   };
 
-  /* =========================
-     CRUD OPERATIONS
-  ========================== */
   const updateStatus = async (id: string, status: string) => {
     await supabase.from("projects").update({ status }).eq("id", id);
     fetchProjects(user, isAdmin);
@@ -166,16 +156,10 @@ export default function Dashboard() {
   };
 
   const handleLogout = async () => {
-    if (!confirm("Are you sure you want to logout?")) return;
-
     await supabase.auth.signOut();
-    resetState();
     window.location.href = "/login";
   };
 
-  /* =========================
-     HELPERS
-  ========================== */
   const getUserEmail = (id: string) => {
     const found = users.find((u) => u.id === id);
     return found ? found.email : "Unassigned";
@@ -186,15 +170,8 @@ export default function Dashboard() {
   };
 
   if (loading)
-    return (
-      <div className="text-white p-6 text-center animate-pulse">
-        Loading dashboard...
-      </div>
-    );
+    return <div className="text-white p-6 text-center">Loading...</div>;
 
-  /* =========================
-     ANALYTICS
-  ========================== */
   const totalProjects = projects.length;
   const pending = projects.filter(p => p.status === "pending").length;
   const inProgress = projects.filter(p => p.status === "in progress").length;
@@ -207,35 +184,38 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-[#0a0a0a] to-[#111] text-white p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-black via-[#050505] to-[#0a0a0a] text-white px-4 py-6 md:px-10">
 
-      {/* HEADER */}
-      <div className="flex justify-between items-center mb-8 relative">
-        <h1 className="text-3xl font-bold">
-          Dashboard {isAdmin && <span className="text-blue-500">Admin</span>}
-        </h1>
+      {/* 🔥 HEADER FIXED */}
+      <div className="flex justify-between items-center mb-10">
+        <div>
+          <h1 className="text-xl font-bold tracking-wide">
+            <span className="text-white">SULAIMAN</span>
+            <span className="text-blue-500">.GRAPHICS</span>
+          </h1>
 
-        {/* PROFILE */}
+          <p className="text-xs text-gray-400 mt-1">
+            Dashboard {isAdmin && "• Admin"}
+          </p>
+        </div>
+
         <div className="relative">
           <button
             onClick={() => setShowMenu(!showMenu)}
-            className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold hover:scale-110 transition"
+            className="w-11 h-11 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center font-bold shadow-lg"
           >
             {getInitials(user?.email)}
           </button>
 
           {showMenu && (
-            <div className="absolute right-0 mt-2 w-52 bg-[#111] border border-gray-700 rounded-xl shadow-lg z-50">
-              <div className="px-4 py-3 border-b border-gray-700 text-sm text-gray-300">
+            <div className="absolute right-0 mt-2 w-56 bg-[#0d0d0d] border border-gray-700 rounded-xl shadow-xl z-50">
+              <div className="px-4 py-3 text-sm text-gray-400 border-b border-gray-700">
                 {user?.email}
               </div>
 
               <button
-                onClick={() => {
-                  setShowSettings(true);
-                  setShowMenu(false);
-                }}
-                className="w-full text-left px-4 py-3 hover:bg-white/10"
+                onClick={() => setShowSettings(true)}
+                className="w-full text-left px-4 py-3 hover:bg-white/5"
               >
                 ⚙️ Settings
               </button>
@@ -252,46 +232,43 @@ export default function Dashboard() {
       </div>
 
       {/* CREATE */}
-      <div className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-5 mb-8">
-        <h2 className="text-lg mb-3 text-blue-400">Create Project</h2>
+      <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mb-10 backdrop-blur-lg shadow-lg">
+        <h2 className="text-blue-400 mb-3 font-semibold">Create Project</h2>
 
         <div className="flex gap-3">
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Project title..."
-            className="flex-1 p-3 rounded-lg bg-black/60 border border-gray-700 focus:ring-2 focus:ring-blue-500"
+            className="flex-1 p-3 rounded-lg bg-black/60 border border-gray-700 focus:border-blue-500 outline-none"
           />
 
           <button
             onClick={handleCreateProject}
-            className="bg-blue-600 px-6 rounded-lg hover:bg-blue-700 transition"
+            className="bg-blue-600 px-6 rounded-lg hover:bg-blue-700"
           >
             {creating ? "..." : "Create"}
           </button>
         </div>
       </div>
 
-      {/* ANALYTICS */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      {/* ANALYTICS CARDS */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
         {[{label:"Total",val:totalProjects},
           {label:"Pending",val:pending},
           {label:"In Progress",val:inProgress},
           {label:"Completed",val:completed}]
         .map((item, i) => (
-          <div key={i} className="bg-blue-600/10 border border-blue-500/20 rounded-xl p-4 hover:scale-105 transition">
-            <p className="text-sm text-gray-400">{item.label}</p>
+          <div key={i} className="bg-gradient-to-br from-blue-600/10 to-blue-900/10 border border-blue-500/20 rounded-2xl p-4 shadow-md">
+            <p className="text-xs text-gray-400">{item.label}</p>
             <h3 className="text-2xl font-bold text-blue-400">{item.val}</h3>
           </div>
         ))}
       </div>
 
       {/* CHARTS */}
-      <motion.div className="grid md:grid-cols-2 gap-6 mb-10"
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}>
-        
-        <div className="bg-white/5 border border-white/10 rounded-xl p-5">
+      <motion.div className="grid md:grid-cols-2 gap-6 mb-12">
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
           <h3 className="text-sm text-gray-400 mb-4">Project Overview</h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={chartData}>
@@ -302,11 +279,11 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </div>
 
-        <div className="bg-white/5 border border-white/10 rounded-xl p-5">
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
           <h3 className="text-sm text-gray-400 mb-4">Distribution</h3>
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
-              <Pie data={chartData} dataKey="value" outerRadius={80} label>
+              <Pie data={chartData} dataKey="value" outerRadius={80}>
                 <Cell fill="#3b82f6" />
                 <Cell fill="#60a5fa" />
                 <Cell fill="#93c5fd" />
@@ -319,7 +296,7 @@ export default function Dashboard() {
       {/* PROJECTS */}
       <div className="grid gap-6">
         {projects.map((project: any) => (
-          <div key={project.id} className="bg-white/5 border border-white/10 rounded-xl p-5">
+          <div key={project.id} className="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-md">
             <div className="flex justify-between mb-3">
               <div>
                 <h3 className="font-semibold">{project.title}</h3>
@@ -368,10 +345,10 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* SETTINGS */}
+      {/* SETTINGS MODAL */}
       {showSettings && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center">
-          <div className="bg-[#111] p-6 rounded-xl w-80">
+          <div className="bg-[#111] p-6 rounded-xl w-80 border border-gray-700">
             <h2 className="text-lg mb-4">Settings</h2>
             <p className="text-sm text-gray-400 mb-4">
               More features coming soon...
@@ -387,4 +364,4 @@ export default function Dashboard() {
       )}
     </div>
   );
-    }
+                }
