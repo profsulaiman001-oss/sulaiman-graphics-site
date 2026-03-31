@@ -33,6 +33,11 @@ export default function Dashboard() {
 
   const [showMenu, setShowMenu] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  
+  const [notifications, setNotifications] = useState<string[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  
 
   /* =========================
      AUTH + SESSION
@@ -121,6 +126,7 @@ export default function Dashboard() {
 
     fetchProjects(user, isAdmin);
   };
+  setNotifications(prev => [`Status changed to ${status}`, ...prev]);
 
   const handleCreateProject = async () => {
     if (!title.trim() || !user) return;
@@ -134,6 +140,7 @@ export default function Dashboard() {
         user_id: user.id,
       },
     ]);
+    setNotifications(prev => ["New project created", ...prev]); 
 
     setTitle("");
     fetchProjects(user, isAdmin);
@@ -164,6 +171,7 @@ export default function Dashboard() {
     await supabase.from("projects").delete().eq("id", id);
     fetchProjects(user, isAdmin);
   };
+  setNotifications(prev => ["Project deleted", ...prev]);
 
   const handleLogout = async () => {
     if (!confirm("Are you sure you want to logout?")) return;
@@ -214,6 +222,37 @@ export default function Dashboard() {
         <h1 className="text-3xl font-bold">
           Dashboard {isAdmin && <span className="text-blue-500">Admin</span>}
         </h1>
+      {/* 🔔 Notification Bell */}
+<div className="relative mr-4">
+  <button
+    onClick={() => setShowNotifications(!showNotifications)}
+    className="bg-blue-600 px-3 py-2 rounded-lg relative hover:scale-105 transition"
+  >
+    🔔
+
+    {notifications.length > 0 && (
+      <span className="absolute -top-2 -right-2 bg-red-500 text-xs px-1 rounded-full">
+        {notifications.length}
+      </span>
+    )}
+  </button>
+
+  {showNotifications && (
+    <div className="absolute right-0 mt-2 w-64 bg-[#111] border border-gray-700 rounded-xl p-3 z-50">
+      <h3 className="text-sm mb-2">Notifications</h3>
+
+      {notifications.length === 0 ? (
+        <p className="text-gray-400 text-sm">No notifications</p>
+      ) : (
+        notifications.map((n, i) => (
+          <p key={i} className="text-xs border-b border-gray-700 py-1">
+            {n}
+          </p>
+        ))
+      )}
+    </div>
+  )}
+</div>
 
         {/* PROFILE */}
         <div className="relative">
