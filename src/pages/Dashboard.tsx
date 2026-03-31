@@ -114,9 +114,12 @@ export default function Dashboard() {
      CRUD OPERATIONS
   ========================== */
   const updateStatus = async (id: string, status: string) => {
-    await supabase.from("projects").update({ status }).eq("id", id);
-    fetchProjects(user, isAdmin);
-  };
+  await supabase.from("projects").update({ status }).eq("id", id);
+
+  setNotifications(prev => [`Status changed to ${status}`, ...prev]);
+
+  fetchProjects(user, isAdmin);
+};
 
   const assignUser = async (projectId: string, assignedTo: string) => {
     await supabase
@@ -126,7 +129,6 @@ export default function Dashboard() {
 
     fetchProjects(user, isAdmin);
   };
-  setNotifications(prev => [`Status changed to ${status}`, ...prev]);
 
   const handleCreateProject = async () => {
     if (!title.trim() || !user) return;
@@ -166,12 +168,14 @@ export default function Dashboard() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this project?")) return;
+  if (!confirm("Delete this project?")) return;
 
-    await supabase.from("projects").delete().eq("id", id);
-    fetchProjects(user, isAdmin);
-  };
+  await supabase.from("projects").delete().eq("id", id);
+
   setNotifications(prev => ["Project deleted", ...prev]);
+
+  fetchProjects(user, isAdmin);
+};
 
   const handleLogout = async () => {
     if (!confirm("Are you sure you want to logout?")) return;
