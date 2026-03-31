@@ -55,6 +55,17 @@ export default function Dashboard() {
         }
       }
     );
+    useEffect(() => {
+  const closeNotifications = () => {
+    setShowNotifications(false);
+  };
+
+  window.addEventListener("click", closeNotifications);
+
+  return () => {
+    window.removeEventListener("click", closeNotifications);
+  };
+}, []);
 
     return () => listener.subscription.unsubscribe();
   }, []);
@@ -227,9 +238,12 @@ export default function Dashboard() {
           Dashboard {isAdmin && <span className="text-blue-500">Admin</span>}
         </h1>
       {/* 🔔 Notification Bell */}
-<div className="relative mr-4">
+<div className="relative mr-4 z-50">
   <button
-    onClick={() => setShowNotifications(!showNotifications)}
+  onClick={(e) => {
+    e.stopPropagation();
+    setShowNotifications(!showNotifications);
+  }}
     className="bg-blue-600 px-3 py-2 rounded-lg relative hover:scale-105 transition"
   >
     🔔
@@ -242,7 +256,7 @@ export default function Dashboard() {
   </button>
 
   {showNotifications && (
-    <div className="absolute right-0 mt-2 w-64 bg-[#111] border border-gray-700 rounded-xl p-3 z-50">
+    <div className="absolute right-0 top-12 w-64 bg-[#111] border border-gray-700 rounded-xl p-3 z-[999] shadow-xl">
       <h3 className="text-sm mb-2">Notifications</h3>
 
       {notifications.length === 0 ? (
