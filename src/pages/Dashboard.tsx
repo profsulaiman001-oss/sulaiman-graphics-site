@@ -3,14 +3,8 @@ import { useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
 import { motion } from "framer-motion";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
+  BarChart, Bar, XAxis, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell,
 } from "recharts";
 
 export default function Dashboard() {
@@ -18,9 +12,11 @@ export default function Dashboard() {
 
   const [projects, setProjects] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
-  const [user, setUser] = useState<any>(null);
+  const [notifications, setNotifications] = useState<any[]>([]);
 
+  const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+
   const [loading, setLoading] = useState(true);
 
   const [title, setTitle] = useState("");
@@ -30,23 +26,9 @@ export default function Dashboard() {
   const [editTitle, setEditTitle] = useState("");
 
   const [showMenu, setShowMenu] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-
-  // 🔔 NOTIFICATIONS
-  const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
 
-  const addNotification = (message: string) => {
-    const newNotif = {
-      id: Date.now(),
-      message,
-      time: new Date().toLocaleTimeString(),
-    };
-
-    setNotifications((prev) => [newNotif, ...prev]);
-  };
-
-  /* ========================= */
+  /* ================= AUTH ================= */
   useEffect(() => {
     checkUser();
 
@@ -67,6 +49,7 @@ export default function Dashboard() {
   const resetState = () => {
     setUser(null);
     setProjects([]);
+    setNotifications([]);
   };
 
   const checkUser = async () => {
@@ -90,6 +73,7 @@ export default function Dashboard() {
     setIsAdmin(admin);
 
     await fetchProjects(currentUser, admin);
+    await fetchNotifications(currentUser.id);
 
     if (admin) {
       const { data: allUsers } = await supabase
@@ -98,25 +82,59 @@ export default function Dashboard() {
 
       setUsers(allUsers || []);
     }
+
+    /* 🔥 REAL-TIME NOTIFICATIONS */
+    supabase
+      .channel("notifications")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "notifications" },
+        (payload) => {
+          setNotifications((prev) => [payload.new, ...prev]);
+        }
+      )
+      .subscribe();
   };
 
+  /* ================= DATA ================= */
   const fetchProjects = async (userData: any, admin: boolean) => {
     let query = supabase.from("projects").select("*");
 
-    if (!admin) {
-      query = query.eq("user_id", userData.id);
-    }
+    if (!admin) query = query.eq("user_id", userData.id);
 
     const { data } = await query;
     setProjects(data || []);
     setLoading(false);
   };
 
-  /* ========================= CRUD ========================= */
+  const fetchNotifications = async (userId: string) => {
+    const { data } = await supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+
+    setNotifications(data || []);
+  };
+
+  /* ================= ACTIONS ================= */
+  const createNotification = async (userId: string, message: string) => {
+    await supabase.from("notifications").insert([
+      { user_id: userId, message },
+    ]);
+  };
 
   const updateStatus = async (id: string, status: string) => {
     await supabase.from("projects").update({ status }).eq("id", id);
-    addNotification(`Project status updated to "${status}"`);
+
+    const project = projects.find(p => p.id === id);
+    if (project?.assigned_to) {
+      createNotification(
+        project.assigned_to,
+        `Project "${project.title}" updated to ${status}`
+      );
+    }
+
     fetchProjects(user, isAdmin);
   };
 
@@ -126,7 +144,15 @@ export default function Dashboard() {
       .update({ assigned_to: assignedTo || null })
       .eq("id", projectId);
 
-    addNotification("Project assigned successfully");
+    const project = projects.find(p => p.id === projectId);
+
+    if (assignedTo) {
+      createNotification(
+        assignedTo,
+        `You were assigned to "${project?.title}"`
+      );
+    }
+
     fetchProjects(user, isAdmin);
   };
 
@@ -143,59 +169,18 @@ export default function Dashboard() {
       },
     ]);
 
-    addNotification(`New project "${title}" created`);
-
     setTitle("");
     fetchProjects(user, isAdmin);
     setCreating(false);
   };
 
-  const saveEdit = async () => {
-    if (!editTitle.trim() || !editingId) return;
-
-    await supabase
-      .from("projects")
-      .update({ title: editTitle })
-      .eq("id", editingId);
-
-    addNotification("Project updated");
-
-    setEditingId(null);
-    setEditTitle("");
-    fetchProjects(user, isAdmin);
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this project?")) return;
-
-    await supabase.from("projects").delete().eq("id", id);
-
-    addNotification("Project deleted");
-
-    fetchProjects(user, isAdmin);
-  };
-
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    resetState();
     window.location.href = "/login";
   };
 
-  /* ========================= HELPERS ========================= */
-
-  const getUserEmail = (id: string) => {
-    const found = users.find((u) => u.id === id);
-    return found ? found.email : "Unassigned";
-  };
-
-  const getInitials = (email: string) => {
-    return email ? email.substring(0, 2).toUpperCase() : "U";
-  };
-
-  if (loading) return <p className="text-white p-6">Loading...</p>;
-
-  /* ========================= ANALYTICS ========================= */
-
-  const total = projects.length;
+  /* ================= ANALYTICS ================= */
   const pending = projects.filter(p => p.status === "pending").length;
   const inProgress = projects.filter(p => p.status === "in progress").length;
   const completed = projects.filter(p => p.status === "completed").length;
@@ -206,59 +191,50 @@ export default function Dashboard() {
     { name: "Completed", value: completed },
   ];
 
+  const unread = notifications.filter(n => !n.read).length;
+
+  if (loading) return <div className="text-white p-6">Loading...</div>;
+
   return (
     <div className="min-h-screen bg-black text-white p-6">
 
       {/* HEADER */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-8">
 
         <div>
-          <h1 className="text-2xl font-bold tracking-wide">
-            SULAIMAN<span className="text-blue-500">.GRAPHICS</span>
-          </h1>
-          <p className="text-sm text-gray-400">
-            Dashboard {isAdmin && "• Admin"}
+          <h1 className="text-2xl font-bold">Sulaiman Graphics</h1>
+          <p className="text-blue-400 text-sm">
+            Dashboard {isAdmin && "Admin"}
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
 
-          {/* 🔔 NOTIFICATION BELL */}
+          {/* 🔔 NOTIFICATIONS */}
           <div className="relative">
             <button
               onClick={() => setShowNotifications(!showNotifications)}
-              className="relative text-xl"
+              className="relative"
             >
               🔔
-              {notifications.length > 0 && (
+              {unread > 0 && (
                 <span className="absolute -top-2 -right-2 bg-red-500 text-xs px-1 rounded-full">
-                  {notifications.length}
+                  {unread}
                 </span>
               )}
             </button>
 
             {showNotifications && (
-              <div className="absolute right-0 mt-3 w-72 bg-[#111] border border-gray-700 rounded-xl p-3 z-50">
-                <div className="flex justify-between mb-2">
-                  <span className="text-sm text-gray-400">Notifications</span>
-                  <button
-                    onClick={() => setNotifications([])}
-                    className="text-xs text-red-400"
-                  >
-                    Clear
-                  </button>
-                </div>
-
-                {notifications.length === 0 ? (
-                  <p className="text-gray-500 text-sm">No notifications</p>
-                ) : (
-                  notifications.map((n) => (
-                    <div key={n.id} className="text-sm mb-2 border-b border-gray-700 pb-2">
-                      <p>{n.message}</p>
-                      <span className="text-xs text-gray-500">{n.time}</span>
-                    </div>
-                  ))
+              <div className="absolute right-0 mt-2 w-72 bg-[#111] border border-gray-700 rounded-lg p-3">
+                {notifications.length === 0 && (
+                  <p className="text-gray-400 text-sm">No notifications</p>
                 )}
+
+                {notifications.map((n) => (
+                  <div key={n.id} className="text-sm mb-2 border-b border-gray-700 pb-2">
+                    {n.message}
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -266,25 +242,12 @@ export default function Dashboard() {
           {/* PROFILE */}
           <button
             onClick={() => setShowMenu(!showMenu)}
-            className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center"
-          >
-            {getInitials(user?.email)}
-          </button>
+            className="w-10 h-10 bg-blue-600 rounded-full"
+          />
 
-          {/* MENU */}
           {showMenu && (
-            <div className="absolute right-6 top-16 bg-[#111] border border-gray-700 rounded-xl w-48">
-              <button
-                onClick={() => setShowSettings(true)}
-                className="block w-full text-left px-4 py-3 hover:bg-white/10"
-              >
-                Settings
-              </button>
-
-              <button
-                onClick={handleLogout}
-                className="block w-full text-left px-4 py-3 text-red-400 hover:bg-red-500/10"
-              >
+            <div className="absolute right-6 top-16 bg-[#111] p-3 rounded-lg">
+              <button onClick={handleLogout} className="text-red-400">
                 Logout
               </button>
             </div>
@@ -293,92 +256,62 @@ export default function Dashboard() {
       </div>
 
       {/* CREATE */}
-      <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-6 flex gap-3">
+      <div className="mb-6">
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Project title..."
-          className="flex-1 p-3 bg-black border border-gray-700 rounded"
+          placeholder="New project..."
+          className="p-2 bg-black border border-gray-600 mr-2"
         />
-        <button
-          onClick={handleCreateProject}
-          className="bg-blue-600 px-5 rounded"
-        >
+        <button onClick={handleCreateProject} className="bg-blue-600 px-4">
           Create
         </button>
       </div>
 
       {/* ANALYTICS */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        {[["Total", total], ["Pending", pending], ["In Progress", inProgress], ["Completed", completed]]
-          .map(([label, val]) => (
-            <div key={label} className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl">
-              <p className="text-sm text-gray-400">{label}</p>
-              <h2 className="text-xl text-blue-400">{val}</h2>
-            </div>
-          ))}
-      </div>
-
-      {/* PROJECTS */}
-      <div className="space-y-4">
-        {projects.map((project) => (
-          <div key={project.id} className="bg-white/5 border border-white/10 rounded-xl p-4">
-            <div className="flex justify-between mb-2">
-              <div>
-                <h3>{project.title}</h3>
-                <p className="text-xs text-gray-400">
-                  {getUserEmail(project.assigned_to)}
-                </p>
-              </div>
-
-              <select
-                value={project.status}
-                onChange={(e) => updateStatus(project.id, e.target.value)}
-                className="bg-black border border-gray-600 rounded"
-              >
-                <option value="pending">Pending</option>
-                <option value="in progress">In Progress</option>
-                <option value="completed">Completed</option>
-              </select>
-            </div>
-
-            <div className="flex justify-between">
-              {isAdmin && (
-                <select
-                  value={project.assigned_to || ""}
-                  onChange={(e) => assignUser(project.id, e.target.value)}
-                  className="bg-black border border-gray-600 rounded"
-                >
-                  <option value="">Assign</option>
-                  {users.map((u) => (
-                    <option key={u.id} value={u.id}>{u.email}</option>
-                  ))}
-                </select>
-              )}
-
-              <div className="flex gap-2">
-                <button onClick={() => setEditingId(project.id)} className="bg-yellow-500 px-3 rounded">Edit</button>
-                <button onClick={() => handleDelete(project.id)} className="bg-red-500 px-3 rounded">Delete</button>
-              </div>
-            </div>
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        {chartData.map((c, i) => (
+          <div key={i} className="bg-blue-600/10 p-4 rounded">
+            {c.name}: {c.value}
           </div>
         ))}
       </div>
 
-      {/* SETTINGS */}
-      {showSettings && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center">
-          <div className="bg-[#111] p-6 rounded-xl w-80">
-            <h2>Settings</h2>
-            <button
-              onClick={() => setShowSettings(false)}
-              className="bg-blue-500 px-4 py-2 rounded mt-4"
+      {/* PROJECTS */}
+      {projects.map((project) => (
+        <div key={project.id} className="bg-[#111] p-4 mb-3 rounded">
+          <div className="flex justify-between">
+            <span>{project.title}</span>
+
+            <select
+              value={project.status}
+              onChange={(e) =>
+                updateStatus(project.id, e.target.value)
+              }
             >
-              Close
-            </button>
+              <option value="pending">Pending</option>
+              <option value="in progress">In Progress</option>
+              <option value="completed">Completed</option>
+            </select>
           </div>
+
+          {isAdmin && (
+            <select
+              value={project.assigned_to || ""}
+              onChange={(e) =>
+                assignUser(project.id, e.target.value)
+              }
+            >
+              <option value="">Assign</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.email}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
-      )}
+      ))}
     </div>
   );
-}
+      }
