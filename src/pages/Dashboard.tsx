@@ -242,7 +242,11 @@ export default function Dashboard() {
       {/* HEADER */}
       <div className="flex justify-between items-center mb-10 pb-6 border-b border-gray-800 relative z-50">
         <h1 className="text-4xl font-extrabold tracking-tighter">
-          Dashboard <span className="text-blue-600">Admin</span>
+          {isAdmin ? (
+            <>Dashboard <span className="text-blue-600">Admin</span></>
+          ) : (
+            <>Client <span className="text-blue-600">Portal</span></>
+          )}
         </h1>
         
         <div className="flex items-center gap-5">
