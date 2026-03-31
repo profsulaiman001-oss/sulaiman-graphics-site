@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
-
 import { motion } from "framer-motion";
 import {
   BarChart,
@@ -33,6 +32,21 @@ export default function Dashboard() {
   const [showMenu, setShowMenu] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
+  // 🔔 NOTIFICATIONS
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  const addNotification = (message: string) => {
+    const newNotif = {
+      id: Date.now(),
+      message,
+      time: new Date().toLocaleTimeString(),
+    };
+
+    setNotifications((prev) => [newNotif, ...prev]);
+  };
+
+  /* ========================= */
   useEffect(() => {
     checkUser();
 
@@ -89,7 +103,7 @@ export default function Dashboard() {
   const fetchProjects = async (userData: any, admin: boolean) => {
     let query = supabase.from("projects").select("*");
 
-    if (!admin && userData) {
+    if (!admin) {
       query = query.eq("user_id", userData.id);
     }
 
@@ -98,8 +112,11 @@ export default function Dashboard() {
     setLoading(false);
   };
 
+  /* ========================= CRUD ========================= */
+
   const updateStatus = async (id: string, status: string) => {
     await supabase.from("projects").update({ status }).eq("id", id);
+    addNotification(`Project status updated to "${status}"`);
     fetchProjects(user, isAdmin);
   };
 
@@ -109,6 +126,7 @@ export default function Dashboard() {
       .update({ assigned_to: assignedTo || null })
       .eq("id", projectId);
 
+    addNotification("Project assigned successfully");
     fetchProjects(user, isAdmin);
   };
 
@@ -125,14 +143,11 @@ export default function Dashboard() {
       },
     ]);
 
+    addNotification(`New project "${title}" created`);
+
     setTitle("");
     fetchProjects(user, isAdmin);
     setCreating(false);
-  };
-
-  const startEdit = (project: any) => {
-    setEditingId(project.id);
-    setEditTitle(project.title);
   };
 
   const saveEdit = async () => {
@@ -143,6 +158,8 @@ export default function Dashboard() {
       .update({ title: editTitle })
       .eq("id", editingId);
 
+    addNotification("Project updated");
+
     setEditingId(null);
     setEditTitle("");
     fetchProjects(user, isAdmin);
@@ -152,6 +169,9 @@ export default function Dashboard() {
     if (!confirm("Delete this project?")) return;
 
     await supabase.from("projects").delete().eq("id", id);
+
+    addNotification("Project deleted");
+
     fetchProjects(user, isAdmin);
   };
 
@@ -159,6 +179,8 @@ export default function Dashboard() {
     await supabase.auth.signOut();
     window.location.href = "/login";
   };
+
+  /* ========================= HELPERS ========================= */
 
   const getUserEmail = (id: string) => {
     const found = users.find((u) => u.id === id);
@@ -169,10 +191,11 @@ export default function Dashboard() {
     return email ? email.substring(0, 2).toUpperCase() : "U";
   };
 
-  if (loading)
-    return <div className="text-white p-6 text-center">Loading...</div>;
+  if (loading) return <p className="text-white p-6">Loading...</p>;
 
-  const totalProjects = projects.length;
+  /* ========================= ANALYTICS ========================= */
+
+  const total = projects.length;
   const pending = projects.filter(p => p.status === "pending").length;
   const inProgress = projects.filter(p => p.status === "in progress").length;
   const completed = projects.filter(p => p.status === "completed").length;
@@ -184,45 +207,83 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-[#050505] to-[#0a0a0a] text-white px-4 py-6 md:px-10">
+    <div className="min-h-screen bg-black text-white p-6">
 
-      {/* 🔥 HEADER FIXED */}
-      <div className="flex justify-between items-center mb-10">
+      {/* HEADER */}
+      <div className="flex justify-between items-center mb-6">
+
         <div>
-          <h1 className="text-xl font-bold tracking-wide">
-            <span className="text-white">SULAIMAN</span>
-            <span className="text-blue-500">.GRAPHICS</span>
+          <h1 className="text-2xl font-bold tracking-wide">
+            SULAIMAN<span className="text-blue-500">.GRAPHICS</span>
           </h1>
-
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-sm text-gray-400">
             Dashboard {isAdmin && "• Admin"}
           </p>
         </div>
 
-        <div className="relative">
+        <div className="flex items-center gap-3">
+
+          {/* 🔔 NOTIFICATION BELL */}
+          <div className="relative">
+            <button
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="relative text-xl"
+            >
+              🔔
+              {notifications.length > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-xs px-1 rounded-full">
+                  {notifications.length}
+                </span>
+              )}
+            </button>
+
+            {showNotifications && (
+              <div className="absolute right-0 mt-3 w-72 bg-[#111] border border-gray-700 rounded-xl p-3 z-50">
+                <div className="flex justify-between mb-2">
+                  <span className="text-sm text-gray-400">Notifications</span>
+                  <button
+                    onClick={() => setNotifications([])}
+                    className="text-xs text-red-400"
+                  >
+                    Clear
+                  </button>
+                </div>
+
+                {notifications.length === 0 ? (
+                  <p className="text-gray-500 text-sm">No notifications</p>
+                ) : (
+                  notifications.map((n) => (
+                    <div key={n.id} className="text-sm mb-2 border-b border-gray-700 pb-2">
+                      <p>{n.message}</p>
+                      <span className="text-xs text-gray-500">{n.time}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* PROFILE */}
           <button
             onClick={() => setShowMenu(!showMenu)}
-            className="w-11 h-11 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center font-bold shadow-lg"
+            className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center"
           >
             {getInitials(user?.email)}
           </button>
 
+          {/* MENU */}
           {showMenu && (
-            <div className="absolute right-0 mt-2 w-56 bg-[#0d0d0d] border border-gray-700 rounded-xl shadow-xl z-50">
-              <div className="px-4 py-3 text-sm text-gray-400 border-b border-gray-700">
-                {user?.email}
-              </div>
-
+            <div className="absolute right-6 top-16 bg-[#111] border border-gray-700 rounded-xl w-48">
               <button
                 onClick={() => setShowSettings(true)}
-                className="w-full text-left px-4 py-3 hover:bg-white/5"
+                className="block w-full text-left px-4 py-3 hover:bg-white/10"
               >
-                ⚙️ Settings
+                Settings
               </button>
 
               <button
                 onClick={handleLogout}
-                className="w-full text-left px-4 py-3 text-red-400 hover:bg-red-500/10"
+                className="block w-full text-left px-4 py-3 text-red-400 hover:bg-red-500/10"
               >
                 Logout
               </button>
@@ -232,74 +293,39 @@ export default function Dashboard() {
       </div>
 
       {/* CREATE */}
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mb-10 backdrop-blur-lg shadow-lg">
-        <h2 className="text-blue-400 mb-3 font-semibold">Create Project</h2>
-
-        <div className="flex gap-3">
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Project title..."
-            className="flex-1 p-3 rounded-lg bg-black/60 border border-gray-700 focus:border-blue-500 outline-none"
-          />
-
-          <button
-            onClick={handleCreateProject}
-            className="bg-blue-600 px-6 rounded-lg hover:bg-blue-700"
-          >
-            {creating ? "..." : "Create"}
-          </button>
-        </div>
+      <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-6 flex gap-3">
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Project title..."
+          className="flex-1 p-3 bg-black border border-gray-700 rounded"
+        />
+        <button
+          onClick={handleCreateProject}
+          className="bg-blue-600 px-5 rounded"
+        >
+          Create
+        </button>
       </div>
 
-      {/* ANALYTICS CARDS */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-        {[{label:"Total",val:totalProjects},
-          {label:"Pending",val:pending},
-          {label:"In Progress",val:inProgress},
-          {label:"Completed",val:completed}]
-        .map((item, i) => (
-          <div key={i} className="bg-gradient-to-br from-blue-600/10 to-blue-900/10 border border-blue-500/20 rounded-2xl p-4 shadow-md">
-            <p className="text-xs text-gray-400">{item.label}</p>
-            <h3 className="text-2xl font-bold text-blue-400">{item.val}</h3>
-          </div>
-        ))}
+      {/* ANALYTICS */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        {[["Total", total], ["Pending", pending], ["In Progress", inProgress], ["Completed", completed]]
+          .map(([label, val]) => (
+            <div key={label} className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl">
+              <p className="text-sm text-gray-400">{label}</p>
+              <h2 className="text-xl text-blue-400">{val}</h2>
+            </div>
+          ))}
       </div>
-
-      {/* CHARTS */}
-      <motion.div className="grid md:grid-cols-2 gap-6 mb-12">
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
-          <h3 className="text-sm text-gray-400 mb-4">Project Overview</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={chartData}>
-              <XAxis dataKey="name" stroke="#aaa" />
-              <Tooltip />
-              <Bar dataKey="value" fill="#3b82f6" radius={[6,6,0,0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
-          <h3 className="text-sm text-gray-400 mb-4">Distribution</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <PieChart>
-              <Pie data={chartData} dataKey="value" outerRadius={80}>
-                <Cell fill="#3b82f6" />
-                <Cell fill="#60a5fa" />
-                <Cell fill="#93c5fd" />
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </motion.div>
 
       {/* PROJECTS */}
-      <div className="grid gap-6">
-        {projects.map((project: any) => (
-          <div key={project.id} className="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-md">
-            <div className="flex justify-between mb-3">
+      <div className="space-y-4">
+        {projects.map((project) => (
+          <div key={project.id} className="bg-white/5 border border-white/10 rounded-xl p-4">
+            <div className="flex justify-between mb-2">
               <div>
-                <h3 className="font-semibold">{project.title}</h3>
+                <h3>{project.title}</h3>
                 <p className="text-xs text-gray-400">
                   {getUserEmail(project.assigned_to)}
                 </p>
@@ -308,7 +334,7 @@ export default function Dashboard() {
               <select
                 value={project.status}
                 onChange={(e) => updateStatus(project.id, e.target.value)}
-                className="bg-black border border-gray-600 rounded px-2"
+                className="bg-black border border-gray-600 rounded"
               >
                 <option value="pending">Pending</option>
                 <option value="in progress">In Progress</option>
@@ -321,41 +347,32 @@ export default function Dashboard() {
                 <select
                   value={project.assigned_to || ""}
                   onChange={(e) => assignUser(project.id, e.target.value)}
-                  className="bg-black border border-gray-600 rounded px-2"
+                  className="bg-black border border-gray-600 rounded"
                 >
                   <option value="">Assign</option>
-                  {users.map((u: any) => (
+                  {users.map((u) => (
                     <option key={u.id} value={u.id}>{u.email}</option>
                   ))}
                 </select>
               )}
 
               <div className="flex gap-2">
-                {editingId === project.id ? (
-                  <button onClick={saveEdit} className="bg-green-500 px-3 rounded">Save</button>
-                ) : (
-                  <>
-                    <button onClick={() => startEdit(project)} className="bg-yellow-500 px-3 rounded">Edit</button>
-                    <button onClick={() => handleDelete(project.id)} className="bg-red-500 px-3 rounded">Delete</button>
-                  </>
-                )}
+                <button onClick={() => setEditingId(project.id)} className="bg-yellow-500 px-3 rounded">Edit</button>
+                <button onClick={() => handleDelete(project.id)} className="bg-red-500 px-3 rounded">Delete</button>
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* SETTINGS MODAL */}
+      {/* SETTINGS */}
       {showSettings && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center">
-          <div className="bg-[#111] p-6 rounded-xl w-80 border border-gray-700">
-            <h2 className="text-lg mb-4">Settings</h2>
-            <p className="text-sm text-gray-400 mb-4">
-              More features coming soon...
-            </p>
+          <div className="bg-[#111] p-6 rounded-xl w-80">
+            <h2>Settings</h2>
             <button
               onClick={() => setShowSettings(false)}
-              className="bg-blue-500 px-4 py-2 rounded"
+              className="bg-blue-500 px-4 py-2 rounded mt-4"
             >
               Close
             </button>
@@ -364,4 +381,4 @@ export default function Dashboard() {
       )}
     </div>
   );
-                }
+}
