@@ -8,7 +8,7 @@ import {
 } from "recharts";
 import { 
   Edit3, Trash2, Save, XCircle, Bell, LogOut, CheckCircle, 
-  Clock, Loader2, Plus, HardDrive, Download, Settings, X 
+  Clock, Loader2, Plus, HardDrive, Download, Settings, X, Mail
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -27,6 +27,10 @@ export default function Dashboard() {
   const [newClient, setNewClient] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
+
+  // ── ADDED: Client Onboarding States ──
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviting, setInviting] = useState(false);
 
   // Recharts colors
   const COLORS = ["#3b82f6", "#1d4ed8", "#1e40af", "#1e3a8a"];
@@ -113,6 +117,29 @@ export default function Dashboard() {
       fetchProjects(user, isAdmin);
     } catch (error: any) {
       alert(error.message);
+    }
+  };
+
+  // ── ADDED: Edge Function Trigger to Send Invites ──
+  const handleOnboardClient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteEmail.trim()) return;
+
+    setInviting(true);
+    try {
+      // Calls the Edge function you just deployed to Supabase!
+      const { error } = await supabase.functions.invoke('invite-client', {
+        body: { email: inviteEmail },
+      });
+
+      if (error) throw error;
+
+      setNotifications(prev => [`Success! Invite sent to ${inviteEmail}`, ...prev]);
+      setInviteEmail("");
+    } catch (err: any) {
+      alert(err.message || "Failed to send email invite.");
+    } finally {
+      setInviting(false);
     }
   };
 
@@ -256,7 +283,6 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Notification Bell with fixed click interactions */}
             <div className="relative group">
               <button className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-900 border border-gray-800 hover:border-blue-600 transition relative">
                 <Bell size={18} className="text-gray-400" />
@@ -281,7 +307,6 @@ export default function Dashboard() {
               )}
             </div>
 
-            {/* ⚙️ Clickable Settings Button */}
             <button 
               onClick={() => setIsSettingsOpen(true)}
               className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-900 border border-gray-800 hover:border-blue-600 transition text-gray-400 hover:text-white"
@@ -308,7 +333,6 @@ export default function Dashboard() {
       <AnimatePresence>
         {isSettingsOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            {/* Dark blur background overlay */}
             <motion.div 
               className="absolute inset-0 bg-black/80 backdrop-blur-sm"
               initial={{ opacity: 0 }}
@@ -317,7 +341,6 @@ export default function Dashboard() {
               onClick={() => setIsSettingsOpen(false)}
             />
             
-            {/* Modal Box */}
             <motion.div 
               className="bg-gray-950 border border-gray-800 rounded-2xl w-full max-w-md p-6 shadow-2xl relative z-10"
               initial={{ scale: 0.95, opacity: 0 }}
@@ -436,38 +459,74 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* ── MODIFIED: Dual Grid for Project Creation and Client Onboarding ── */}
         {isAdmin && (
-          <div className="bg-gray-950/50 border border-gray-900 rounded-2xl p-5 mb-8">
-            <h2 className="text-sm font-semibold text-gray-400 mb-4 flex items-center gap-2">
-              <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span> Quick Create Project
-            </h2>
-            <form onSubmit={createProject} className="flex flex-col sm:flex-row gap-3">
-              <input
-                type="text"
-                placeholder="Project Title (e.g., Brand Identity)"
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
-                className="flex-1 bg-black border border-gray-800 rounded-xl px-4 py-3 text-sm focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none transition"
-              />
-              
-              <select
-                value={newClient}
-                onChange={(e) => setNewClient(e.target.value)}
-                className="bg-black border border-gray-800 rounded-xl px-4 py-3 text-sm focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none transition text-gray-400"
-              >
-                <option value="">Assign to Client (Optional)</option>
-                {users.map((u: any) => (
-                  <option key={u.id} value={u.id}>{u.email}</option>
-                ))}
-              </select>
+          <div className="grid gap-6 md:grid-cols-2 mb-8">
+            
+            {/* Quick Create Project */}
+            <div className="bg-gray-950/50 border border-gray-900 rounded-2xl p-5">
+              <h2 className="text-sm font-semibold text-gray-400 mb-4 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span> Quick Create Project
+              </h2>
+              <form onSubmit={createProject} className="flex flex-col gap-3">
+                <input
+                  type="text"
+                  placeholder="Project Title (e.g., Brand Identity)"
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  className="bg-black border border-gray-800 rounded-xl px-4 py-3 text-sm focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none transition"
+                />
+                
+                <div className="flex gap-3">
+                  <select
+                    value={newClient}
+                    onChange={(e) => setNewClient(e.target.value)}
+                    className="flex-1 bg-black border border-gray-800 rounded-xl px-4 py-3 text-sm focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none transition text-gray-400"
+                  >
+                    <option value="">Assign to Client (Optional)</option>
+                    {users.map((u: any) => (
+                      <option key={u.id} value={u.id}>{u.email}</option>
+                    ))}
+                  </select>
 
-              <button
-                type="submit"
-                className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm px-6 py-3 rounded-xl transition flex items-center justify-center gap-2 whitespace-nowrap"
-              >
-                <Plus size={16} /> Create
-              </button>
-            </form>
+                  <button
+                    type="submit"
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm px-6 py-3 rounded-xl transition flex items-center justify-center gap-2 whitespace-nowrap"
+                  >
+                    <Plus size={16} /> Create
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* ── NEW: Send Client Invite Form ── */}
+            <div className="bg-gray-950/50 border border-gray-900 rounded-2xl p-5">
+              <h2 className="text-sm font-semibold text-gray-400 mb-4 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Onboard New Client
+              </h2>
+              <form onSubmit={handleOnboardClient} className="flex flex-col gap-3">
+                <input
+                  type="email"
+                  placeholder="Client Email Address"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  className="bg-black border border-gray-800 rounded-xl px-4 py-3 text-sm focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none transition"
+                />
+                <button
+                  type="submit"
+                  disabled={inviting}
+                  className="bg-gray-900 border border-gray-800 hover:border-green-500 hover:text-green-500 text-gray-300 font-medium text-sm px-6 py-3 rounded-xl transition flex items-center justify-center gap-2 whitespace-nowrap"
+                >
+                  {inviting ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Mail size={16} />
+                  )}
+                  {inviting ? "Sending..." : "Send Secure Portal Invite"}
+                </button>
+              </form>
+            </div>
+            
           </div>
         )}
 
@@ -637,4 +696,4 @@ export default function Dashboard() {
       </footer>
     </div>
   );
-    }
+}
