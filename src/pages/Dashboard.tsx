@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, 
   PieChart, Pie, Cell 
 } from "recharts";
 import { 
   Edit3, Trash2, Save, XCircle, Bell, LogOut, CheckCircle, 
-  Clock, Loader2, Plus, HardDrive, Download, Settings 
+  Clock, Loader2, Plus, HardDrive, Download, Settings, X 
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -21,7 +21,8 @@ export default function Dashboard() {
   const [users, setUsers] = useState([]);
   const [notifications, setNotifications] = useState<string[]>([]);
   
-  // Form states
+  // Modal & Form states
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newClient, setNewClient] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -42,7 +43,6 @@ export default function Dashboard() {
     }
     setUser(user);
     
-    // Simple admin check based on email
     const adminStatus = user.email === "profsulaiman001@gmail.com";
     setIsAdmin(adminStatus);
     
@@ -52,7 +52,6 @@ export default function Dashboard() {
       fetchUsers();
     }
 
-    // Realtime subscription for notifications
     const channel = supabase
       .channel('schema-db-changes')
       .on(
@@ -74,7 +73,6 @@ export default function Dashboard() {
       setLoading(true);
       let query = supabase.from("projects").select("*").order("created_at", { ascending: false });
       
-      // If not admin, only show projects assigned to this user
       if (!admin) {
         query = query.eq("assigned_to", currentUser.id);
       }
@@ -90,12 +88,8 @@ export default function Dashboard() {
   };
 
   const fetchUsers = async () => {
-    // In a real app, you'd have a profiles table. 
-    // This is a fallback to show assigned emails.
     const { data } = await supabase.from("projects").select("assigned_to");
     const uniqueIds = [...new Set(data?.map(p => p.assigned_to).filter(Boolean))];
-    
-    // Creating mock user objects for the dropdown based on what's in the DB
     setUsers(uniqueIds.map(id => ({ id, email: id === "profsulaiman001@gmail.com" ? "profsulaiman001@gmail.com" : "client@example.com" })));
   };
 
@@ -187,7 +181,6 @@ export default function Dashboard() {
     setLocation("/login");
   };
 
-  // 📁 FILE UPLOAD LOGIC
   const handleFileUpload = async (projectId: string, file: File) => {
     try {
       setLoading(true);
@@ -196,21 +189,18 @@ export default function Dashboard() {
       const fileName = `${projectId}-${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      // 1. Upload file to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from('project-files')
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
-      // 2. Get the public URL
       const { data: urlData } = supabase.storage
         .from('project-files')
         .getPublicUrl(filePath);
 
       const publicUrl = urlData.publicUrl;
 
-      // 3. Update the projects table
       const { error: updateError } = await supabase
         .from('projects')
         .update({ file_url: publicUrl })
@@ -227,14 +217,12 @@ export default function Dashboard() {
     }
   };
 
-  // Helper to get short email display
   const getUserEmail = (id: string) => {
     if (!id) return "Unassigned";
     if (id === "profsulaiman001@gmail.com") return "profsulaiman001@gmail.com";
     return "client@example.com";
   };
 
-  // Chart Data preparation
   const getChartData = () => {
     const pending = projects.filter((p: any) => p.status === "pending").length;
     const inProgress = projects.filter((p: any) => p.status === "in progress").length;
@@ -268,6 +256,7 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Notification Bell with fixed click interactions */}
             <div className="relative group">
               <button className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-900 border border-gray-800 hover:border-blue-600 transition relative">
                 <Bell size={18} className="text-gray-400" />
@@ -292,8 +281,11 @@ export default function Dashboard() {
               )}
             </div>
 
-            {/* ⚙️ Restored Settings Button */}
-            <button className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-900 border border-gray-800 hover:border-blue-600 transition text-gray-400 hover:text-white">
+            {/* ⚙️ Clickable Settings Button */}
+            <button 
+              onClick={() => setIsSettingsOpen(true)}
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-900 border border-gray-800 hover:border-blue-600 transition text-gray-400 hover:text-white"
+            >
               <Settings size={18} />
             </button>
 
@@ -312,12 +304,78 @@ export default function Dashboard() {
         </div>
       </header>
 
+      {/* Settings Modal */}
+      <AnimatePresence>
+        {isSettingsOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            {/* Dark blur background overlay */}
+            <motion.div 
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsSettingsOpen(false)}
+            />
+            
+            {/* Modal Box */}
+            <motion.div 
+              className="bg-gray-950 border border-gray-800 rounded-2xl w-full max-w-md p-6 shadow-2xl relative z-10"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: "spring", damping: 20 }}
+            >
+              <div className="flex justify-between items-center mb-5">
+                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Settings size={20} className="text-blue-500" /> Account Settings
+                </h2>
+                <button 
+                  onClick={() => setIsSettingsOpen(false)}
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-900 border border-gray-800 hover:border-red-600 transition text-gray-500 hover:text-white"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs text-gray-500 font-medium uppercase mb-1 block">Account Email</label>
+                  <div className="bg-black border border-gray-900 rounded-xl px-4 py-3 text-sm text-gray-300">
+                    {user?.email}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs text-gray-500 font-medium uppercase mb-1 block">Role</label>
+                  <div className="bg-black border border-gray-900 rounded-xl px-4 py-3 text-sm text-blue-500 font-medium">
+                    {isAdmin ? "Administrator" : "Client Account"}
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-gray-900 flex justify-between gap-3">
+                  <button 
+                    onClick={() => setIsSettingsOpen(false)}
+                    className="flex-1 bg-gray-900 hover:bg-gray-800 text-white font-medium text-sm px-4 py-3 rounded-xl transition"
+                  >
+                    Close
+                  </button>
+                  <button 
+                    onClick={handleSignOut}
+                    className="flex-1 bg-red-600/10 border border-red-600/30 hover:bg-red-600 text-red-500 hover:text-white font-medium text-sm px-4 py-3 rounded-xl transition flex items-center justify-center gap-2"
+                  >
+                    <LogOut size={14} /> Sign Out
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <main className="container mx-auto px-4 py-8 flex-1">
         
-        {/* Analytics Section - Only show if projects exist */}
         {projects.length > 0 && (
           <div className="grid gap-6 md:grid-cols-3 mb-8">
-            {/* Stat Cards */}
             <div className="md:col-span-1 grid grid-cols-2 gap-4">
               <div className="bg-gray-950/50 border border-gray-900 rounded-2xl p-4 flex flex-col justify-between">
                 <span className="text-xs text-gray-500 font-medium uppercase tracking-wider">Total</span>
@@ -343,7 +401,6 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Bar Chart */}
             <div className="bg-gray-950/50 border border-gray-900 rounded-2xl p-4 h-[160px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={getChartData()}>
@@ -357,7 +414,6 @@ export default function Dashboard() {
               </ResponsiveContainer>
             </div>
 
-            {/* Pie Chart */}
             <div className="bg-gray-950/50 border border-gray-900 rounded-2xl p-4 h-[160px] flex items-center justify-center">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -380,7 +436,6 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Create Project - Admin Only */}
         {isAdmin && (
           <div className="bg-gray-950/50 border border-gray-900 rounded-2xl p-5 mb-8">
             <h2 className="text-sm font-semibold text-gray-400 mb-4 flex items-center gap-2">
@@ -416,7 +471,6 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Project Grid */}
         <div className="flex justify-between items-center mb-5">
           <h2 className="font-bold text-lg">Active Projects</h2>
           {loading && <Loader2 size={18} className="text-blue-500 animate-spin" />}
@@ -462,7 +516,6 @@ export default function Dashboard() {
                   </span>
                 </div>
 
-                {/* 📁 FILE ATTACHMENT SECTION (VIEW & DOWNLOAD SIMULTANEOUS ACTION) */}
                 <div className="bg-black/40 border border-gray-900 rounded-xl p-3 flex items-center justify-between gap-3">
                   {project.file_url ? (
                     <>
@@ -471,13 +524,9 @@ export default function Dashboard() {
                       </span>
                       <button 
                         onClick={async () => {
-                          // 1. Open preview in a new tab
                           window.open(project.file_url, '_blank');
-
-                          // 2. State trigger for user context awareness
                           setNotifications(prev => ["Downloading your design file... Check your browser downloads!", ...prev]);
 
-                          // 3. Trigger the background download to physical storage
                           try {
                             const response = await fetch(project.file_url);
                             const blob = await response.blob();
@@ -549,7 +598,6 @@ export default function Dashboard() {
                       </>
                     ) : (
                       <>
-                        {/* Only Admin can see the upload file button */}
                         {isAdmin && (
                           <label className="w-9 h-9 flex items-center justify-center rounded-lg border border-blue-700/60 text-blue-500 bg-black hover:bg-blue-600/10 hover:border-blue-600 transition cursor-pointer">
                             <input
@@ -589,4 +637,4 @@ export default function Dashboard() {
       </footer>
     </div>
   );
-                                            }
+    }
