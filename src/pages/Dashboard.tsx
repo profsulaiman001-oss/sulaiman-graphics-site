@@ -8,7 +8,7 @@ import {
 } from "recharts";
 import { 
   Edit3, Trash2, Save, XCircle, Bell, LogOut, CheckCircle, 
-  Clock, Loader2, Plus, HardDrive, Download 
+  Clock, Loader2, Plus, HardDrive, Download, Settings 
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -267,7 +267,7 @@ export default function Dashboard() {
             </span>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <div className="relative group">
               <button className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-900 border border-gray-800 hover:border-blue-600 transition relative">
                 <Bell size={18} className="text-gray-400" />
@@ -291,6 +291,11 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
+
+            {/* ⚙️ Restored Settings Button */}
+            <button className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-900 border border-gray-800 hover:border-blue-600 transition text-gray-400 hover:text-white">
+              <Settings size={18} />
+            </button>
 
             <div className="flex items-center gap-3 bg-gray-950 border border-gray-800 py-1.5 pl-3 pr-1.5 rounded-full">
               <span className="text-xs font-medium text-gray-400 max-w-[120px] truncate">
@@ -457,21 +462,46 @@ export default function Dashboard() {
                   </span>
                 </div>
 
-                {/* 📁 FILE ATTACHMENT SECTION */}
+                {/* 📁 FILE ATTACHMENT SECTION (VIEW & DOWNLOAD SIMULTANEOUS ACTION) */}
                 <div className="bg-black/40 border border-gray-900 rounded-xl p-3 flex items-center justify-between gap-3">
                   {project.file_url ? (
                     <>
                       <span className="text-xs text-green-400 font-medium flex items-center gap-1">
                         <CheckCircle size={12} /> Design ready
                       </span>
-                      <a 
-                        href={project.file_url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
+                      <button 
+                        onClick={async () => {
+                          // 1. Open preview in a new tab
+                          window.open(project.file_url, '_blank');
+
+                          // 2. State trigger for user context awareness
+                          setNotifications(prev => ["Downloading your design file... Check your browser downloads!", ...prev]);
+
+                          // 3. Trigger the background download to physical storage
+                          try {
+                            const response = await fetch(project.file_url);
+                            const blob = await response.blob();
+                            const blobUrl = window.URL.createObjectURL(blob);
+                            
+                            const link = document.createElement('a');
+                            link.href = blobUrl;
+                            
+                            const fileName = project.file_url.split('/').pop() || 'design-file';
+                            link.download = fileName; 
+                            
+                            document.body.appendChild(link);
+                            link.click();
+                            
+                            document.body.removeChild(link);
+                            window.URL.revokeObjectURL(blobUrl);
+                          } catch (error) {
+                            console.error("Background physical save failed, but tab opened.");
+                          }
+                        }}
                         className="text-xs bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white px-3 py-1.5 rounded-lg border border-blue-600/30 transition-colors font-semibold flex items-center gap-1"
                       >
-                        <Download size={12} /> Download
-                      </a>
+                        <Download size={12} /> View & Download
+                      </button>
                     </>
                   ) : (
                     <span className="text-xs text-gray-600 italic flex items-center gap-1">
@@ -559,4 +589,4 @@ export default function Dashboard() {
       </footer>
     </div>
   );
-}
+                                            }
