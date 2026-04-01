@@ -2,6 +2,8 @@ import { CheckCircle2, ArrowRight } from "lucide-react";
 import { AnimatedSection } from "@/components/AnimatedSection";
 import { Button } from "@/components/Button";
 import { Link } from "wouter";
+/* ── Added the import for your new calculator component ── */
+import { PricingCalculator } from "@/components/PricingCalculator";
 
 /* ── Service pricing data ──────────────────────────────────────── */
 const services = [
@@ -114,7 +116,7 @@ export default function Services() {
         </AnimatedSection>
 
         {/* ── Pricing Cards ── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-32">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-24">
           {services.map((svc, i) => (
             <AnimatedSection key={svc.id} delay={i * 0.07}>
               <div
@@ -170,8 +172,16 @@ export default function Services() {
           ))}
         </div>
 
+        {/* ── Pricing Calculator Section ── */}
+        {/* Placed here as requested, nicely contained in max-5xl so it doesn't stretch too wide */}
+        <AnimatedSection className="mb-32">
+          <div className="max-w-5xl mx-auto">
+            <PricingCalculator />
+          </div>
+        </AnimatedSection>
+
         {/* ── Process ── */}
-        <AnimatedSection className="mb-20">
+        <AnimatedSection className="mb-24">
           <h2 className="font-display font-black text-4xl text-center text-foreground mb-14">
             How It Works
           </h2>
