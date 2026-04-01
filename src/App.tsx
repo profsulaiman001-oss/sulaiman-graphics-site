@@ -23,7 +23,6 @@ import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 
 // ── ADDED: Imports for your new Onboarding system ──
-import OnboardClient from "@/pages/admin/Onboard";
 import SetPassword from "@/pages/SetPassword";
 
 const queryClient = new QueryClient({
@@ -99,13 +98,6 @@ function Router() {
           <Route path="/dashboard">
             <ProtectedRoute>
               <Dashboard />
-            </ProtectedRoute>
-          </Route>
-
-          {/* ── ADDED: Protected endpoint just for you to onboard clients ── */}
-          <Route path="/admin/clients">
-            <ProtectedRoute>
-              <OnboardClient />
             </ProtectedRoute>
           </Route>
 
