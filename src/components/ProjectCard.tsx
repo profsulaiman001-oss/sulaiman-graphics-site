@@ -20,6 +20,9 @@ export function ProjectCard({ project, index = 0 }: { project: Project; index?: 
   /* Show gradient if there's neither a video nor a usable image */
   const showGradient = !hasVideo && !hasImage;
 
+  /* Check if this project falls under Flyer Design */
+  const isFlyer = project.category === "Flyer Design";
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
@@ -36,7 +39,15 @@ export function ProjectCard({ project, index = 0 }: { project: Project; index?: 
       )}
 
       {/* ── MEDIA AREA ─────────────────────────────────────────── */}
-      <div className="relative w-full aspect-[4/3] overflow-hidden bg-muted">
+      {/* Dynamic Aspect Ratio Applied Here: 
+          If it's a flyer, it uses aspect-[4/5]. 
+          For everything else (Social Media, Product), it uses a clean aspect-square (1:1).
+      */}
+      <div 
+        className={`relative w-full ${
+          isFlyer ? "aspect-[4/5]" : "aspect-square"
+        } overflow-hidden bg-muted`}
+      >
 
         {/* VIDEO — shown for Motion Graphics when a video path is provided */}
         {hasVideo && (
@@ -113,4 +124,4 @@ export function ProjectCard({ project, index = 0 }: { project: Project; index?: 
       </div>
     </motion.div>
   );
-}
+        }
