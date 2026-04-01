@@ -2,13 +2,14 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
 import { motion } from "framer-motion";
-import { Mail, Lock, LogIn, Loader2, MessageCircle } from "lucide-react";
+import { Mail, Lock, LogIn, Loader2, MessageCircle, Chrome } from "lucide-react"; // Added Chrome icon for Google!
 
 export default function Login() {
   const [, setLocation] = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false); // New loader state for Google
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,6 +35,23 @@ export default function Login() {
     setLoading(false);
   };
 
+  // 🔥 NEW GOOGLE LOGIN HANDLER
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        // Sends them to your dashboard once they authenticate
+        redirectTo: 'https://www.sulaimangraphics.com.ng/dashboard', 
+      },
+    });
+
+    if (error) {
+      alert("Google login failed: " + error.message);
+      setGoogleLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-black text-gray-100 relative overflow-hidden">
       
@@ -57,7 +75,7 @@ export default function Login() {
       {/* Glassmorphic Login Card */}
       <motion.div 
         className="w-full max-w-sm bg-gray-950/40 backdrop-blur-xl border border-gray-800/80 rounded-3xl p-8 shadow-[0_8px_30px_rgba(0,0,0,0.5)] relative z-10"
-        initial={{ opacity: 0, scale: 0.95 }}
+        initial={{ opacity: 0, scale:0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5, delay: 0.1 }}
       >
@@ -105,7 +123,7 @@ export default function Login() {
           {/* Action Button */}
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || googleLoading}
             className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800/50 disabled:text-blue-300/50 text-white font-medium text-sm py-3.5 rounded-xl transition flex items-center justify-center gap-2 mt-2 shadow-lg shadow-blue-600/10"
           >
             {loading ? (
@@ -118,6 +136,27 @@ export default function Login() {
           </button>
         </form>
 
+        {/* 🌟 NEW GOOGLE BUTTON ADDED HERE 🌟 */}
+        <div className="relative my-6 flex items-center justify-center">
+          <span className="absolute inset-x-0 border-t border-gray-800"></span>
+          <span className="relative bg-gray-950 px-3 text-xs text-gray-600 uppercase">Or</span>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleGoogleLogin}
+          disabled={loading || googleLoading}
+          className="w-full bg-transparent hover:bg-white/5 border border-gray-800 text-white font-medium text-sm py-3.5 rounded-xl transition flex items-center justify-center gap-2 disabled:opacity-50"
+        >
+          {googleLoading ? (
+            <Loader2 size={16} className="animate-spin" />
+          ) : (
+            <>
+              <Chrome size={16} className="text-white" /> Continue with Google
+            </>
+          )}
+        </button>
+
         <div className="text-center mt-6">
           <p className="text-xs text-gray-600">
             Forgot your password? <span className="text-blue-500 cursor-pointer hover:underline">Contact Support</span>
@@ -125,9 +164,9 @@ export default function Login() {
         </div>
       </motion.div>
 
-      {/* Floating WhatsApp Support Button from your screenshot */}
+      {/* Floating WhatsApp Support Button */}
       <motion.a
-        href="https://wa.me/+2349060410369" // 👈 Put your WhatsApp number here!
+        href="https://wa.me/+2349060410369"
         target="_blank"
         rel="noopener noreferrer"
         className="fixed bottom-6 right-6 w-14 h-14 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-green-500/20 transition-transform hover:scale-105 active:scale-95 z-50"
@@ -143,4 +182,4 @@ export default function Login() {
       </footer>
     </div>
   );
-              }
+}
