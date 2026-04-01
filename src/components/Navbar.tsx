@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "./Button";
+/* ── Added the import for your new Settings Dropdown ── */
+import { SettingsDropdown } from "@/components/SettingsDropdown";
 
 const links = [
   { name: "Home", path: "/" },
@@ -104,18 +106,25 @@ export function Navbar() {
               );
             })}
 
+            {/* ── Settings Dropdown Inserted Here ── */}
+            <div className="ml-2">
+              <SettingsDropdown />
+            </div>
+
             <Link href="/contact">
               <Button size="sm">Let's Talk</Button>
             </Link>
           </nav>
 
           {/* Mobile Menu Toggle */}
-          <button
-            className="md:hidden relative z-10 text-foreground p-2"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+          <div className="flex items-center gap-3 md:hidden">
+            <button
+              className="relative z-10 text-foreground p-2"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -129,7 +138,7 @@ export function Navbar() {
             transition={{ duration: 0.2 }}
             className="absolute top-full left-0 right-0 bg-card border-b border-border shadow-2xl p-4 md:hidden"
           >
-            <div className="flex flex-col space-y-4">
+            <div className="flex flex-col space-y-3">
               {links.map((link) => {
                 const isActive =
                   !link.hash &&
@@ -164,10 +173,16 @@ export function Navbar() {
                   </Link>
                 );
               })}
+
+              {/* ── Mobile Settings Option ── */}
+              <div className="border-t border-border mt-3 pt-3 px-4 flex justify-between items-center">
+                <span className="text-lg font-medium text-muted-foreground">Settings</span>
+                <SettingsDropdown />
+              </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
     </header>
   );
-                      }
+              }
