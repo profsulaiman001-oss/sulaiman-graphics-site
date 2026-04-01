@@ -17,11 +17,13 @@ function GalleryImage({
   alt,
   gradient,
   index,
+  isFlyer, // Added prop to check if it's a flyer
 }: {
   src: string;
   alt: string;
   gradient: string;
   index: number;
+  isFlyer: boolean;
 }) {
   const [failed, setFailed] = useState(false);
 
@@ -31,7 +33,12 @@ function GalleryImage({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.5, delay: (index % 4) * 0.1 }}
-      className="w-full aspect-square rounded-2xl overflow-hidden relative group bg-card border border-border"
+      /* Dynamic Aspect Ratio Check:
+        If it's a flyer, we use aspect-[4/5]. Otherwise, we keep your original aspect-square.
+      */
+      className={`w-full ${
+        isFlyer ? "aspect-[4/5]" : "aspect-square"
+      } rounded-2xl overflow-hidden relative group bg-card border border-border`}
     >
       {!failed ? (
         <img
@@ -58,17 +65,27 @@ function HeroBanner({
   gradient,
   category,
   title,
+  isFlyer, // Added prop here too
 }: {
   src?: string;
   gradient: string;
   category: string;
   title: string;
+  isFlyer: boolean;
 }) {
   const [failed, setFailed] = useState(false);
   const showImage = !!src && !failed;
 
   return (
-    <AnimatedSection className="w-full aspect-[21/9] rounded-[2rem] overflow-hidden relative mb-16">
+    /* Dynamic Hero Banner Aspect Ratio:
+      If it's a flyer, making it aspect-[4/5] on mobile and aspect-[3/2] on desktop ensures the graphic is seen.
+      If it's not a flyer, we keep your banner cinematic aspect-[21/9].
+    */
+    <AnimatedSection 
+      className={`w-full ${
+        isFlyer ? "aspect-[4/5] md:aspect-[3/2]" : "aspect-[21/9]"
+      } rounded-[2rem] overflow-hidden relative mb-16`}
+    >
       {showImage ? (
         <>
           <img
@@ -142,6 +159,9 @@ export default function ProjectDetail() {
       ? allProjects[(currentIndex + 1) % allProjects.length]
       : null;
 
+  /* Check if this project falls under Flyer Design */
+  const isFlyer = project.category === "Flyer Design";
+
   /* Hero image: first in images[] or the card thumbnail */
   const heroSrc = project.images?.[0] ?? project.image;
 
@@ -168,6 +188,7 @@ export default function ProjectDetail() {
           gradient={project.gradient}
           category={project.category}
           title={project.title}
+          isFlyer={isFlyer} // Passing it here
         />
 
         {/* ── Main content grid ── */}
@@ -219,6 +240,7 @@ export default function ProjectDetail() {
                       alt={`${project.title} — image ${i + 1}`}
                       gradient={project.gradient}
                       index={i}
+                      isFlyer={isFlyer} // Passing it here
                     />
                   ))}
                 </div>
