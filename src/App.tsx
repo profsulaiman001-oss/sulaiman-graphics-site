@@ -22,6 +22,10 @@ import NotFound from "@/pages/not-found";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 
+// ── ADDED: Imports for your new Onboarding system ──
+import OnboardClient from "@/pages/admin/Onboard";
+import SetPassword from "@/pages/SetPassword";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -85,6 +89,9 @@ function Router() {
           <Route path="/about" component={About} />
           <Route path="/services" component={Services} />
           <Route path="/contact" component={Contact} />
+          
+          {/* ── ADDED: Public endpoint for clients clicking the link ── */}
+          <Route path="/set-password" component={SetPassword} />
 
           {/* AUTH ROUTES */}
           <Route path="/login" component={Login} />
@@ -92,6 +99,13 @@ function Router() {
           <Route path="/dashboard">
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          </Route>
+
+          {/* ── ADDED: Protected endpoint just for you to onboard clients ── */}
+          <Route path="/admin/clients">
+            <ProtectedRoute>
+              <OnboardClient />
             </ProtectedRoute>
           </Route>
 
