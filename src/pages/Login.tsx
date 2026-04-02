@@ -2,14 +2,13 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
 import { motion } from "framer-motion";
-import { Mail, Lock, LogIn, Loader2, MessageCircle, Chrome } from "lucide-react"; // Added Chrome icon for Google!
+import { Mail, Lock, LogIn, Loader2, MessageCircle } from "lucide-react"; // Chrome icon removed
 
 export default function Login() {
   const [, setLocation] = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false); // New loader state for Google
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,23 +32,6 @@ export default function Login() {
     }
 
     setLoading(false);
-  };
-
-  // 🔥 NEW GOOGLE LOGIN HANDLER
-  const handleGoogleLogin = async () => {
-    setGoogleLoading(true);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        // Sends them to your dashboard once they authenticate
-        redirectTo: 'https://www.sulaimangraphics.com.ng/dashboard', 
-      },
-    });
-
-    if (error) {
-      alert("Google login failed: " + error.message);
-      setGoogleLoading(false);
-    }
   };
 
   return (
@@ -123,7 +105,7 @@ export default function Login() {
           {/* Action Button */}
           <button
             type="submit"
-            disabled={loading || googleLoading}
+            disabled={loading}
             className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800/50 disabled:text-blue-300/50 text-white font-medium text-sm py-3.5 rounded-xl transition flex items-center justify-center gap-2 mt-2 shadow-lg shadow-blue-600/10"
           >
             {loading ? (
@@ -135,27 +117,6 @@ export default function Login() {
             )}
           </button>
         </form>
-
-        {/* 🌟 NEW GOOGLE BUTTON ADDED HERE 🌟 */}
-        <div className="relative my-6 flex items-center justify-center">
-          <span className="absolute inset-x-0 border-t border-gray-800"></span>
-          <span className="relative bg-gray-950 px-3 text-xs text-gray-600 uppercase">Or</span>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleGoogleLogin}
-          disabled={loading || googleLoading}
-          className="w-full bg-transparent hover:bg-white/5 border border-gray-800 text-white font-medium text-sm py-3.5 rounded-xl transition flex items-center justify-center gap-2 disabled:opacity-50"
-        >
-          {googleLoading ? (
-            <Loader2 size={16} className="animate-spin" />
-          ) : (
-            <>
-              <Chrome size={16} className="text-white" /> Continue with Google
-            </>
-          )}
-        </button>
 
         <div className="text-center mt-6">
           <p className="text-xs text-gray-600">
