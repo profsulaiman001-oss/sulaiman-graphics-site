@@ -28,7 +28,7 @@ export default function Dashboard() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
 
-  // ── ADDED: Client Onboarding States ──
+  // Client Onboarding States
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviting, setInviting] = useState(false);
 
@@ -120,21 +120,21 @@ export default function Dashboard() {
     }
   };
 
-  // ── ADDED: Edge Function Trigger to Send Invites ──
+  // ── UPDATED: Calls the secure SQL function instead of the Edge function ──
   const handleOnboardClient = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteEmail.trim()) return;
 
     setInviting(true);
     try {
-      // Calls the Edge function you just deployed to Supabase!
-      const { error } = await supabase.functions.invoke('invite-client', {
-        body: { email: inviteEmail },
+      // Calls the secure function in Supabase we made in Step 1
+      const { data, error } = await supabase.rpc('invite_client', { 
+        client_email: inviteEmail 
       });
 
       if (error) throw error;
 
-      setNotifications(prev => [`Success! Invite sent to ${inviteEmail}`, ...prev]);
+      setNotifications(prev => [data as string, ...prev]);
       setInviteEmail("");
     } catch (err: any) {
       alert(err.message || "Failed to send email invite.");
@@ -459,7 +459,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* ── MODIFIED: Dual Grid for Project Creation and Client Onboarding ── */}
+        {/* Dual Grid for Project Creation and Client Onboarding */}
         {isAdmin && (
           <div className="grid gap-6 md:grid-cols-2 mb-8">
             
@@ -499,7 +499,7 @@ export default function Dashboard() {
               </form>
             </div>
 
-            {/* ── NEW: Send Client Invite Form ── */}
+            {/* Send Client Invite Form (Cleaned Up!) */}
             <div className="bg-gray-950/50 border border-gray-900 rounded-2xl p-5">
               <h2 className="text-sm font-semibold text-gray-400 mb-4 flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Onboard New Client
@@ -696,4 +696,4 @@ export default function Dashboard() {
       </footer>
     </div>
   );
-}
+  }
