@@ -19,22 +19,18 @@ export default function Dashboard() {
   
   const [projects, setProjects] = useState([]);
   
-  // ── OPTION A: Holds unique client emails for dropdowns ──
   const [clientEmails, setClientEmails] = useState<string[]>([]);
   const [notifications, setNotifications] = useState<string[]>([]);
   
-  // Modal & Form states
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newClient, setNewClient] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
 
-  // Client Onboarding States
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviting, setInviting] = useState(false);
 
-  // Recharts colors
   const COLORS = ["#3b82f6", "#1d4ed8", "#1e40af", "#1e3a8a"];
 
   useEffect(() => {
@@ -75,7 +71,6 @@ export default function Dashboard() {
       setLoading(true);
       let query = supabase.from("projects").select("*").order("created_at", { ascending: false });
       
-      // ── OPTION A: Filter by client email instead of a user ID ──
       if (!admin) {
         query = query.eq("client_email", currentUser.email);
       }
@@ -86,7 +81,6 @@ export default function Dashboard() {
       const projectsData = data || [];
       setProjects(projectsData);
 
-      // ── OPTION A: Grab unique emails from existing projects for the dropdown ──
       const uniqueEmails = [
         ...new Set(projectsData.map((p: any) => p.client_email).filter(Boolean))
       ] as string[];
@@ -99,7 +93,6 @@ export default function Dashboard() {
     }
   };
 
-  // CRUD Operations
   const createProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim() || !newClient.trim()) {
@@ -108,7 +101,6 @@ export default function Dashboard() {
     }
 
     try {
-      // ── OPTION A: Save client by email ──
       const { error } = await supabase.from("projects").insert([{
         title: newTitle,
         status: "Pending",
@@ -126,25 +118,35 @@ export default function Dashboard() {
     }
   };
 
+  // ── HERE IS THE FIXED ONBOARD FUNCTION ──
   const handleOnboardClient = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteEmail.trim()) return;
 
     setInviting(true);
     try {
-      const { data, error } = await supabase.rpc('invite_client', { 
-        client_email: inviteEmail 
+      // 1. We ping our Vercel API file to send the actual mail
+      const response = await fetch('/api/onboard', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: inviteEmail }),
       });
 
-      if (error) throw error;
+      const result = await response.json();
 
-      setNotifications(prev => [data as string, ...prev]);
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to send portal invite.");
+      }
+
+      setNotifications(prev => [result.message, ...prev]);
       
-      // ── OPTION A: Instantly add the newly invited email to your dropdown options! ──
+      // 2. Instantly add the email to your dropdown options
       setClientEmails(prev => [...new Set([...prev, inviteEmail])]);
       setInviteEmail("");
     } catch (err: any) {
-      alert(err.message || "Failed to send email invite.");
+      alert(err.message || "An error occurred.");
     } finally {
       setInviting(false);
     }
@@ -271,7 +273,6 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-black text-gray-100 flex flex-col">
-      {/* Header */}
       <header className="border-b border-gray-900 bg-black/50 backdrop-blur-md sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
@@ -330,7 +331,6 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Settings Modal */}
       <AnimatePresence>
         {isSettingsOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -460,11 +460,8 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Dual Grid for Project Creation and Client Onboarding */}
         {isAdmin && (
           <div className="grid gap-6 md:grid-cols-2 mb-8">
-            
-            {/* Quick Create Project */}
             <div className="bg-gray-950/50 border border-gray-900 rounded-2xl p-5">
               <h2 className="text-sm font-semibold text-gray-400 mb-4 flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span> Quick Create Project
@@ -479,7 +476,6 @@ export default function Dashboard() {
                 />
                 
                 <div className="flex gap-3">
-                  {/* ── OPTION A: Shows all past invited client emails ── */}
                   <select
                     value={newClient}
                     onChange={(e) => setNewClient(e.target.value)}
@@ -501,7 +497,6 @@ export default function Dashboard() {
               </form>
             </div>
 
-            {/* Send Client Invite Form (Cleaned Up!) */}
             <div className="bg-gray-950/50 border border-gray-900 rounded-2xl p-5">
               <h2 className="text-sm font-semibold text-gray-400 mb-4 flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Onboard New Client
@@ -698,4 +693,4 @@ export default function Dashboard() {
       </footer>
     </div>
   );
-}
+    }
