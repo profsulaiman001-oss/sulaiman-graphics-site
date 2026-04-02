@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
 import { motion } from "framer-motion";
-import { Mail, Lock, LogIn, Loader2, Save } from "lucide-react"; 
+import { Mail, Lock, LogIn, Loader2 } from "lucide-react"; 
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -10,40 +10,43 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // New states for the invited user logic
-  const [isInvitedUser, setIsInvitedUser] = useState(false);
-  const [newPassword, setNewPassword] = useState("");
-
-  useEffect(() => {
-    // Listen for Supabase auth events.
-    // If a user clicks an invite link, Supabase fires a SIGNED_IN event on arrival.
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session) {
-        // We look at the user metadata to see if they are a newly invited user completing their setup
-        setIsInvitedUser(true);
-      }
-    });
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, []);
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
+    // 1. Try to log them in first
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
+    // 2. If it fails because the user doesn't exist, SIGN THEM UP!
+    if (error && (error.message.includes("Invalid login credentials") || error.message.includes("User not found"))) {
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (signUpError) {
+        alert("Failed to create account: " + signUpError.message);
+        setLoading(false);
+        return;
+      }
+
+      alert("Account created successfully! Welcome to your portal.");
+      setLocation("/dashboard");
+      setLoading(false);
+      return;
+    }
+
+    // 3. If there was a different error (like a network issue), show it
     if (error) {
       alert("Login failed: " + error.message);
       setLoading(false);
       return;
     }
 
+    // 4. If login was successful, proceed to dashboard
     if (data.session) {
       setLocation("/dashboard");
     } else {
@@ -51,26 +54,6 @@ export default function Login() {
     }
 
     setLoading(false);
-  };
-
-  // New handler for when the client creates their password
-  const handleSetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword,
-    });
-
-    if (error) {
-      alert("Failed to set password: " + error.message);
-      setLoading(false);
-      return;
-    }
-
-    alert("Password set successfully! Welcome to your portal.");
-    setLoading(false);
-    setLocation("/dashboard"); // Send them straight to work!
   };
 
   return (
@@ -101,105 +84,66 @@ export default function Login() {
         transition={{ duration: 0.5, delay: 0.1 }}
       >
         <h2 className="text-lg font-semibold mb-6 text-center text-white">
-          {isInvitedUser ? "Create Your Password" : "Client Login"}
+          Client Login / Setup
         </h2>
 
-        {isInvitedUser ? (
-          // --- SCREEN A: CREATE PASSWORD (Shown when email link is clicked) ---
-          <form onSubmit={handleSetPassword} className="space-y-5">
-            <p className="text-sm text-gray-400 text-center mb-4">
-              Welcome! Please choose a password to secure your account.
-            </p>
-            <div>
-              <label className="text-xs text-gray-500 font-medium uppercase mb-1.5 block">New Password</label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-600">
-                  <Lock size={16} />
-                </span>
-                <input
-                  type="password"
-                  placeholder="••••••••"
-                  className="w-full pl-11 pr-4 py-3 bg-black border border-gray-800 rounded-xl text-sm text-white placeholder-gray-700 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none transition"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  required
-                />
-              </div>
+        {/* SCREEN B: NORMAL LOGIN (Now handles auto-signup too!) */}
+        <form onSubmit={handleLogin} className="space-y-5">
+          {/* Email Field */}
+          <div>
+            <label className="text-xs text-gray-500 font-medium uppercase mb-1.5 block">Email Address</label>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-600">
+                <Mail size={16} />
+              </span>
+              <input
+                type="email"
+                placeholder="name@example.com"
+                className="w-full pl-11 pr-4 py-3 bg-black border border-gray-800 rounded-xl text-sm text-white placeholder-gray-700 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none transition"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
             </div>
+          </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800/50 disabled:text-blue-300/50 text-white font-medium text-sm py-3.5 rounded-xl transition flex items-center justify-center gap-2 mt-2 shadow-lg shadow-blue-600/10"
-            >
-              {loading ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                <>
-                  <Save size={16} /> Save & Continue
-                </>
-              )}
-            </button>
-          </form>
-        ) : (
-          // --- SCREEN B: NORMAL LOGIN ---
-          <form onSubmit={handleLogin} className="space-y-5">
-            {/* Email Field */}
-            <div>
-              <label className="text-xs text-gray-500 font-medium uppercase mb-1.5 block">Email Address</label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-600">
-                  <Mail size={16} />
-                </span>
-                <input
-                  type="email"
-                  placeholder="name@example.com"
-                  className="w-full pl-11 pr-4 py-3 bg-black border border-gray-800 rounded-xl text-sm text-white placeholder-gray-700 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none transition"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
+          {/* Password Field */}
+          <div>
+            <label className="text-xs text-gray-500 font-medium uppercase mb-1.5 block">Password</label>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-600">
+                <Lock size={16} />
+              </span>
+              <input
+                type="password"
+                placeholder="••••••••"
+                className="w-full pl-11 pr-4 py-3 bg-black border border-gray-800 rounded-xl text-sm text-white placeholder-gray-700 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none transition"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
             </div>
+          </div>
 
-            {/* Password Field */}
-            <div>
-              <label className="text-xs text-gray-500 font-medium uppercase mb-1.5 block">Password</label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-600">
-                  <Lock size={16} />
-                </span>
-                <input
-                  type="password"
-                  placeholder="••••••••"
-                  className="w-full pl-11 pr-4 py-3 bg-black border border-gray-800 rounded-xl text-sm text-white placeholder-gray-700 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none transition"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Action Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800/50 disabled:text-blue-300/50 text-white font-medium text-sm py-3.5 rounded-xl transition flex items-center justify-center gap-2 mt-2 shadow-lg shadow-blue-600/10"
-            >
-              {loading ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                <>
-                  <LogIn size={16} /> Login
-                </>
-              )}
-            </button>
-          </form>
-        )}
+          {/* Action Button */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800/50 disabled:text-blue-300/50 text-white font-medium text-sm py-3.5 rounded-xl transition flex items-center justify-center gap-2 mt-2 shadow-lg shadow-blue-600/10"
+          >
+            {loading ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <>
+                <LogIn size={16} /> Login or Setup
+              </>
+            )}
+          </button>
+        </form>
 
         <div className="text-center mt-6">
           <p className="text-xs text-gray-600">
-            Forgot your password? <span className="text-blue-500 cursor-pointer hover:underline">Contact Support</span>
+            Having issues? <span className="text-blue-500 cursor-pointer hover:underline">Contact Support</span>
           </p>
         </div>
       </motion.div>
