@@ -18,7 +18,9 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   
   const [projects, setProjects] = useState([]);
-  const [users, setUsers] = useState([]);
+  
+  // ── OPTION A: Holds unique client emails for dropdowns ──
+  const [clientEmails, setClientEmails] = useState<string[]>([]);
   const [notifications, setNotifications] = useState<string[]>([]);
   
   // Modal & Form states
@@ -51,10 +53,6 @@ export default function Dashboard() {
     setIsAdmin(adminStatus);
     
     fetchProjects(user, adminStatus);
-    
-    if (adminStatus) {
-      fetchUsers();
-    }
 
     const channel = supabase
       .channel('schema-db-changes')
@@ -77,13 +75,23 @@ export default function Dashboard() {
       setLoading(true);
       let query = supabase.from("projects").select("*").order("created_at", { ascending: false });
       
+      // ── OPTION A: Filter by client email instead of a user ID ──
       if (!admin) {
-        query = query.eq("assigned_to", currentUser.id);
+        query = query.eq("client_email", currentUser.email);
       }
       
       const { data, error } = await query;
       if (error) throw error;
-      setProjects(data || []);
+      
+      const projectsData = data || [];
+      setProjects(projectsData);
+
+      // ── OPTION A: Grab unique emails from existing projects for the dropdown ──
+      const uniqueEmails = [
+        ...new Set(projectsData.map((p: any) => p.client_email).filter(Boolean))
+      ] as string[];
+      setClientEmails(uniqueEmails);
+
     } catch (error: any) {
       console.error("Error fetching projects:", error.message);
     } finally {
@@ -91,22 +99,20 @@ export default function Dashboard() {
     }
   };
 
-  const fetchUsers = async () => {
-    const { data } = await supabase.from("projects").select("assigned_to");
-    const uniqueIds = [...new Set(data?.map(p => p.assigned_to).filter(Boolean))];
-    setUsers(uniqueIds.map(id => ({ id, email: id === "profsulaiman001@gmail.com" ? "profsulaiman001@gmail.com" : "client@example.com" })));
-  };
-
   // CRUD Operations
   const createProject = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTitle.trim()) return;
+    if (!newTitle.trim() || !newClient.trim()) {
+      alert("Please provide both a project title and a client email!");
+      return;
+    }
 
     try {
+      // ── OPTION A: Save client by email ──
       const { error } = await supabase.from("projects").insert([{
         title: newTitle,
-        status: "pending",
-        assigned_to: newClient || null
+        status: "Pending",
+        client_email: newClient
       }]);
 
       if (error) throw error;
@@ -120,14 +126,12 @@ export default function Dashboard() {
     }
   };
 
-  // ── UPDATED: Calls the secure SQL function instead of the Edge function ──
   const handleOnboardClient = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteEmail.trim()) return;
 
     setInviting(true);
     try {
-      // Calls the secure function in Supabase we made in Step 1
       const { data, error } = await supabase.rpc('invite_client', { 
         client_email: inviteEmail 
       });
@@ -135,6 +139,9 @@ export default function Dashboard() {
       if (error) throw error;
 
       setNotifications(prev => [data as string, ...prev]);
+      
+      // ── OPTION A: Instantly add the newly invited email to your dropdown options! ──
+      setClientEmails(prev => [...new Set([...prev, inviteEmail])]);
       setInviteEmail("");
     } catch (err: any) {
       alert(err.message || "Failed to send email invite.");
@@ -177,11 +184,11 @@ export default function Dashboard() {
     }
   };
 
-  const assignUser = async (projectId: string, userId: string) => {
+  const assignUser = async (projectId: string, email: string) => {
     try {
       const { error } = await supabase
         .from("projects")
-        .update({ assigned_to: userId || null })
+        .update({ client_email: email })
         .eq("id", projectId);
 
       if (error) throw error;
@@ -244,16 +251,10 @@ export default function Dashboard() {
     }
   };
 
-  const getUserEmail = (id: string) => {
-    if (!id) return "Unassigned";
-    if (id === "profsulaiman001@gmail.com") return "profsulaiman001@gmail.com";
-    return "client@example.com";
-  };
-
   const getChartData = () => {
-    const pending = projects.filter((p: any) => p.status === "pending").length;
-    const inProgress = projects.filter((p: any) => p.status === "in progress").length;
-    const completed = projects.filter((p: any) => p.status === "completed").length;
+    const pending = projects.filter((p: any) => p.status?.toLowerCase() === "pending").length;
+    const inProgress = projects.filter((p: any) => p.status?.toLowerCase() === "in progress").length;
+    const completed = projects.filter((p: any) => p.status?.toLowerCase() === "completed").length;
 
     return [
       { name: "Pending", value: pending },
@@ -263,9 +264,9 @@ export default function Dashboard() {
   };
 
   const statusColors: any = {
-    pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
-    "in progress": "bg-blue-500/10 text-blue-500 border-blue-500/20",
-    completed: "bg-green-500/10 text-green-500 border-green-500/20"
+    Pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+    "In Progress": "bg-blue-500/10 text-blue-500 border-blue-500/20",
+    Completed: "bg-green-500/10 text-green-500 border-green-500/20"
   };
 
   return (
@@ -407,19 +408,19 @@ export default function Dashboard() {
               <div className="bg-gray-950/50 border border-gray-900 rounded-2xl p-4 flex flex-col justify-between">
                 <span className="text-xs text-yellow-500/70 font-medium uppercase tracking-wider">Pending</span>
                 <span className="text-3xl font-bold text-yellow-500 mt-2">
-                  {projects.filter((p: any) => p.status === "pending").length}
+                  {projects.filter((p: any) => p.status?.toLowerCase() === "pending").length}
                 </span>
               </div>
               <div className="bg-gray-950/50 border border-gray-900 rounded-2xl p-4 flex flex-col justify-between">
                 <span className="text-xs text-blue-500/70 font-medium uppercase tracking-wider">Active</span>
                 <span className="text-3xl font-bold text-blue-500 mt-2">
-                  {projects.filter((p: any) => p.status === "in progress").length}
+                  {projects.filter((p: any) => p.status?.toLowerCase() === "in progress").length}
                 </span>
               </div>
               <div className="bg-gray-950/50 border border-gray-900 rounded-2xl p-4 flex flex-col justify-between">
                 <span className="text-xs text-green-500/70 font-medium uppercase tracking-wider">Done</span>
                 <span className="text-3xl font-bold text-green-500 mt-2">
-                  {projects.filter((p: any) => p.status === "completed").length}
+                  {projects.filter((p: any) => p.status?.toLowerCase() === "completed").length}
                 </span>
               </div>
             </div>
@@ -478,14 +479,15 @@ export default function Dashboard() {
                 />
                 
                 <div className="flex gap-3">
+                  {/* ── OPTION A: Shows all past invited client emails ── */}
                   <select
                     value={newClient}
                     onChange={(e) => setNewClient(e.target.value)}
                     className="flex-1 bg-black border border-gray-800 rounded-xl px-4 py-3 text-sm focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none transition text-gray-400"
                   >
-                    <option value="">Assign to Client (Optional)</option>
-                    {users.map((u: any) => (
-                      <option key={u.id} value={u.id}>{u.email}</option>
+                    <option value="">Assign to Client</option>
+                    {clientEmails.map((email: string) => (
+                      <option key={email} value={email}>{email}</option>
                     ))}
                   </select>
 
@@ -566,11 +568,11 @@ export default function Dashboard() {
                       </h3>
                     )}
                     <p className="text-xs text-gray-600 tracking-wide break-all mt-1 flex items-center gap-1.5">
-                      👤 {getUserEmail(project.assigned_to)}
+                      👤 {project.client_email || "Unassigned"}
                     </p>
                   </div>
                   
-                  <span className={`text-[11px] font-bold px-3 py-1 uppercase rounded-full tracking-wider border ${statusColors[project.status]}`}>
+                  <span className={`text-[11px] font-bold px-3 py-1 uppercase rounded-full tracking-wider border ${statusColors[project.status] || statusColors["Pending"]}`}>
                       {project.status}
                   </span>
                 </div>
@@ -626,20 +628,20 @@ export default function Dashboard() {
                           onChange={(e) => updateStatus(project.id, e.target.value)}
                           className="bg-black border border-gray-700 text-gray-300 text-xs rounded-lg px-2.5 py-1.5 focus:border-blue-600 transition"
                       >
-                          <option value="pending">Pending</option>
-                          <option value="in progress">In Progress</option>
-                          <option value="completed">Completed</option>
+                          <option value="Pending">Pending</option>
+                          <option value="In Progress">In Progress</option>
+                          <option value="Completed">Completed</option>
                       </select>
 
                       {isAdmin && (
                           <select
-                          value={project.assigned_to || ""}
+                          value={project.client_email || ""}
                           onChange={(e) => assignUser(project.id, e.target.value)}
                           className="bg-black border border-gray-700 text-gray-300 text-xs rounded-lg px-2.5 py-1.5 focus:border-blue-600 transition"
                           >
                           <option value="">Client Assign</option>
-                          {users.map((u: any) => (
-                              <option key={u.id} value={u.id}>{u.email}</option>
+                          {clientEmails.map((email: string) => (
+                              <option key={email} value={email}>{email}</option>
                           ))}
                           </select>
                       )}
@@ -696,4 +698,4 @@ export default function Dashboard() {
       </footer>
     </div>
   );
-      }
+}
