@@ -34,6 +34,7 @@ export default function Dashboard() {
   const [fullName, setFullName] = useState("");
   const [showNamePrompt, setShowNamePrompt] = useState(false);
   const [submittingName, setSubmittingName] = useState(false);
+
   // Comments states
   const [openCommentsId, setOpenCommentsId] = useState<string | null>(null);
   const [comments, setComments] = useState<any[]>([]);
@@ -41,6 +42,7 @@ export default function Dashboard() {
   const [sendingComment, setSendingComment] = useState(false);
 
   const [unreadCounts, setUnreadCounts] = useState<{[key: string]: number}>({});
+
   // Fixed: State for mobile-friendly notification drawer and a click-outside listener
   const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
@@ -61,11 +63,13 @@ export default function Dashboard() {
 
   const checkUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
+
     if (!user) {
       setLocation("/login");
       return;
     }
     setUser(user);
+
     const adminStatus = user.email === "profsulaiman001@gmail.com";
     setIsAdmin(adminStatus);
     
@@ -108,6 +112,7 @@ export default function Dashboard() {
       .select("full_name")
       .eq("id", userId)
       .single();
+
     if (data && data.full_name) {
       setFullName(data.full_name);
     } else if (!isAdmin) {
@@ -118,10 +123,12 @@ export default function Dashboard() {
   const saveProfileName = async () => {
     if (!fullName.trim()) return;
     setSubmittingName(true);
+
     try {
       const { error } = await supabase
         .from("profiles")
         .upsert({ id: user.id, full_name: fullName.trim(), updated_at: new Date() });
+
       if (error) throw error;
       setShowNamePrompt(false);
     } catch (error: any) {
@@ -134,6 +141,7 @@ export default function Dashboard() {
   const fetchProjects = async (currentUser: any, admin: boolean) => {
     try {
       setLoading(true);
+
       let query = supabase.from("projects").select("*").order("created_at", { ascending: false });
       
       if (!admin) {
@@ -141,13 +149,16 @@ export default function Dashboard() {
       }
       
       const { data, error } = await query;
+
       if (error) throw error;
       
       const projectsData = data || [];
       setProjects(projectsData);
+
       const uniqueEmails = [
         ...new Set(projectsData.map((p: any) => p.client_email).filter(Boolean))
       ] as string[];
+
       setClientEmails(uniqueEmails);
 
       if (projectsData.length > 0) {
@@ -167,8 +178,10 @@ export default function Dashboard() {
       .select("project_id, is_admin")
       .in("project_id", projectIds)
       .eq("is_read", false);
+
     if (!error && data) {
       const counts: {[key: string]: number} = {};
+
       data.forEach((msg: any) => {
         const isUnreadForMe = admin ? !msg.is_admin : msg.is_admin;
         
@@ -176,6 +189,7 @@ export default function Dashboard() {
           counts[msg.project_id] = (counts[msg.project_id] || 0) + 1;
         }
       });
+
       setUnreadCounts(counts);
     }
   };
@@ -186,6 +200,7 @@ export default function Dashboard() {
       .select("*")
       .eq("project_id", projectId)
       .order("created_at", { ascending: true });
+
     if (!error && data) {
       setComments(data);
     }
@@ -198,6 +213,7 @@ export default function Dashboard() {
       .eq("project_id", projectId)
       .eq("is_read", false)
       .eq("is_admin", !isAdmin);
+
     if (!error) {
       setUnreadCounts(prev => ({ ...prev, [projectId]: 0 }));
     }
@@ -248,6 +264,7 @@ export default function Dashboard() {
     if (!newComment.trim() || !user) return;
     
     setSendingComment(true);
+
     const { error } = await supabase
       .from("comments")
       .insert([{
@@ -257,6 +274,7 @@ export default function Dashboard() {
         is_admin: isAdmin,
         is_read: false
       }]);
+
     if (!error) {
       setNewComment("");
       fetchComments(projectId);
@@ -266,6 +284,7 @@ export default function Dashboard() {
 
   const createProject = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!newTitle.trim() || !newClient.trim()) {
       alert("Please provide both a project title and a client email!");
       return;
@@ -277,12 +296,14 @@ export default function Dashboard() {
         status: "Pending",
         client_email: newClient
       }]);
+
       if (error) throw error;
       
       setNewTitle("");
       setNewClient("");
       setNotifications(prev => ["Project created successfully!", ...prev]);
       fetchProjects(user, isAdmin);
+
     } catch (error: any) {
       alert(error.message);
     }
@@ -293,6 +314,7 @@ export default function Dashboard() {
     if (!inviteEmail.trim()) return;
 
     setInviting(true);
+
     try {
       const response = await fetch('/api/onboard', {
         method: 'POST',
@@ -301,6 +323,7 @@ export default function Dashboard() {
         },
         body: JSON.stringify({ email: inviteEmail }),
       });
+
       const result = await response.json();
 
       if (!response.ok) {
@@ -310,6 +333,7 @@ export default function Dashboard() {
       setNotifications(prev => [result.message, ...prev]);
       setClientEmails(prev => [...new Set([...prev, inviteEmail])]);
       setInviteEmail("");
+
     } catch (err: any) {
       alert(err.message || "An error occurred.");
     } finally {
@@ -328,6 +352,7 @@ export default function Dashboard() {
         .from("projects")
         .update({ title: editTitle })
         .eq("id", editingId);
+
       if (error) throw error;
       setEditingId(null);
       fetchProjects(user, isAdmin);
@@ -342,6 +367,7 @@ export default function Dashboard() {
         .from("projects")
         .update({ status })
         .eq("id", projectId);
+
       if (error) throw error;
       fetchProjects(user, isAdmin);
     } catch (error: any) {
@@ -355,6 +381,7 @@ export default function Dashboard() {
         .from("projects")
         .update({ client_approval: decision })
         .eq("id", projectId);
+
       if (error) throw error;
       
       const noteMessage = decision === 'Approved' 
@@ -363,6 +390,7 @@ export default function Dashboard() {
         
       setNotifications(prev => [noteMessage, ...prev]);
       fetchProjects(user, isAdmin);
+
     } catch (error: any) {
       alert(error.message);
     }
@@ -374,6 +402,7 @@ export default function Dashboard() {
         .from("projects")
         .update({ client_email: email })
         .eq("id", projectId);
+
       if (error) throw error;
       fetchProjects(user, isAdmin);
     } catch (error: any) {
@@ -383,9 +412,11 @@ export default function Dashboard() {
 
   const handleDelete = async (projectId: string) => {
     if (!confirm("Are you sure you want to delete this project?")) return;
+
     try {
       const { error } = await supabase.from("projects").delete().eq("id", projectId);
       if (error) throw error;
+
       fetchProjects(user, isAdmin);
     } catch (error: any) {
       alert(error.message);
@@ -402,7 +433,8 @@ export default function Dashboard() {
       setLoading(true);
 
       // 1. LIMIT FILE SIZE (5MB max)
-      const maxFileSize = 5 * 1024 * 1024; 
+      const maxFileSize = 5 * 1024 * 1024;
+
       if (file.size > maxFileSize) {
         alert("File is too large! Please keep files under 5MB to save storage space.");
         setLoading(false);
@@ -411,6 +443,7 @@ export default function Dashboard() {
 
       // 2. LIMIT FILE TYPES
       const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'application/pdf'];
+
       if (!allowedTypes.includes(file.type)) {
         alert("Unsupported file type! Please upload only PNG, JPG, WEBP, or PDF files.");
         setLoading(false);
@@ -462,6 +495,7 @@ export default function Dashboard() {
 
       setNotifications(prev => ["Design file uploaded and client notified!", ...prev]);
       fetchProjects(user, isAdmin);
+
     } catch (error: any) {
       alert(error.message || "Error uploading file");
     } finally {
@@ -473,6 +507,7 @@ export default function Dashboard() {
     const pending = projects.filter((p: any) => p.status?.toLowerCase() === "pending").length;
     const inProgress = projects.filter((p: any) => p.status?.toLowerCase() === "in progress").length;
     const completed = projects.filter((p: any) => p.status?.toLowerCase() === "completed").length;
+
     return [
       { name: "Pending", value: pending },
       { name: "In Progress", value: inProgress },
@@ -1053,7 +1088,7 @@ export default function Dashboard() {
 
                 <div className="mt-auto pt-4 border-t border-border flex flex-wrap justify-between items-center gap-3">
                   <div className="flex gap-2 flex-wrap">
-                      <select
+                        <select
                           value={project.status}
                           onChange={(e) => updateStatus(project.id, e.target.value)}
                           className="bg-background border border-border text-foreground text-xs rounded-lg px-2.5 py-1.5 focus:border-primary transition"
@@ -1069,7 +1104,7 @@ export default function Dashboard() {
                           onChange={(e) => assignUser(project.id, e.target.value)}
                           className="bg-background border border-border text-foreground text-xs rounded-lg px-2.5 py-1.5 focus:border-primary transition"
                           >
-                              <option value="">Client Assign</option>
+                            <option value="">Client Assign</option>
                           {clientEmails.map((email: string) => (
                               <option key={email} value={email}>{email}</option>
                           ))}
@@ -1128,4 +1163,4 @@ export default function Dashboard() {
       </footer>
     </div>
   );
-  }
+    }
