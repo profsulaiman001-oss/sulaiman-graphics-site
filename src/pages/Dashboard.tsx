@@ -43,7 +43,7 @@ export default function Dashboard() {
 
   const [unreadCounts, setUnreadCounts] = useState<{[key: string]: number}>({});
 
-  // NEW: State for mobile-friendly notification toggle and a click-outside listener
+  // Fixed: State for mobile-friendly notification drawer and a click-outside listener
   const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
 
@@ -52,7 +52,6 @@ export default function Dashboard() {
   useEffect(() => {
     checkUser();
     
-    // Close notification box if user clicks anywhere else
     function handleClickOutside(event: MouseEvent) {
       if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
         setShowNotificationDropdown(false);
@@ -76,9 +75,22 @@ export default function Dashboard() {
     fetchProfile(user.id);
     fetchProjects(user, adminStatus);
 
-    // Setup real-time notifications
+    // Fixed: Real-time notifications for status changes and inserts
     const channel = supabase
       .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'projects' },
+        (payload) => {
+          if (payload.eventType === 'UPDATE') {
+             const oldStatus = payload.old.status;
+             const newStatus = payload.new.status;
+             if (oldStatus !== newStatus) {
+                setNotifications(prev => [`Project "${payload.new.title}" status updated to ${newStatus}`, ...prev]);
+             }
+          }
+        }
+      )
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
@@ -351,6 +363,26 @@ export default function Dashboard() {
     }
   };
 
+  const handleClientApproval = async (projectId: string, decision: 'Approved' | 'Revision Requested') => {
+    try {
+      const { error } = await supabase
+        .from("projects")
+        .update({ client_approval: decision })
+        .eq("id", projectId);
+
+      if (error) throw error;
+      
+      const noteMessage = decision === 'Approved' 
+        ? "🎉 Project approved by client!" 
+        : "✍️ Client requested revisions.";
+        
+      setNotifications(prev => [noteMessage, ...prev]);
+      fetchProjects(user, isAdmin);
+    } catch (error: any) {
+      alert(error.message);
+    }
+  };
+
   const assignUser = async (projectId: string, email: string) => {
     try {
       const { error } = await supabase
@@ -506,7 +538,8 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-center gap-3 ml-auto sm:ml-0">
-            {/* FIXED: Tap-activated Notification dropdown with empty state */}
+            
+            {/* FIXED: Dynamic Sliding Drawer for Mobile Screen Widths */}
             <div className="relative" ref={notificationRef}>
               <button 
                 onClick={() => setShowNotificationDropdown(!showNotificationDropdown)}
@@ -514,7 +547,7 @@ export default function Dashboard() {
               >
                 <Bell size={18} />
                 {notifications.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-white text-xs rounded-full flex items-center justify-center font-bold">
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold animate-pulse">
                     {notifications.length}
                   </span>
                 )}
@@ -522,28 +555,50 @@ export default function Dashboard() {
               
               <AnimatePresence>
                 {showNotificationDropdown && (
-                  <motion.div 
-                    className="absolute right-0 mt-2 w-64 bg-background border border-border rounded-xl p-3 shadow-2xl z-50"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    transition={{ duration: 0.15 }}
-                  >
-                    <h4 className="font-semibold text-sm mb-2 border-b border-border pb-1 text-foreground">Notifications</h4>
-                    <div className="space-y-2 max-h-40 overflow-y-auto">
-                      {notifications.length > 0 ? (
-                        notifications.map((note, i) => (
-                          <p key={i} className="text-xs text-muted-foreground flex items-start gap-1">
-                            <span className="text-primary">•</span> {note}
+                  <>
+                    {/* Mobile Dimmed Backdrop */}
+                    <motion.div 
+                      className="fixed inset-0 bg-black/60 z-40 md:hidden"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      onClick={() => setShowNotificationDropdown(false)}
+                    />
+
+                    {/* Bottom Drawer on mobile, Dropdown box on desktop */}
+                    <motion.div 
+                      className="fixed bottom-0 left-0 right-0 w-full bg-card border-t border-border rounded-t-2xl p-4 shadow-2xl z-50 md:absolute md:top-auto md:bottom-auto md:left-auto md:right-0 md:mt-2 md:w-64 md:border md:rounded-xl md:p-3"
+                      initial={{ y: "100%", opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ y: "100%", opacity: 0 }}
+                      transition={{ duration: 0.2, ease: "easeInOut" }}
+                    >
+                      <div className="w-12 h-1 bg-border rounded-full mx-auto mb-3 md:hidden"></div>
+                      <div className="flex justify-between items-center mb-2 border-b border-border pb-1">
+                        <h4 className="font-semibold text-sm text-foreground">Notifications</h4>
+                        <button 
+                          onClick={() => setShowNotificationDropdown(false)}
+                          className="text-xs text-muted-foreground hover:text-foreground md:hidden"
+                        >
+                          Close
+                        </button>
+                      </div>
+
+                      <div className="space-y-2 max-h-64 md:max-h-40 overflow-y-auto">
+                        {notifications.length > 0 ? (
+                          notifications.map((note, i) => (
+                            <p key={i} className="text-xs text-muted-foreground flex items-start gap-1 p-1.5 hover:bg-background rounded-md transition-colors">
+                              <span className="text-primary">•</span> {note}
+                            </p>
+                          ))
+                        ) : (
+                          <p className="text-xs text-muted-foreground italic text-center py-2">
+                            No notifications yet
                           </p>
-                        ))
-                      ) : (
-                        <p className="text-xs text-muted-foreground italic text-center py-2">
-                          No notifications yet
-                        </p>
-                      )}
-                    </div>
-                  </motion.div>
+                        )}
+                      </div>
+                    </motion.div>
+                  </>
                 )}
               </AnimatePresence>
             </div>
@@ -555,7 +610,6 @@ export default function Dashboard() {
               <Settings size={18} />
             </button>
 
-            {/* FIXED: Prevented email/logout cropping on mobile with flex-shrink and min-widths */}
             <div className="flex items-center gap-2 bg-background border border-border py-1.5 pl-3 pr-1.5 rounded-full max-w-[200px] sm:max-w-none">
               <span className="text-xs font-medium text-muted-foreground truncate flex-shrink min-w-0">
                 {user?.email}
@@ -818,41 +872,75 @@ export default function Dashboard() {
                   </span>
                 </div>
 
-                <div className="bg-background border border-border rounded-xl p-3 flex items-center justify-between gap-3">
+                {/* FIXED: Premium client approval & download box */}
+                <div className="bg-background border border-border rounded-xl p-3 flex flex-col gap-3">
                   {project.file_url ? (
                     <>
-                      <span className="text-xs text-green-400 font-medium flex items-center gap-1">
-                        <CheckCircle size={12} /> Design ready
-                      </span>
-                      <button 
-                        onClick={async () => {
-                          window.open(project.file_url, '_blank');
-                          setNotifications(prev => ["Downloading your design file... Check your browser downloads!", ...prev]);
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-xs text-green-400 font-medium flex items-center gap-1">
+                          <CheckCircle size={12} /> Design ready
+                        </span>
+                        <button 
+                          onClick={async () => {
+                            window.open(project.file_url, '_blank');
+                            setNotifications(prev => ["Downloading your design file... Check your browser downloads!", ...prev]);
 
-                          try {
-                            const response = await fetch(project.file_url);
-                            const blob = await response.blob();
-                            const blobUrl = window.URL.createObjectURL(blob);
-                            
-                            const link = document.createElement('a');
-                            link.href = blobUrl;
-                            
-                            const fileName = project.file_url.split('/').pop() || 'design-file';
-                            link.download = fileName; 
-                            
-                            document.body.appendChild(link);
-                            link.click();
-                            
-                            document.body.removeChild(link);
-                            window.URL.revokeObjectURL(blobUrl);
-                          } catch (error) {
-                            console.error("Background physical save failed, but tab opened.");
-                          }
-                        }}
-                        className="text-xs bg-primary/10 hover:bg-primary text-primary hover:text-white px-3 py-1.5 rounded-lg border border-primary/30 transition-colors font-semibold flex items-center gap-1"
-                      >
-                        <Download size={12} /> View & Download
-                      </button>
+                            try {
+                              const response = await fetch(project.file_url);
+                              const blob = await response.blob();
+                              const blobUrl = window.URL.createObjectURL(blob);
+                              
+                              const link = document.createElement('a');
+                              link.href = blobUrl;
+                              
+                              const fileName = project.file_url.split('/').pop() || 'design-file';
+                              link.download = fileName; 
+                              
+                              document.body.appendChild(link);
+                              link.click();
+                              
+                              document.body.removeChild(link);
+                              window.URL.revokeObjectURL(blobUrl);
+                            } catch (error) {
+                              console.error("Background physical save failed, but tab opened.");
+                            }
+                          }}
+                          className="text-xs bg-primary/10 hover:bg-primary text-primary hover:text-white px-3 py-1.5 rounded-lg border border-primary/30 transition-colors font-semibold flex items-center gap-1"
+                        >
+                          <Download size={12} /> View & Download
+                        </button>
+                      </div>
+
+                      <div className="border-t border-border/50 pt-2 mt-1">
+                        {project.client_approval === 'Approved' ? (
+                          <div className="text-center py-1.5 bg-green-500/10 border border-green-500/20 rounded-lg text-green-500 text-xs font-bold flex items-center justify-center gap-1">
+                             <CheckCircle size={12} /> Project Approved
+                          </div>
+                        ) : project.client_approval === 'Revision Requested' ? (
+                          <div className="text-center py-1.5 bg-yellow-500/10 border border-yellow-500/20 rounded-lg text-yellow-500 text-xs font-bold flex items-center justify-center gap-1">
+                             <Edit3 size={12} /> Revisions Requested
+                          </div>
+                        ) : !isAdmin ? (
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              onClick={() => handleClientApproval(project.id, 'Revision Requested')}
+                              className="text-xs bg-background hover:bg-yellow-500/10 text-muted-foreground hover:text-yellow-500 py-2 rounded-lg border border-border hover:border-yellow-500/30 transition-colors font-semibold"
+                            >
+                              Request Changes
+                            </button>
+                            <button
+                              onClick={() => handleClientApproval(project.id, 'Approved')}
+                              className="text-xs bg-primary hover:opacity-90 text-white py-2 rounded-lg transition-opacity font-semibold"
+                            >
+                              Approve Project
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="text-center py-1.5 bg-muted rounded-lg text-muted-foreground text-xs font-medium">
+                             Waiting for client review
+                          </div>
+                        )}
+                      </div>
                     </>
                   ) : (
                     <span className="text-xs text-muted-foreground italic flex items-center gap-1">
@@ -1022,4 +1110,4 @@ export default function Dashboard() {
       </footer>
     </div>
   );
-        }
+}
