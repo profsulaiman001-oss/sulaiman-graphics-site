@@ -31,8 +31,8 @@ export default function Dashboard() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviting, setInviting] = useState(false);
 
-  // BRIGHTER ACCENTS: Shifted closer to your homepage's glowing blue
-  const COLORS = ["#2563eb", "#3b82f6", "#60a5fa", "#1d4ed8"];
+  // Synchronized color spectrum for the Pie Chart using your site's primary palette
+  const COLORS = ["#3b82f6", "#2563eb", "#1d4ed8", "#1e3a8a"];
 
   useEffect(() => {
     checkUser();
@@ -264,42 +264,42 @@ export default function Dashboard() {
 
   const statusColors: any = {
     Pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
-    "In Progress": "bg-blue-500/10 text-blue-500 border-blue-500/20",
+    "In Progress": "bg-blue-500/10 text-primary border-blue-500/20",
     Completed: "bg-green-500/10 text-green-500 border-green-500/20"
   };
 
   return (
-    // SOLID BLACK BACKGROUND: High contrast for sunlight readability
-    <div className="min-h-screen bg-black text-gray-100 flex flex-col">
-      <header className="border-b border-gray-800 bg-black/90 backdrop-blur-md sticky top-0 z-50">
+    // Synchronized Background
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
+      <header className="border-b border-border bg-background/90 backdrop-blur-md sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <h1 className="font-bold text-xl tracking-tighter bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
-              SULAIMAN GRAPHICS
+            <h1 className="font-display font-black text-xl tracking-tighter text-foreground">
+              SULAIMAN <span className="text-primary">GRAPHICS</span>
             </h1>
-            <span className="text-xs bg-gray-900 px-2 py-0.5 rounded-full border border-gray-700 text-gray-400 font-medium">
+            <span className="text-xs bg-background border border-border px-2 py-0.5 rounded-full text-muted-foreground font-medium">
               {isAdmin ? "Admin Portal" : "Client Portal"}
             </span>
           </div>
 
           <div className="flex items-center gap-3">
             <div className="relative group">
-              <button className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-900 border border-gray-700 hover:border-blue-500 transition relative">
-                <Bell size={18} className="text-gray-400" />
+              <button className="w-10 h-10 flex items-center justify-center rounded-full bg-background border border-border hover:border-primary transition relative">
+                <Bell size={18} className="text-muted-foreground group-hover:text-foreground" />
                 {notifications.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-white text-xs rounded-full flex items-center justify-center font-bold">
                     {notifications.length}
                   </span>
                 )}
               </button>
               
               {notifications.length > 0 && (
-                <div className="absolute right-0 mt-2 w-64 bg-black border border-gray-700 rounded-xl p-3 shadow-2xl opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity z-50">
-                  <h4 className="font-semibold text-sm mb-2 border-b border-gray-800 pb-1">Notifications</h4>
+                <div className="absolute right-0 mt-2 w-64 bg-background border border-border rounded-xl p-3 shadow-2xl opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity z-50">
+                  <h4 className="font-semibold text-sm mb-2 border-b border-border pb-1 text-foreground">Notifications</h4>
                   <div className="space-y-2 max-h-40 overflow-y-auto">
                     {notifications.map((note, i) => (
-                      <p key={i} className="text-xs text-gray-400 flex items-start gap-1">
-                        <span className="text-blue-500">•</span> {note}
+                      <p key={i} className="text-xs text-muted-foreground flex items-start gap-1">
+                        <span className="text-primary">•</span> {note}
                       </p>
                     ))}
                   </div>
@@ -309,18 +309,18 @@ export default function Dashboard() {
 
             <button 
               onClick={() => setIsSettingsOpen(true)}
-              className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-900 border border-gray-700 hover:border-blue-500 transition text-gray-400 hover:text-white"
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-background border border-border hover:border-primary transition text-muted-foreground hover:text-foreground"
             >
               <Settings size={18} />
             </button>
 
-            <div className="flex items-center gap-3 bg-gray-900 border border-gray-700 py-1.5 pl-3 pr-1.5 rounded-full">
-              <span className="text-xs font-medium text-gray-400 max-w-[120px] truncate">
+            <div className="flex items-center gap-3 bg-background border border-border py-1.5 pl-3 pr-1.5 rounded-full">
+              <span className="text-xs font-medium text-muted-foreground max-w-[120px] truncate">
                 {user?.email}
               </span>
               <button 
                 onClick={handleSignOut}
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-500 hover:bg-blue-600 text-white transition"
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-primary hover:opacity-90 text-white transition"
               >
                 <LogOut size={14} />
               </button>
@@ -333,7 +333,7 @@ export default function Dashboard() {
         {isSettingsOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <motion.div 
-              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+              className="absolute inset-0 bg-background/80 backdrop-blur-sm"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -341,19 +341,19 @@ export default function Dashboard() {
             />
             
             <motion.div 
-              className="bg-black border border-gray-700 rounded-2xl w-full max-w-md p-6 shadow-2xl relative z-10"
+              className="bg-card border border-border rounded-2xl w-full max-w-md p-6 shadow-2xl relative z-10"
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               transition={{ type: "spring", damping: 20 }}
             >
               <div className="flex justify-between items-center mb-5">
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Settings size={20} className="text-blue-500" /> Account Settings
+                <h2 className="text-lg font-display font-black text-foreground flex items-center gap-2">
+                  <Settings size={20} className="text-primary" /> Account Settings
                 </h2>
                 <button 
                   onClick={() => setIsSettingsOpen(false)}
-                  className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-900 border border-gray-700 hover:border-red-500 transition text-gray-500 hover:text-white"
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-background border border-border hover:border-red-500 transition text-muted-foreground hover:text-foreground"
                 >
                   <X size={16} />
                 </button>
@@ -361,23 +361,23 @@ export default function Dashboard() {
 
               <div className="space-y-4">
                 <div>
-                  <label className="text-xs text-gray-500 font-medium uppercase mb-1 block">Account Email</label>
-                  <div className="bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 text-sm text-gray-300">
+                  <label className="text-xs text-muted-foreground font-medium uppercase mb-1 block">Account Email</label>
+                  <div className="bg-background border border-border rounded-xl px-4 py-3 text-sm text-foreground">
                     {user?.email}
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-xs text-gray-500 font-medium uppercase mb-1 block">Role</label>
-                  <div className="bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 text-sm text-blue-500 font-medium">
+                  <label className="text-xs text-muted-foreground font-medium uppercase mb-1 block">Role</label>
+                  <div className="bg-background border border-border rounded-xl px-4 py-3 text-sm text-primary font-medium">
                     {isAdmin ? "Administrator" : "Client Account"}
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-gray-800 flex justify-between gap-3">
+                <div className="pt-4 border-t border-border flex justify-between gap-3">
                   <button 
                     onClick={() => setIsSettingsOpen(false)}
-                    className="flex-1 bg-gray-900 hover:bg-gray-800 text-white font-medium text-sm px-4 py-3 rounded-xl transition"
+                    className="flex-1 bg-background border border-border hover:bg-muted text-foreground font-medium text-sm px-4 py-3 rounded-xl transition"
                   >
                     Close
                   </button>
@@ -399,31 +399,32 @@ export default function Dashboard() {
         {projects.length > 0 && (
           <div className="grid gap-6 grid-cols-1 md:grid-cols-3 mb-8">
             <div className="md:col-span-1 grid grid-cols-2 gap-4">
-              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex flex-col justify-between">
-                <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">Total</span>
-                <span className="text-3xl font-bold text-white mt-2">{projects.length}</span>
+              {/* Box Synchronized with Homepage bg-card and borders */}
+              <div className="bg-card border border-border rounded-2xl p-4 flex flex-col justify-between">
+                <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Total</span>
+                <span className="text-3xl font-display font-black text-foreground mt-2">{projects.length}</span>
               </div>
-              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex flex-col justify-between">
+              <div className="bg-card border border-border rounded-2xl p-4 flex flex-col justify-between">
                 <span className="text-xs text-yellow-500/70 font-medium uppercase tracking-wider">Pending</span>
-                <span className="text-3xl font-bold text-yellow-500 mt-2">
+                <span className="text-3xl font-display font-black text-yellow-500 mt-2">
                   {projects.filter((p: any) => p.status?.toLowerCase() === "pending").length}
                 </span>
               </div>
-              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex flex-col justify-between">
-                <span className="text-xs text-blue-400 font-medium uppercase tracking-wider">Active</span>
-                <span className="text-3xl font-bold text-blue-500 mt-2">
+              <div className="bg-card border border-border rounded-2xl p-4 flex flex-col justify-between">
+                <span className="text-xs text-primary font-medium uppercase tracking-wider">Active</span>
+                <span className="text-3xl font-display font-black text-primary mt-2">
                   {projects.filter((p: any) => p.status?.toLowerCase() === "in progress").length}
                 </span>
               </div>
-              <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex flex-col justify-between">
+              <div className="bg-card border border-border rounded-2xl p-4 flex flex-col justify-between">
                 <span className="text-xs text-green-500/70 font-medium uppercase tracking-wider">Done</span>
-                <span className="text-3xl font-bold text-green-500 mt-2">
+                <span className="text-3xl font-display font-black text-green-500 mt-2">
                   {projects.filter((p: any) => p.status?.toLowerCase() === "completed").length}
                 </span>
               </div>
             </div>
 
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 h-[160px]">
+            <div className="bg-card border border-border rounded-2xl p-4 h-[160px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={getChartData()}>
                   <XAxis dataKey="name" stroke="#6b7280" fontSize={11} tickLine={false} axisLine={false} />
@@ -431,13 +432,12 @@ export default function Dashboard() {
                     contentStyle={{ background: '#000', border: '1px solid #374151', borderRadius: '8px', fontSize: '12px' }}
                     cursor={{ fill: 'rgba(255,255,255,0.02)' }}
                   />
-                  {/* CHART ACCENT: Uses the vibrant glowing blue */}
                   <Bar dataKey="value" fill="#2563eb" radius={[6, 6, 0, 0]} barSize={40} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
 
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 h-[160px] flex items-center justify-center">
+            <div className="bg-card border border-border rounded-2xl p-4 h-[160px] flex items-center justify-center">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -460,11 +460,10 @@ export default function Dashboard() {
         )}
 
         {isAdmin && (
-          // STACK ON MOBILE: Added responsive switching to prevent cutoff boxes on small screens
           <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 mb-8">
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
-              <h2 className="text-sm font-semibold text-gray-300 mb-4 flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span> Quick Create Project
+            <div className="bg-card border border-border rounded-2xl p-5">
+              <h2 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-primary rounded-full"></span> Quick Create Project
               </h2>
               <form onSubmit={createProject} className="flex flex-col gap-3">
                 <input
@@ -472,15 +471,14 @@ export default function Dashboard() {
                   placeholder="Project Title (e.g., Brand Identity)"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  className="bg-black border border-gray-700 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition text-white"
+                  className="bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition text-foreground"
                 />
                 
-                {/* STACK ON MOBILE: Dropdown and button stack on small screens */}
                 <div className="flex flex-col sm:flex-row gap-3">
                   <select
                     value={newClient}
                     onChange={(e) => setNewClient(e.target.value)}
-                    className="flex-1 bg-black border border-gray-700 rounded-xl px-4 py-3 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition text-gray-400"
+                    className="flex-1 bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition text-muted-foreground"
                   >
                     <option value="">Assign to Client</option>
                     {clientEmails.map((email: string) => (
@@ -490,7 +488,7 @@ export default function Dashboard() {
 
                   <button
                     type="submit"
-                    className="bg-blue-500 hover:bg-blue-600 text-white font-medium text-sm px-6 py-3 rounded-xl transition flex items-center justify-center gap-2 whitespace-nowrap"
+                    className="bg-primary hover:opacity-90 text-white font-medium text-sm px-6 py-3 rounded-xl transition flex items-center justify-center gap-2 whitespace-nowrap"
                   >
                     <Plus size={16} /> Create
                   </button>
@@ -498,8 +496,8 @@ export default function Dashboard() {
               </form>
             </div>
 
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
-              <h2 className="text-sm font-semibold text-gray-300 mb-4 flex items-center gap-2">
+            <div className="bg-card border border-border rounded-2xl p-5">
+              <h2 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Onboard New Client
               </h2>
               <form onSubmit={handleOnboardClient} className="flex flex-col sm:flex-row gap-3">
@@ -508,12 +506,12 @@ export default function Dashboard() {
                   placeholder="Client Email Address"
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
-                  className="bg-black border border-gray-700 rounded-xl px-4 py-3 text-sm focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none transition text-white flex-1"
+                  className="bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none transition text-foreground flex-1"
                 />
                 <button
                   type="submit"
                   disabled={inviting}
-                  className="bg-black border border-gray-700 hover:border-green-500 hover:text-green-500 text-gray-300 font-medium text-sm px-6 py-3 rounded-xl transition flex items-center justify-center gap-2 whitespace-nowrap"
+                  className="bg-background border border-border hover:border-green-500 hover:text-green-500 text-muted-foreground font-medium text-sm px-6 py-3 rounded-xl transition flex items-center justify-center gap-2 whitespace-nowrap"
                 >
                   {inviting ? (
                     <Loader2 size={16} className="animate-spin" />
@@ -529,22 +527,21 @@ export default function Dashboard() {
         )}
 
         <div className="flex justify-between items-center mb-5">
-          <h2 className="font-bold text-lg">Active Projects</h2>
-          {loading && <Loader2 size={18} className="text-blue-500 animate-spin" />}
+          <h2 className="font-display font-black text-xl text-foreground">Active Projects</h2>
+          {loading && <Loader2 size={18} className="text-primary animate-spin" />}
         </div>
 
         {projects.length === 0 && !loading ? (
-          <div className="text-center py-16 bg-gray-900 border border-gray-800 border-dashed rounded-3xl">
-            {/* NO PROJECTS DISPLAY: I preserved the base for No. 1 feature here */}
-            <div className="text-gray-400 text-sm mb-2">No projects found.</div>
-            <p className="text-xs text-gray-600">When projects are created or assigned, they will appear here.</p>
+          <div className="text-center py-16 bg-card border border-border border-dashed rounded-3xl">
+            <div className="text-muted-foreground text-sm mb-2">No projects found.</div>
+            <p className="text-xs text-muted-foreground">When projects are created or assigned, they will appear here.</p>
           </div>
         ) : (
           <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {projects.map((project: any, index) => (
               <motion.div 
                 key={project.id} 
-                className="bg-gray-900 border border-gray-800 rounded-3xl p-6 flex flex-col gap-5 hover:border-blue-500/30 hover:shadow-[0_8px_30px_rgba(59,130,246,0.05)] transition-all group relative overflow-hidden"
+                className="bg-card border border-border rounded-3xl p-6 flex flex-col gap-5 hover:border-primary/30 hover:shadow-[0_8px_30px_rgba(59,130,246,0.05)] transition-all group relative overflow-hidden"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 * index }}
@@ -556,15 +553,15 @@ export default function Dashboard() {
                       <input
                         value={editTitle}
                         onChange={(e) => setEditTitle(e.target.value)}
-                        className="p-3 rounded-lg w-full bg-black border border-blue-500 focus:ring-1 focus:ring-blue-500 text-white font-medium mb-1"
+                        className="p-3 rounded-lg w-full bg-background border border-primary focus:ring-1 focus:ring-primary text-foreground font-medium mb-1"
                         autoFocus
                       />
                     ) : (
-                      <h3 className="font-semibold text-lg tracking-tight line-clamp-2 leading-tight group-hover:text-blue-400 transition-colors">
+                      <h3 className="font-bold text-lg tracking-tight line-clamp-2 leading-tight text-foreground group-hover:text-primary transition-colors">
                         {project.title}
                       </h3>
                     )}
-                    <p className="text-xs text-gray-400 tracking-wide break-all mt-1 flex items-center gap-1.5">
+                    <p className="text-xs text-muted-foreground tracking-wide break-all mt-1 flex items-center gap-1.5">
                       👤 {project.client_email || "Unassigned"}
                     </p>
                   </div>
@@ -574,7 +571,7 @@ export default function Dashboard() {
                   </span>
                 </div>
 
-                <div className="bg-black border border-gray-800 rounded-xl p-3 flex items-center justify-between gap-3">
+                <div className="bg-background border border-border rounded-xl p-3 flex items-center justify-between gap-3">
                   {project.file_url ? (
                     <>
                       <span className="text-xs text-green-400 font-medium flex items-center gap-1">
@@ -605,25 +602,25 @@ export default function Dashboard() {
                             console.error("Background physical save failed, but tab opened.");
                           }
                         }}
-                        className="text-xs bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white px-3 py-1.5 rounded-lg border border-blue-500/30 transition-colors font-semibold flex items-center gap-1"
+                        className="text-xs bg-primary/10 hover:bg-primary text-primary hover:text-white px-3 py-1.5 rounded-lg border border-primary/30 transition-colors font-semibold flex items-center gap-1"
                       >
                         <Download size={12} /> View & Download
                       </button>
                     </>
                   ) : (
-                    <span className="text-xs text-gray-500 italic flex items-center gap-1">
+                    <span className="text-xs text-muted-foreground italic flex items-center gap-1">
                       <Clock size={12} /> No files attached yet
                     </span>
                   )}
                 </div>
 
-                <div className="mt-auto pt-5 border-t border-gray-800 flex flex-wrap justify-between items-center gap-3">
+                <div className="mt-auto pt-5 border-t border-border flex flex-wrap justify-between items-center gap-3">
                   
                   <div className="flex gap-2 flex-wrap">
                       <select
                           value={project.status}
                           onChange={(e) => updateStatus(project.id, e.target.value)}
-                          className="bg-black border border-gray-700 text-gray-300 text-xs rounded-lg px-2.5 py-1.5 focus:border-blue-500 transition"
+                          className="bg-background border border-border text-foreground text-xs rounded-lg px-2.5 py-1.5 focus:border-primary transition"
                       >
                           <option value="Pending">Pending</option>
                           <option value="In Progress">In Progress</option>
@@ -634,7 +631,7 @@ export default function Dashboard() {
                           <select
                           value={project.client_email || ""}
                           onChange={(e) => assignUser(project.id, e.target.value)}
-                          className="bg-black border border-gray-700 text-gray-300 text-xs rounded-lg px-2.5 py-1.5 focus:border-blue-500 transition"
+                          className="bg-background border border-border text-foreground text-xs rounded-lg px-2.5 py-1.5 focus:border-primary transition"
                           >
                           <option value="">Client Assign</option>
                           {clientEmails.map((email: string) => (
@@ -647,17 +644,17 @@ export default function Dashboard() {
                   <div className="flex gap-2.5 ml-auto">
                     {editingId === project.id ? (
                       <>
-                        <button onClick={saveEdit} className="w-9 h-9 flex items-center justify-center rounded-lg border border-green-700 text-green-500 bg-black hover:bg-green-600/10 hover:border-green-600 transition">
+                        <button onClick={saveEdit} className="w-9 h-9 flex items-center justify-center rounded-lg border border-green-700 text-green-500 bg-background hover:bg-green-600/10 hover:border-green-600 transition">
                           <Save size={16}/>
                         </button>
-                        <button onClick={() => setEditingId(null)} className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-700 text-gray-400 bg-black hover:bg-gray-800 hover:border-gray-600 transition">
+                        <button onClick={() => setEditingId(null)} className="w-9 h-9 flex items-center justify-center rounded-lg border border-border text-muted-foreground bg-background hover:bg-card hover:border-border transition">
                           <XCircle size={16}/>
                         </button>
                       </>
                     ) : (
                       <>
                         {isAdmin && (
-                          <label className="w-9 h-9 flex items-center justify-center rounded-lg border border-blue-700/60 text-blue-400 bg-black hover:bg-blue-500/10 hover:border-blue-500 transition cursor-pointer">
+                          <label className="w-9 h-9 flex items-center justify-center rounded-lg border border-blue-700/60 text-primary bg-background hover:bg-primary/10 hover:border-primary transition cursor-pointer">
                             <input
                               type="file"
                               className="hidden"
@@ -671,11 +668,11 @@ export default function Dashboard() {
                           </label>
                         )}
                         
-                        <button onClick={() => startEdit(project)} className="w-9 h-9 flex items-center justify-center rounded-lg border border-yellow-700/60 text-yellow-500 bg-black hover:bg-yellow-600/10 hover:border-yellow-600 transition">
+                        <button onClick={() => startEdit(project)} className="w-9 h-9 flex items-center justify-center rounded-lg border border-yellow-700/60 text-yellow-500 bg-background hover:bg-yellow-600/10 hover:border-yellow-600 transition">
                           <Edit3 size={16}/>
                         </button>
                         
-                        <button onClick={() => handleDelete(project.id)} className="w-9 h-9 flex items-center justify-center rounded-lg border border-red-700/60 text-red-500 bg-black hover:bg-red-600/10 hover:border-red-600 transition">
+                        <button onClick={() => handleDelete(project.id)} className="w-9 h-9 flex items-center justify-center rounded-lg border border-red-700/60 text-red-500 bg-background hover:bg-red-600/10 hover:border-red-600 transition">
                           <Trash2 size={16}/>
                         </button>
                       </>
@@ -688,11 +685,11 @@ export default function Dashboard() {
         )}
       </main>
 
-      <footer className="border-t border-gray-800 py-6 mt-auto">
-        <div className="container mx-auto px-4 text-center text-xs text-gray-600">
+      <footer className="border-t border-border py-6 mt-auto">
+        <div className="container mx-auto px-4 text-center text-xs text-muted-foreground">
           © {new Date().getFullYear()} Sulaiman Graphics. All rights reserved.
         </div>
       </footer>
     </div>
   );
-  }
+                 }
