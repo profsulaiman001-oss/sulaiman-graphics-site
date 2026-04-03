@@ -1,6 +1,6 @@
 import { Resend } from 'resend';
 
-// Initialize with the API key you just generated
+// Initialize with the API key you generated
 const resend = new Resend('re_h8wHRzfM_BoqUueRK5jcVB6CUvEHypgTe');
 
 export default async function handler(req: any, res: any) {
@@ -12,7 +12,8 @@ export default async function handler(req: any, res: any) {
 
   try {
     const data = await resend.emails.send({
-      from: 'Design Portal <onboarding@resend.dev>', // If you have a verified domain, replace this with yours!
+      // We replaced the default onboarding email with your active custom domain!
+      from: 'Sulaiman Graphics <hello@sulaimangraphics.com.ng>',
       to: [clientEmail],
       subject: `Your design asset for "${projectTitle}" is ready!`,
       html: `
@@ -24,7 +25,7 @@ export default async function handler(req: any, res: any) {
           <div style="margin: 25px 0;">
             <a href="https://sulaimangraphics.com.ng" style="background: #2563eb; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">View Dashboard</a>
           </div>
-          <p style="font-size: 12px; color: #666;">If the button doesn't work, copy and paste this link to your browser: https://sulaimangraphics.com.ng</p>
+          <p style="font-size: 12px; color: #666;">If the button doesn't work, copy and paste this link into your browser: https://sulaimangraphics.com.ng</p>
         </div>
       `,
     });
