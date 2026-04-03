@@ -2,13 +2,9 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/Button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/components/ui/use-toast";
 
 export default function CreatePost() {
   const [, setLocation] = useLocation();
-  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   
   const [title, setTitle] = useState("");
@@ -27,19 +23,12 @@ export default function CreatePost() {
 
       if (error) throw error;
 
-      toast({
-        title: "Success!",
-        description: "Your post has been published.",
-      });
+      alert("Success! Your post has been published.");
       
-      // Send the user back to the dashboard or home
+      // Send the user back to the dashboard
       setLocation("/dashboard");
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Something went wrong",
-        variant: "destructive",
-      });
+      alert("Error: " + (error.message || "Something went wrong"));
     } finally {
       setLoading(false);
     }
@@ -57,12 +46,12 @@ export default function CreatePost() {
           <label className="block text-sm font-medium text-foreground mb-2">
             Post Title
           </label>
-          <Input
+          <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g., Behind the Scenes: Rebranding XYZ Agency"
             required
-            className="bg-card border-border"
+            className="w-full p-3 rounded-lg bg-card border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
 
@@ -71,11 +60,11 @@ export default function CreatePost() {
           <label className="block text-sm font-medium text-foreground mb-2">
             Image URL
           </label>
-          <Input
+          <input
             value={imageUrl}
             onChange={(e) => setImageUrl(e.target.value)}
             placeholder="Paste your image link here"
-            className="bg-card border-border"
+            className="w-full p-3 rounded-lg bg-card border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           />
           <p className="text-xs text-muted-foreground mt-1">
             Tip: You can use a direct link to an image for now!
@@ -87,13 +76,13 @@ export default function CreatePost() {
           <label className="block text-sm font-medium text-foreground mb-2">
             Story / Content
           </label>
-          <Textarea
+          <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="Tell the story behind your design..."
             required
             rows={10}
-            className="bg-card border-border leading-relaxed"
+            className="w-full p-3 rounded-lg bg-card border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary leading-relaxed"
           />
         </div>
 
