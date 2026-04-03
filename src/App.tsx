@@ -28,6 +28,10 @@ import SetPassword from "@/pages/SetPassword";
 // ── ✅ ADDED: Import for your brand new posting page ──
 import CreatePost from "@/pages/CreatePost";
 
+// ── ✅ ADDED: Imports for your new public blog pages ──
+import Blog from "@/pages/Blog";
+import BlogPost from "@/pages/BlogPost";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -94,6 +98,10 @@ function Router() {
           
           {/* ── ADDED: Public endpoint for clients clicking the link ── */}
           <Route path="/set-password" component={SetPassword} />
+
+          {/* ── ✅ ADDED: Public routes for reading blog posts ── */}
+          <Route path="/blog" component={Blog} />
+          <Route path="/blog/:id" component={BlogPost} />
 
           {/* AUTH ROUTES */}
           <Route path="/login" component={Login} />
