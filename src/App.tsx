@@ -32,6 +32,9 @@ import CreatePost from "@/pages/CreatePost";
 import Blog from "@/pages/Blog";
 import BlogPost from "@/pages/BlogPost";
 
+// ── ✅ ADDED: Import for your new Questionnaire page ──
+import Questionnaire from "@/pages/Questionnaire";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -102,6 +105,9 @@ function Router() {
           {/* ── ✅ ADDED: Public routes for reading blog posts ── */}
           <Route path="/blog" component={Blog} />
           <Route path="/blog/:id" component={BlogPost} />
+
+          {/* ── ✅ ADDED: Public route for the Questionnaire ── */}
+          <Route path="/questionnaire" component={Questionnaire} />
 
           {/* AUTH ROUTES */}
           <Route path="/login" component={Login} />
