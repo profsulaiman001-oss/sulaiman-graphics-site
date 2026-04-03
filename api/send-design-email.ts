@@ -1,7 +1,7 @@
 import { Resend } from 'resend';
 
-// Initialize with the API key you generated
-const resend = new Resend('re_h8wHRzfM_BoqUueRK5jcVB6CUvEHypgTe');
+// This pulls the key safely from your environment variables instead of hardcoding it.
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
@@ -12,7 +12,6 @@ export default async function handler(req: any, res: any) {
 
   try {
     const data = await resend.emails.send({
-      // We replaced the default onboarding email with your active custom domain!
       from: 'Sulaiman Graphics <hello@sulaimangraphics.com.ng>',
       to: [clientEmail],
       subject: `Your design asset for "${projectTitle}" is ready!`,
