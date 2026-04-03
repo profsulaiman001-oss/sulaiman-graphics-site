@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from " f|ramer-motion";
 import { ArrowLeft, ArrowRight, Send, CheckCircle, Loader2, ClipboardList } from "lucide-react";
 
 export default function Questionnaire() {
@@ -33,13 +33,27 @@ export default function Questionnaire() {
   const nextStep = () => setStep(prev => prev + 1);
   const prevStep = () => setStep(prev => prev - 1);
 
+  // PREVENT ENTER KEY AUTO-SUBMIT
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
+    if (e.key === "Enter" && step < 4) {
+      e.preventDefault();
+      // If valid, move them to the next step on enter
+      const isStep1Valid = step === 1 && formData.client_name && formData.client_email;
+      const isStep2Valid = step === 2 && formData.project_type && formData.project_goal;
+      
+      if (step === 1 && isStep1Valid) nextStep();
+      if (step === 2 && isStep2Valid) nextStep();
+      if (step === 3) nextStep();
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
       const { error } = await supabase
-        .from("project_questionnaires")
+        .from("project_questionnaires") // Keeping this as your database table
         .insert([formData]);
 
       if (error) throw error;
@@ -109,7 +123,11 @@ export default function Questionnaire() {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="bg-card border border-border rounded-2xl p-6 md:p-8 shadow-xl">
+          <form 
+            onSubmit={handleSubmit} 
+            onKeyDown={handleKeyDown} 
+            className="bg-card border border-border rounded-2xl p-6 md:p-8 shadow-xl"
+          >
             <AnimatePresence mode="wait">
               
               {/* STEP 1: Basic Info */}
@@ -328,7 +346,7 @@ export default function Questionnaire() {
                   <ArrowLeft size={16} /> Back
                 </button>
               ) : (
-                <div></div> /* Empty div to push next button to the right */
+                <div></div>
               )}
 
               {step < 4 ? (
