@@ -20,7 +20,11 @@ export default function Dashboard() {
   const [projects, setProjects] = useState([]);
   
   const [clientEmails, setClientEmails] = useState<string[]>([]);
+  
+  // Handled notification states
   const [notifications, setNotifications] = useState<string[]>([]);
+  const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
+  const notificationRef = useRef<HTMLDivElement>(null);
   
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
@@ -43,16 +47,11 @@ export default function Dashboard() {
 
   const [unreadCounts, setUnreadCounts] = useState<{[key: string]: number}>({});
 
-  // NEW: State for mobile-friendly notification toggle and a click-outside listener
-  const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
-  const notificationRef = useRef<HTMLDivElement>(null);
-
   const COLORS = ["#3b82f6", "#2563eb", "#1d4ed8", "#1e3a8a"];
 
   useEffect(() => {
     checkUser();
     
-    // Close notification box if user clicks anywhere else
     function handleClickOutside(event: MouseEvent) {
       if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
         setShowNotificationDropdown(false);
@@ -76,14 +75,16 @@ export default function Dashboard() {
     fetchProfile(user.id);
     fetchProjects(user, adminStatus);
 
-    // Setup real-time notifications
+    // Dynamic real-time channel watching both inserts AND updates
     const channel = supabase
       .channel('schema-db-changes')
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
+        { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
         (payload) => {
-          setNotifications(prev => [payload.new.message, ...prev]);
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            setNotifications(prev => [payload.new.message || "Status updated", ...prev]);
+          }
         }
       )
       .subscribe();
@@ -133,7 +134,7 @@ export default function Dashboard() {
         query = query.eq("client_email", currentUser.email);
       }
       
-      const { data, error } = await query;
+      const { data, error } = query;
       if (error) throw error;
       
       const projectsData = data || [];
@@ -345,6 +346,9 @@ export default function Dashboard() {
         .eq("id", projectId);
 
       if (error) throw error;
+      
+      // Fallback local trigger for visual feedback immediately
+      setNotifications(prev => [`Project status shifted to: ${status}`, ...prev]);
       fetchProjects(user, isAdmin);
     } catch (error: any) {
       alert(error.message);
@@ -506,7 +510,7 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-center gap-3 ml-auto sm:ml-0">
-            {/* FIXED: Tap-activated Notification dropdown with empty state */}
+            {/* FIXED: Dropdown aligned cleanly to the right side of the bell */}
             <div className="relative" ref={notificationRef}>
               <button 
                 onClick={() => setShowNotificationDropdown(!showNotificationDropdown)}
@@ -514,7 +518,7 @@ export default function Dashboard() {
               >
                 <Bell size={18} />
                 {notifications.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-white text-xs rounded-full flex items-center justify-center font-bold">
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold animate-pulse">
                     {notifications.length}
                   </span>
                 )}
@@ -523,17 +527,17 @@ export default function Dashboard() {
               <AnimatePresence>
                 {showNotificationDropdown && (
                   <motion.div 
-                    className="absolute right-0 mt-2 w-64 bg-background border border-border rounded-xl p-3 shadow-2xl z-50"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
+                    className="absolute right-0 mt-2 w-64 bg-card border border-border rounded-xl p-3 shadow-2xl z-50 origin-top-right"
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     transition={{ duration: 0.15 }}
                   >
                     <h4 className="font-semibold text-sm mb-2 border-b border-border pb-1 text-foreground">Notifications</h4>
                     <div className="space-y-2 max-h-40 overflow-y-auto">
                       {notifications.length > 0 ? (
                         notifications.map((note, i) => (
-                          <p key={i} className="text-xs text-muted-foreground flex items-start gap-1">
+                          <p key={i} className="text-xs text-muted-foreground flex items-start gap-1 p-1.5 hover:bg-background rounded-md transition-colors">
                             <span className="text-primary">•</span> {note}
                           </p>
                         ))
@@ -555,7 +559,6 @@ export default function Dashboard() {
               <Settings size={18} />
             </button>
 
-            {/* FIXED: Prevented email/logout cropping on mobile with flex-shrink and min-widths */}
             <div className="flex items-center gap-2 bg-background border border-border py-1.5 pl-3 pr-1.5 rounded-full max-w-[200px] sm:max-w-none">
               <span className="text-xs font-medium text-muted-foreground truncate flex-shrink min-w-0">
                 {user?.email}
@@ -861,7 +864,6 @@ export default function Dashboard() {
                   )}
                 </div>
 
-                {/* Collapsible Interactive Comments Area */}
                 <div className="border-t border-border pt-4">
                   <button 
                     onClick={() => toggleComments(project.id)}
@@ -1022,4 +1024,4 @@ export default function Dashboard() {
       </footer>
     </div>
   );
-    }
+                                                                       }
