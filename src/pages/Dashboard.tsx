@@ -34,7 +34,6 @@ export default function Dashboard() {
   const [fullName, setFullName] = useState("");
   const [showNamePrompt, setShowNamePrompt] = useState(false);
   const [submittingName, setSubmittingName] = useState(false);
-
   // Comments states
   const [openCommentsId, setOpenCommentsId] = useState<string | null>(null);
   const [comments, setComments] = useState<any[]>([]);
@@ -42,7 +41,6 @@ export default function Dashboard() {
   const [sendingComment, setSendingComment] = useState(false);
 
   const [unreadCounts, setUnreadCounts] = useState<{[key: string]: number}>({});
-
   // Fixed: State for mobile-friendly notification drawer and a click-outside listener
   const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
@@ -68,7 +66,6 @@ export default function Dashboard() {
       return;
     }
     setUser(user);
-    
     const adminStatus = user.email === "profsulaiman001@gmail.com";
     setIsAdmin(adminStatus);
     
@@ -111,7 +108,6 @@ export default function Dashboard() {
       .select("full_name")
       .eq("id", userId)
       .single();
-
     if (data && data.full_name) {
       setFullName(data.full_name);
     } else if (!isAdmin) {
@@ -126,7 +122,6 @@ export default function Dashboard() {
       const { error } = await supabase
         .from("profiles")
         .upsert({ id: user.id, full_name: fullName.trim(), updated_at: new Date() });
-
       if (error) throw error;
       setShowNamePrompt(false);
     } catch (error: any) {
@@ -150,7 +145,6 @@ export default function Dashboard() {
       
       const projectsData = data || [];
       setProjects(projectsData);
-
       const uniqueEmails = [
         ...new Set(projectsData.map((p: any) => p.client_email).filter(Boolean))
       ] as string[];
@@ -173,7 +167,6 @@ export default function Dashboard() {
       .select("project_id, is_admin")
       .in("project_id", projectIds)
       .eq("is_read", false);
-
     if (!error && data) {
       const counts: {[key: string]: number} = {};
       data.forEach((msg: any) => {
@@ -193,7 +186,6 @@ export default function Dashboard() {
       .select("*")
       .eq("project_id", projectId)
       .order("created_at", { ascending: true });
-
     if (!error && data) {
       setComments(data);
     }
@@ -206,7 +198,6 @@ export default function Dashboard() {
       .eq("project_id", projectId)
       .eq("is_read", false)
       .eq("is_admin", !isAdmin);
-
     if (!error) {
       setUnreadCounts(prev => ({ ...prev, [projectId]: 0 }));
     }
@@ -266,7 +257,6 @@ export default function Dashboard() {
         is_admin: isAdmin,
         is_read: false
       }]);
-
     if (!error) {
       setNewComment("");
       fetchComments(projectId);
@@ -287,7 +277,6 @@ export default function Dashboard() {
         status: "Pending",
         client_email: newClient
       }]);
-
       if (error) throw error;
       
       setNewTitle("");
@@ -312,7 +301,6 @@ export default function Dashboard() {
         },
         body: JSON.stringify({ email: inviteEmail }),
       });
-
       const result = await response.json();
 
       if (!response.ok) {
@@ -340,7 +328,6 @@ export default function Dashboard() {
         .from("projects")
         .update({ title: editTitle })
         .eq("id", editingId);
-
       if (error) throw error;
       setEditingId(null);
       fetchProjects(user, isAdmin);
@@ -355,7 +342,6 @@ export default function Dashboard() {
         .from("projects")
         .update({ status })
         .eq("id", projectId);
-
       if (error) throw error;
       fetchProjects(user, isAdmin);
     } catch (error: any) {
@@ -369,7 +355,6 @@ export default function Dashboard() {
         .from("projects")
         .update({ client_approval: decision })
         .eq("id", projectId);
-
       if (error) throw error;
       
       const noteMessage = decision === 'Approved' 
@@ -389,7 +374,6 @@ export default function Dashboard() {
         .from("projects")
         .update({ client_email: email })
         .eq("id", projectId);
-
       if (error) throw error;
       fetchProjects(user, isAdmin);
     } catch (error: any) {
@@ -399,7 +383,6 @@ export default function Dashboard() {
 
   const handleDelete = async (projectId: string) => {
     if (!confirm("Are you sure you want to delete this project?")) return;
-    
     try {
       const { error } = await supabase.from("projects").delete().eq("id", projectId);
       if (error) throw error;
@@ -418,6 +401,22 @@ export default function Dashboard() {
     try {
       setLoading(true);
 
+      // 1. LIMIT FILE SIZE (5MB max)
+      const maxFileSize = 5 * 1024 * 1024; 
+      if (file.size > maxFileSize) {
+        alert("File is too large! Please keep files under 5MB to save storage space.");
+        setLoading(false);
+        return;
+      }
+
+      // 2. LIMIT FILE TYPES
+      const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'application/pdf'];
+      if (!allowedTypes.includes(file.type)) {
+        alert("Unsupported file type! Please upload only PNG, JPG, WEBP, or PDF files.");
+        setLoading(false);
+        return;
+      }
+
       const fileExt = file.name.split('.').pop();
       const fileName = `${projectId}-${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
@@ -434,6 +433,9 @@ export default function Dashboard() {
 
       const publicUrl = urlData.publicUrl;
 
+      // Find the project object to get the client email and title
+      const targetProject = projects.find((p: any) => p.id === projectId);
+
       const { error: updateError } = await supabase
         .from('projects')
         .update({ file_url: publicUrl })
@@ -441,7 +443,24 @@ export default function Dashboard() {
 
       if (updateError) throw updateError;
 
-      setNotifications(prev => ["Design file uploaded successfully!", ...prev]);
+      // 3. TRIGGER AUTOMATED EMAIL
+      if (targetProject && targetProject.client_email) {
+        try {
+          await fetch('/api/send-design-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              clientEmail: targetProject.client_email,
+              projectTitle: targetProject.title,
+              fileUrl: publicUrl
+            })
+          });
+        } catch (emailErr) {
+          console.error("Email failed to trigger, but file saved successfully.");
+        }
+      }
+
+      setNotifications(prev => ["Design file uploaded and client notified!", ...prev]);
       fetchProjects(user, isAdmin);
     } catch (error: any) {
       alert(error.message || "Error uploading file");
@@ -454,7 +473,6 @@ export default function Dashboard() {
     const pending = projects.filter((p: any) => p.status?.toLowerCase() === "pending").length;
     const inProgress = projects.filter((p: any) => p.status?.toLowerCase() === "in progress").length;
     const completed = projects.filter((p: any) => p.status?.toLowerCase() === "completed").length;
-
     return [
       { name: "Pending", value: pending },
       { name: "In Progress", value: inProgress },
@@ -937,7 +955,7 @@ export default function Dashboard() {
                           </div>
                         ) : (
                           <div className="text-center py-1.5 bg-muted rounded-lg text-muted-foreground text-xs font-medium">
-                             Waiting for client review
+                            Waiting for client review
                           </div>
                         )}
                       </div>
@@ -1051,7 +1069,7 @@ export default function Dashboard() {
                           onChange={(e) => assignUser(project.id, e.target.value)}
                           className="bg-background border border-border text-foreground text-xs rounded-lg px-2.5 py-1.5 focus:border-primary transition"
                           >
-                          <option value="">Client Assign</option>
+                              <option value="">Client Assign</option>
                           {clientEmails.map((email: string) => (
                               <option key={email} value={email}>{email}</option>
                           ))}
@@ -1110,4 +1128,4 @@ export default function Dashboard() {
       </footer>
     </div>
   );
-}
+  }
