@@ -8,7 +8,7 @@ import {
 } from "recharts";
 import { 
   Edit3, Trash2, Save, XCircle, Bell, LogOut, CheckCircle, 
-  Clock, Loader2, Plus, HardDrive, Download, Settings, X, Mail, UserCheck
+  Clock, Loader2, Plus, HardDrive, Download, Settings, X, Mail, UserCheck, MessageSquare, Send
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -31,10 +31,15 @@ export default function Dashboard() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviting, setInviting] = useState(false);
 
-  // NEW: Profile states for naming the user
   const [fullName, setFullName] = useState("");
   const [showNamePrompt, setShowNamePrompt] = useState(false);
   const [submittingName, setSubmittingName] = useState(false);
+
+  // NEW: State for tracking which project's comment section is open and typing state
+  const [openCommentsId, setOpenCommentsId] = useState<string | null>(null);
+  const [comments, setComments] = useState<any[]>([]);
+  const [newComment, setNewComment] = useState("");
+  const [sendingComment, setSendingComment] = useState(false);
 
   const COLORS = ["#3b82f6", "#2563eb", "#1d4ed8", "#1e3a8a"];
 
@@ -53,9 +58,7 @@ export default function Dashboard() {
     const adminStatus = user.email === "profsulaiman001@gmail.com";
     setIsAdmin(adminStatus);
     
-    // Fetch profile name
     fetchProfile(user.id);
-    
     fetchProjects(user, adminStatus);
 
     const channel = supabase
@@ -84,7 +87,6 @@ export default function Dashboard() {
     if (data && data.full_name) {
       setFullName(data.full_name);
     } else if (!isAdmin) {
-      // If client has no name set yet, show the popup modal
       setShowNamePrompt(true);
     }
   };
@@ -131,6 +133,51 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // NEW: Fetch comments for a specific project
+  const fetchComments = async (projectId: string) => {
+    const { data, error } = await supabase
+      .from("comments")
+      .select("*")
+      .eq("project_id", projectId)
+      .order("created_at", { ascending: true });
+
+    if (!error && data) {
+      setComments(data);
+    }
+  };
+
+  // NEW: Toggle comments tray and fetch data
+  const toggleComments = (projectId: string) => {
+    if (openCommentsId === projectId) {
+      setOpenCommentsId(null);
+      setComments([]);
+    } else {
+      setOpenCommentsId(projectId);
+      fetchComments(projectId);
+    }
+  };
+
+  // NEW: Send a message to the database
+  const sendComment = async (projectId: string) => {
+    if (!newComment.trim() || !user) return;
+    
+    setSendingComment(true);
+    const { error } = await supabase
+      .from("comments")
+      .insert([{
+        project_id: projectId,
+        user_id: user.id,
+        message: newComment.trim(),
+        is_admin: isAdmin
+      }]);
+
+    if (!error) {
+      setNewComment("");
+      fetchComments(projectId);
+    }
+    setSendingComment(false);
   };
 
   const createProject = async (e: React.FormEvent) => {
@@ -310,7 +357,6 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       
-      {/* NEW: Onboarding Pop-up for Missing Name */}
       <AnimatePresence>
         {showNamePrompt && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
@@ -491,7 +537,6 @@ export default function Dashboard() {
 
       <main className="container mx-auto px-4 py-8 flex-1">
         
-        {/* NEW: Dynamic Welcome Header */}
         <div className="mb-8">
           <h1 className="font-display font-black text-3xl sm:text-4xl text-foreground">
             {fullName ? `Hello, ${fullName}!` : "Hello, Client!"}
@@ -643,11 +688,10 @@ export default function Dashboard() {
             {projects.map((project: any, index) => (
               <motion.div 
                 key={project.id} 
-                className="bg-card border border-border rounded-3xl p-6 flex flex-col gap-5 hover:border-primary/30 hover:shadow-[0_8px_30px_rgba(59,130,246,0.05)] transition-all group relative overflow-hidden"
+                className="bg-card border border-border rounded-3xl p-6 flex flex-col gap-5 hover:border-primary/30 hover:shadow-[0_8px_30px_rgba(59,130,246,0.05)] transition-all group relative"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 * index }}
-                whileHover={{ y: -5 }}
               >
                 <div className="flex justify-between items-start gap-4">
                   <div className="flex-1">
@@ -716,8 +760,84 @@ export default function Dashboard() {
                   )}
                 </div>
 
-                <div className="mt-auto pt-5 border-t border-border flex flex-wrap justify-between items-center gap-3">
-                  
+                {/* NEW: Collapsible Interactive Comments Area */}
+                <div className="border-t border-border pt-4">
+                  <button 
+                    onClick={() => toggleComments(project.id)}
+                    className="flex items-center justify-between w-full text-xs text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <MessageSquare size={14} /> 
+                      {openCommentsId === project.id ? "Hide Discussion" : "Request Changes / Chat"}
+                    </span>
+                    <span className="text-[10px] bg-background border border-border px-1.5 py-0.5 rounded-full">
+                      Tap to open
+                    </span>
+                  </button>
+
+                  <AnimatePresence>
+                    {openCommentsId === project.id && (
+                      <motion.div 
+                        className="mt-3 space-y-3"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <div className="max-h-40 overflow-y-auto space-y-2 bg-background/50 p-2 rounded-lg border border-border">
+                          {comments.length === 0 ? (
+                            <div className="text-[11px] text-muted-foreground text-center py-2">No messages yet. Start the thread below!</div>
+                          ) : (
+                            comments.map((msg) => (
+                              <div 
+                                key={msg.id} 
+                                className={`p-2 rounded-lg text-xs max-w-[85%] ${
+                                  msg.is_admin 
+                                    ? "bg-primary/10 border border-primary/20 ml-auto text-foreground" 
+                                    : "bg-muted border border-border text-foreground"
+                                }`}
+                              >
+                                <div className="flex justify-between items-center gap-2 mb-0.5">
+                                  <span className={`font-bold text-[10px] uppercase ${msg.is_admin ? "text-primary" : "text-muted-foreground"}`}>
+                                    {msg.is_admin ? "Sulaiman" : "Client"}
+                                  </span>
+                                  <span className="text-[9px] text-muted-foreground">
+                                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                </div>
+                                <p className="leading-snug">{msg.message}</p>
+                              </div>
+                            ))
+                          )}
+                        </div>
+
+                        <div className="flex gap-2">
+                          <input 
+                            type="text"
+                            placeholder="Type a message..."
+                            value={newComment}
+                            onChange={(e) => setNewComment(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && sendComment(project.id)}
+                            className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-xs focus:border-primary focus:ring-1 focus:ring-primary outline-none text-foreground"
+                          />
+                          <button
+                            onClick={() => sendComment(project.id)}
+                            disabled={sendingComment || !newComment.trim()}
+                            className="bg-primary hover:opacity-90 disabled:opacity-50 w-9 h-9 flex items-center justify-center rounded-lg text-white transition-colors"
+                          >
+                            {sendingComment ? (
+                              <Loader2 size={12} className="animate-spin" />
+                            ) : (
+                              <Send size={12} />
+                            )}
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                <div className="mt-auto pt-4 border-t border-border flex flex-wrap justify-between items-center gap-3">
                   <div className="flex gap-2 flex-wrap">
                       <select
                           value={project.status}
@@ -794,4 +914,4 @@ export default function Dashboard() {
       </footer>
     </div>
   );
-  }
+      }
