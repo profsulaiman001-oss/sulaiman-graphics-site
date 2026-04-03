@@ -25,6 +25,9 @@ import Dashboard from "@/pages/Dashboard";
 // ── ADDED: Imports for your new Onboarding system ──
 import SetPassword from "@/pages/SetPassword";
 
+// ── ✅ ADDED: Import for your brand new posting page ──
+import CreatePost from "@/pages/CreatePost";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -95,9 +98,17 @@ function Router() {
           {/* AUTH ROUTES */}
           <Route path="/login" component={Login} />
 
+          {/* PROTECTED ROUTES */}
           <Route path="/dashboard">
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          </Route>
+
+          {/* ── ✅ ADDED: Secure route for your posting page ── */}
+          <Route path="/create-post">
+            <ProtectedRoute>
+              <CreatePost />
             </ProtectedRoute>
           </Route>
 
