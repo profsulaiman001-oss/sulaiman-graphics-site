@@ -8,7 +8,7 @@ import {
 } from "recharts";
 import { 
   Edit3, Trash2, Save, XCircle, Bell, LogOut, CheckCircle, 
-  Clock, Loader2, Plus, HardDrive, Download, Settings, X, Mail, UserCheck, MessageSquare, Send, FileText
+  Clock, Loader2, Plus, HardDrive, Download, Settings, X, Mail, UserCheck, MessageSquare, Send, FileText, ClipboardList
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -47,6 +47,10 @@ export default function Dashboard() {
   const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
 
+  // ── ✅ ADDED: State for Questionnaires (Admin Only) ──
+  const [questionnaires, setQuestionnaires] = useState<any[]>([]);
+  const [loadingQuestionnaires, setLoadingQuestionnaires] = useState(false);
+
   const COLORS = ["#3b82f6", "#2563eb", "#1d4ed8", "#1e3a8a"];
 
   useEffect(() => {
@@ -76,6 +80,11 @@ export default function Dashboard() {
     fetchProfile(user.id);
     fetchProjects(user, adminStatus);
 
+    // ── ✅ ADDED: Fetch questionnaires if admin ──
+    if (adminStatus) {
+      fetchQuestionnaires();
+    }
+
     // Fixed: Real-time notifications for status changes and inserts
     const channel = supabase
       .channel('schema-db-changes')
@@ -104,6 +113,24 @@ export default function Dashboard() {
     return () => {
       supabase.removeChannel(channel);
     };
+  };
+
+  // ── ✅ ADDED: Fetch Questionnaire Submissions ──
+  const fetchQuestionnaires = async () => {
+    try {
+      setLoadingQuestionnaires(true);
+      const { data, error } = await supabase
+        .from("questionnaires")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setQuestionnaires(data || []);
+    } catch (error: any) {
+      console.error("Error fetching questionnaires:", error.message);
+    } finally {
+      setLoadingQuestionnaires(false);
+    }
   };
 
   const fetchProfile = async (userId: string) => {
@@ -891,6 +918,57 @@ export default function Dashboard() {
               </form>
             </div>
             
+          </div>
+        )}
+
+        {/* ── ✅ ADDED: Questionnaire Submissions Section (Admin Only) ── */}
+        {isAdmin && (
+          <div className="mb-8 bg-card border border-border rounded-2xl p-5">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span> Questionnaire Submissions
+              </h2>
+              {loadingQuestionnaires && <Loader2 size={14} className="text-primary animate-spin" />}
+            </div>
+
+            {questionnaires.length === 0 && !loadingQuestionnaires ? (
+              <div className="text-center py-6 bg-background rounded-xl border border-dashed border-border">
+                <p className="text-xs text-muted-foreground">No submissions found yet.</p>
+              </div>
+            ) : (
+              <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                {questionnaires.map((form) => (
+                  <div key={form.id} className="bg-background border border-border rounded-xl p-4 hover:border-primary/30 transition-colors">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h3 className="text-sm font-bold text-foreground truncate max-w-[200px]">
+                          {form.business_name || form.client_name || "New Lead"}
+                        </h3>
+                        <span className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                          <Clock size={10} /> {new Date(form.created_at).toLocaleDateString()} at {new Date(form.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-bold px-2 py-0.5 uppercase rounded-full tracking-wider border bg-blue-500/10 text-primary border-blue-500/20">
+                        New Form
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 max-h-32 overflow-y-auto bg-card p-3 rounded-lg border border-border/50 text-xs text-muted-foreground">
+                      {/* Flexibly render stored object keys except system ones */}
+                      {Object.entries(form).map(([key, val]) => {
+                        if (['id', 'created_at'].includes(key)) return null;
+                        return (
+                          <div key={key} className="flex flex-col border-b border-border/30 last:border-0 pb-1 mb-1 last:pb-0 last:mb-0">
+                            <span className="font-semibold text-foreground uppercase text-[9px] tracking-wider mb-0.5">{key.replace(/_/g, ' ')}:</span>
+                            <span className="break-words leading-tight">{typeof val === 'object' ? JSON.stringify(val) : String(val)}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
