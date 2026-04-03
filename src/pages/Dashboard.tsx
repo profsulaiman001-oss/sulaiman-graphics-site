@@ -8,7 +8,7 @@ import {
 } from "recharts";
 import { 
   Edit3, Trash2, Save, XCircle, Bell, LogOut, CheckCircle, 
-  Clock, Loader2, Plus, HardDrive, Download, Settings, X, Mail, UserCheck, MessageSquare, Send
+  Clock, Loader2, Plus, HardDrive, Download, Settings, X, Mail, UserCheck, MessageSquare, Send, FileText
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -148,7 +148,7 @@ export default function Dashboard() {
         query = query.eq("client_email", currentUser.email);
       }
       
-      const { data, error } = await query;
+      const { data, error } = query;
 
       if (error) throw error;
       
@@ -814,6 +814,19 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* ✅ BRAND NEW: Create Post Button (Visible only to Admin) */}
+        {isAdmin && (
+          <div className="mb-8">
+            <button
+              onClick={() => setLocation("/create-post")}
+              className="bg-primary hover:opacity-90 text-white font-semibold text-sm px-5 py-3 rounded-xl transition flex items-center justify-center gap-2"
+            >
+              <FileText size={18} />
+              Create A New Post
+            </button>
+          </div>
+        )}
+
         {isAdmin && (
           <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 mb-8">
             <div className="bg-card border border-border rounded-2xl p-5">
@@ -1163,4 +1176,4 @@ export default function Dashboard() {
       </footer>
     </div>
   );
-    }
+}
