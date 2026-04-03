@@ -8,7 +8,7 @@ import {
 } from "recharts";
 import { 
   Edit3, Trash2, Save, XCircle, Bell, LogOut, CheckCircle, 
-  Clock, Loader2, Plus, HardDrive, Download, Settings, X, Mail
+  Clock, Loader2, Plus, HardDrive, Download, Settings, X, Mail, UserCheck
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -31,7 +31,11 @@ export default function Dashboard() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviting, setInviting] = useState(false);
 
-  // Synchronized color spectrum for the Pie Chart using your site's primary palette
+  // NEW: Profile states for naming the user
+  const [fullName, setFullName] = useState("");
+  const [showNamePrompt, setShowNamePrompt] = useState(false);
+  const [submittingName, setSubmittingName] = useState(false);
+
   const COLORS = ["#3b82f6", "#2563eb", "#1d4ed8", "#1e3a8a"];
 
   useEffect(() => {
@@ -49,6 +53,9 @@ export default function Dashboard() {
     const adminStatus = user.email === "profsulaiman001@gmail.com";
     setIsAdmin(adminStatus);
     
+    // Fetch profile name
+    fetchProfile(user.id);
+    
     fetchProjects(user, adminStatus);
 
     const channel = supabase
@@ -65,6 +72,38 @@ export default function Dashboard() {
     return () => {
       supabase.removeChannel(channel);
     };
+  };
+
+  const fetchProfile = async (userId: string) => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", userId)
+      .single();
+
+    if (data && data.full_name) {
+      setFullName(data.full_name);
+    } else if (!isAdmin) {
+      // If client has no name set yet, show the popup modal
+      setShowNamePrompt(true);
+    }
+  };
+
+  const saveProfileName = async () => {
+    if (!fullName.trim()) return;
+    setSubmittingName(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .upsert({ id: user.id, full_name: fullName.trim(), updated_at: new Date() });
+
+      if (error) throw error;
+      setShowNamePrompt(false);
+    } catch (error: any) {
+      alert("Error saving name: " + error.message);
+    } finally {
+      setSubmittingName(false);
+    }
   };
 
   const fetchProjects = async (currentUser: any, admin: boolean) => {
@@ -269,8 +308,64 @@ export default function Dashboard() {
   };
 
   return (
-    // Synchronized Background
     <div className="min-h-screen bg-background text-foreground flex flex-col">
+      
+      {/* NEW: Onboarding Pop-up for Missing Name */}
+      <AnimatePresence>
+        {showNamePrompt && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <motion.div 
+              className="absolute inset-0 bg-background/90 backdrop-blur-md"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            />
+            
+            <motion.div 
+              className="bg-card border border-border rounded-2xl w-full max-w-md p-6 shadow-2xl relative z-10"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: "spring", damping: 20 }}
+            >
+              <div className="text-center mb-6">
+                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-primary/20">
+                  <UserCheck size={24} className="text-primary" />
+                </div>
+                <h2 className="text-xl font-display font-black text-foreground mb-1">Welcome to Your Portal</h2>
+                <p className="text-sm text-muted-foreground">Let's personalize your experience. What is your name?</p>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs text-muted-foreground font-semibold uppercase mb-1 block">Full Name</label>
+                  <input
+                    type="text"
+                    placeholder="John Doe"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition text-foreground"
+                    autoFocus
+                  />
+                </div>
+
+                <button 
+                  onClick={saveProfileName}
+                  disabled={!fullName.trim() || submittingName}
+                  className="w-full bg-primary hover:opacity-90 disabled:bg-primary/50 text-white font-semibold text-sm px-4 py-3 rounded-xl transition flex items-center justify-center gap-2"
+                >
+                  {submittingName ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    "Save & Continue"
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <header className="border-b border-border bg-background/90 backdrop-blur-md sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
@@ -396,10 +491,17 @@ export default function Dashboard() {
 
       <main className="container mx-auto px-4 py-8 flex-1">
         
+        {/* NEW: Dynamic Welcome Header */}
+        <div className="mb-8">
+          <h1 className="font-display font-black text-3xl sm:text-4xl text-foreground">
+            {fullName ? `Hello, ${fullName}!` : "Hello, Client!"}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">Here is the latest status of your active design projects.</p>
+        </div>
+
         {projects.length > 0 && (
           <div className="grid gap-6 grid-cols-1 md:grid-cols-3 mb-8">
             <div className="md:col-span-1 grid grid-cols-2 gap-4">
-              {/* Box Synchronized with Homepage bg-card and borders */}
               <div className="bg-card border border-border rounded-2xl p-4 flex flex-col justify-between">
                 <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Total</span>
                 <span className="text-3xl font-display font-black text-foreground mt-2">{projects.length}</span>
@@ -692,4 +794,4 @@ export default function Dashboard() {
       </footer>
     </div>
   );
-                 }
+  }
