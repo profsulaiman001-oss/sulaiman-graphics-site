@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
 import { motion, AnimatePresence } from "framer-motion";
@@ -41,13 +41,25 @@ export default function Dashboard() {
   const [newComment, setNewComment] = useState("");
   const [sendingComment, setSendingComment] = useState(false);
 
-  // NEW: State to store unread comment counts mapped by project ID
   const [unreadCounts, setUnreadCounts] = useState<{[key: string]: number}>({});
+
+  // NEW: State for mobile-friendly notification toggle and a click-outside listener
+  const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
+  const notificationRef = useRef<HTMLDivElement>(null);
 
   const COLORS = ["#3b82f6", "#2563eb", "#1d4ed8", "#1e3a8a"];
 
   useEffect(() => {
     checkUser();
+    
+    // Close notification box if user clicks anywhere else
+    function handleClickOutside(event: MouseEvent) {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setShowNotificationDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const checkUser = async () => {
@@ -132,7 +144,6 @@ export default function Dashboard() {
       ] as string[];
       setClientEmails(uniqueEmails);
 
-      // Fetch unread messages for these projects
       if (projectsData.length > 0) {
         fetchUnreadCounts(projectsData.map((p: any) => p.id), admin);
       }
@@ -144,7 +155,6 @@ export default function Dashboard() {
     }
   };
 
-  // NEW: Fetch count of messages that are unread by the opposite party
   const fetchUnreadCounts = async (projectIds: string[], admin: boolean) => {
     const { data, error } = await supabase
       .from("comments")
@@ -155,8 +165,6 @@ export default function Dashboard() {
     if (!error && data) {
       const counts: {[key: string]: number} = {};
       data.forEach((msg: any) => {
-        // Admins see unread client messages (is_admin = false)
-        // Clients see unread admin messages (is_admin = true)
         const isUnreadForMe = admin ? !msg.is_admin : msg.is_admin;
         
         if (isUnreadForMe) {
@@ -179,14 +187,13 @@ export default function Dashboard() {
     }
   };
 
-  // NEW: Mark all messages directed at you in this project as read
   const markMessagesAsRead = async (projectId: string) => {
     const { error } = await supabase
       .from("comments")
       .update({ is_read: true })
       .eq("project_id", projectId)
       .eq("is_read", false)
-      .eq("is_admin", !isAdmin); // Mark the *other* person's messages as read
+      .eq("is_admin", !isAdmin);
 
     if (!error) {
       setUnreadCounts(prev => ({ ...prev, [projectId]: 0 }));
@@ -200,11 +207,10 @@ export default function Dashboard() {
     } else {
       setOpenCommentsId(projectId);
       fetchComments(projectId);
-      markMessagesAsRead(projectId); // Auto clear dot when opening
+      markMessagesAsRead(projectId);
     }
   };
 
-  // NEW: Real-Time Listener for live messaging updates
   useEffect(() => {
     const commentsChannel = supabase
       .channel('realtime-comments')
@@ -214,12 +220,10 @@ export default function Dashboard() {
         (payload) => {
           const newMsg = payload.new;
           
-          // If we have the current tray open, add message instantly
           if (openCommentsId === newMsg.project_id) {
             setComments(prev => [...prev, newMsg]);
-            markMessagesAsRead(newMsg.project_id); // Immediately read it since tray is open
+            markMessagesAsRead(newMsg.project_id);
           } else {
-            // Otherwise, update the unread visual dot
             const isTargetedToMe = isAdmin ? !newMsg.is_admin : newMsg.is_admin;
             if (isTargetedToMe) {
               setUnreadCounts(prev => ({
@@ -248,7 +252,7 @@ export default function Dashboard() {
         user_id: user.id,
         message: newComment.trim(),
         is_admin: isAdmin,
-        is_read: false // Starts as unread for the other person
+        is_read: false
       }]);
 
     if (!error) {
@@ -491,7 +495,7 @@ export default function Dashboard() {
       </AnimatePresence>
 
       <header className="border-b border-border bg-background/90 backdrop-blur-md sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+        <div className="container mx-auto px-4 py-4 flex flex-wrap justify-between items-center gap-4">
           <div className="flex items-center gap-2">
             <h1 className="font-display font-black text-xl tracking-tighter text-foreground">
               SULAIMAN <span className="text-primary">GRAPHICS</span>
@@ -501,10 +505,14 @@ export default function Dashboard() {
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="relative group">
-              <button className="w-10 h-10 flex items-center justify-center rounded-full bg-background border border-border hover:border-primary transition relative">
-                <Bell size={18} className="text-muted-foreground group-hover:text-foreground" />
+          <div className="flex items-center gap-3 ml-auto sm:ml-0">
+            {/* FIXED: Tap-activated Notification dropdown with empty state */}
+            <div className="relative" ref={notificationRef}>
+              <button 
+                onClick={() => setShowNotificationDropdown(!showNotificationDropdown)}
+                className="w-10 h-10 flex items-center justify-center rounded-full bg-background border border-border hover:border-primary transition relative text-muted-foreground hover:text-foreground"
+              >
+                <Bell size={18} />
                 {notifications.length > 0 && (
                   <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-white text-xs rounded-full flex items-center justify-center font-bold">
                     {notifications.length}
@@ -512,18 +520,32 @@ export default function Dashboard() {
                 )}
               </button>
               
-              {notifications.length > 0 && (
-                <div className="absolute right-0 mt-2 w-64 bg-background border border-border rounded-xl p-3 shadow-2xl opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity z-50">
-                  <h4 className="font-semibold text-sm mb-2 border-b border-border pb-1 text-foreground">Notifications</h4>
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {notifications.map((note, i) => (
-                      <p key={i} className="text-xs text-muted-foreground flex items-start gap-1">
-                        <span className="text-primary">•</span> {note}
-                      </p>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <AnimatePresence>
+                {showNotificationDropdown && (
+                  <motion.div 
+                    className="absolute right-0 mt-2 w-64 bg-background border border-border rounded-xl p-3 shadow-2xl z-50"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    transition={{ duration: 0.15 }}
+                  >
+                    <h4 className="font-semibold text-sm mb-2 border-b border-border pb-1 text-foreground">Notifications</h4>
+                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                      {notifications.length > 0 ? (
+                        notifications.map((note, i) => (
+                          <p key={i} className="text-xs text-muted-foreground flex items-start gap-1">
+                            <span className="text-primary">•</span> {note}
+                          </p>
+                        ))
+                      ) : (
+                        <p className="text-xs text-muted-foreground italic text-center py-2">
+                          No notifications yet
+                        </p>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             <button 
@@ -533,13 +555,14 @@ export default function Dashboard() {
               <Settings size={18} />
             </button>
 
-            <div className="flex items-center gap-3 bg-background border border-border py-1.5 pl-3 pr-1.5 rounded-full">
-              <span className="text-xs font-medium text-muted-foreground max-w-[120px] truncate">
+            {/* FIXED: Prevented email/logout cropping on mobile with flex-shrink and min-widths */}
+            <div className="flex items-center gap-2 bg-background border border-border py-1.5 pl-3 pr-1.5 rounded-full max-w-[200px] sm:max-w-none">
+              <span className="text-xs font-medium text-muted-foreground truncate flex-shrink min-w-0">
                 {user?.email}
               </span>
               <button 
                 onClick={handleSignOut}
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-primary hover:opacity-90 text-white transition"
+                className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full bg-primary hover:opacity-90 text-white transition"
               >
                 <LogOut size={14} />
               </button>
@@ -849,7 +872,6 @@ export default function Dashboard() {
                       {openCommentsId === project.id ? "Hide Discussion" : "Request Changes / Chat"}
                     </span>
                     
-                    {/* NEW: Unread message badge indicator! */}
                     {unreadCounts[project.id] > 0 && openCommentsId !== project.id ? (
                       <span className="text-[10px] bg-red-500 text-white px-1.5 py-0.5 rounded-full font-bold flex items-center justify-center animate-pulse">
                         {unreadCounts[project.id]} new
@@ -1000,4 +1022,4 @@ export default function Dashboard() {
       </footer>
     </div>
   );
-         }
+    }
