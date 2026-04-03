@@ -39,27 +39,10 @@ export default function Home() {
               </span>
             </div>
 
-            {/* ✅ LOGO REPLACEMENT APPLIED HERE */}
-            <div className="mb-6">
-              <img
-                src={`${import.meta.env.BASE_URL}images/logo.png`}
-                alt="Sulaiman Graphics Logo"
-                className="h-16 sm:h-20 lg:h-24 w-auto object-contain"
-                onError={(e) => {
-                  const target = e.currentTarget;
-                  target.style.display = "none";
-                  const parent = target.parentElement;
-                  if (parent) {
-                    parent.innerHTML = `
-                      <h1 class="font-display font-black text-6xl sm:text-7xl lg:text-8xl tracking-tighter leading-[1.1] mb-6 text-foreground">
-                        Sulaiman <br class="hidden sm:block" />
-                        <span class="text-gradient">Graphics.</span>
-                      </h1>
-                    `;
-                  }
-                }}
-              />
-            </div>
+            <h1 className="font-display font-black text-6xl sm:text-7xl lg:text-8xl tracking-tighter leading-[1.1] mb-6 text-foreground">
+              Sulaiman <br className="hidden sm:block" />
+              <span className="text-gradient">Graphics.</span>
+            </h1>
 
             <p className="text-xl sm:text-2xl text-muted-foreground mb-10 max-w-2xl leading-relaxed">
               I am a professional graphic and brand designer focused on creating bold, high-impact visuals that elevate brands and communicate clear, compelling identities.
@@ -353,4 +336,4 @@ export default function Home() {
       </section>
     </main>
   );
-      }
+          }
