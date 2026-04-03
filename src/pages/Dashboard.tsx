@@ -148,7 +148,7 @@ export default function Dashboard() {
         query = query.eq("client_email", currentUser.email);
       }
       
-      const { data, error } = query;
+      const { data, error } = await query;
 
       if (error) throw error;
       
@@ -814,7 +814,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* ✅ BRAND NEW: Create Post Button (Visible only to Admin) */}
+        {/* ✅ ADDED BUTTON HERE AS REQUESTED */}
         {isAdmin && (
           <div className="mb-8">
             <button
