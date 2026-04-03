@@ -9,6 +9,8 @@ import { SettingsDropdown } from "@/components/SettingsDropdown";
 
 const links = [
   { name: "Home", path: "/" },
+  // ── ✅ ADDED: Public Blog route ──
+  { name: "Blog", path: "/blog" },
   { name: "Portfolio", path: "/portfolio" },
   { name: "About", path: "/#about", hash: true },
   { name: "Services", path: "/services" },
@@ -185,4 +187,4 @@ export function Navbar() {
       </AnimatePresence>
     </header>
   );
-              }
+}
