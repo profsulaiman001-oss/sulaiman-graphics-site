@@ -57,11 +57,12 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-black text-gray-100 relative overflow-hidden">
+    // Replaced hardcoded bg-black with the global bg-background variable
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground relative overflow-hidden">
       
-      {/* Background aesthetic blobs for that premium depth */}
-      <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-blue-700/10 rounded-full filter blur-3xl -z-10 animate-pulse"></div>
-      <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-blue-900/10 rounded-full filter blur-3xl -z-10 animate-pulse delay-1000"></div>
+      {/* Background aesthetic blobs using your primary glow variable */}
+      <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-primary/10 rounded-full filter blur-3xl -z-10 animate-pulse"></div>
+      <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-primary/5 rounded-full filter blur-3xl -z-10 animate-pulse delay-1000"></div>
 
       {/* Header Branding */}
       <motion.div 
@@ -70,36 +71,36 @@ export default function Login() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <h1 className="font-bold text-2xl tracking-tighter bg-gradient-to-r from-blue-500 to-blue-700 bg-clip-text text-transparent mb-1">
-          SULAIMAN GRAPHICS
+        <h1 className="font-display font-black text-2xl tracking-tighter text-foreground mb-1">
+          SULAIMAN <span className="text-primary">GRAPHICS</span>
         </h1>
-        <p className="text-xs text-gray-500 uppercase tracking-widest font-medium">Design Portal</p>
+        <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium">Design Portal</p>
       </motion.div>
 
-      {/* Glassmorphic Card */}
+      {/* Replaced bg-gray-950/40 and border-gray-800 with standard card variables */}
       <motion.div 
-        className="w-full max-w-sm bg-gray-950/40 backdrop-blur-xl border border-gray-800/80 rounded-3xl p-8 shadow-[0_8px_30px_rgba(0,0,0,0.5)] relative z-10"
+        className="w-full max-w-sm bg-card/80 backdrop-blur-xl border border-border rounded-3xl p-8 shadow-[0_8px_30px_rgba(0,0,0,0.5)] relative z-10"
         initial={{ opacity: 0, scale:0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5, delay: 0.1 }}
       >
-        <h2 className="text-lg font-semibold mb-6 text-center text-white">
+        <h2 className="text-lg font-bold mb-6 text-center text-foreground">
           Client Login / Setup
         </h2>
 
-        {/* SCREEN B: NORMAL LOGIN (Now handles auto-signup too!) */}
+        {/* Form handling auto-signup too! */}
         <form onSubmit={handleLogin} className="space-y-5">
           {/* Email Field */}
           <div>
-            <label className="text-xs text-gray-500 font-medium uppercase mb-1.5 block">Email Address</label>
+            <label className="text-xs text-muted-foreground font-semibold uppercase mb-1.5 block tracking-wider">Email Address</label>
             <div className="relative">
-              <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-600">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-muted-foreground">
                 <Mail size={16} />
               </span>
               <input
                 type="email"
                 placeholder="name@example.com"
-                className="w-full pl-11 pr-4 py-3 bg-black border border-gray-800 rounded-xl text-sm text-white placeholder-gray-700 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none transition"
+                className="w-full pl-11 pr-4 py-3 bg-background border border-border rounded-xl text-sm text-foreground placeholder-muted-foreground focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -109,15 +110,15 @@ export default function Login() {
 
           {/* Password Field */}
           <div>
-            <label className="text-xs text-gray-500 font-medium uppercase mb-1.5 block">Password</label>
+            <label className="text-xs text-muted-foreground font-semibold uppercase mb-1.5 block tracking-wider">Password</label>
             <div className="relative">
-              <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-600">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-muted-foreground">
                 <Lock size={16} />
               </span>
               <input
                 type="password"
                 placeholder="••••••••"
-                className="w-full pl-11 pr-4 py-3 bg-black border border-gray-800 rounded-xl text-sm text-white placeholder-gray-700 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none transition"
+                className="w-full pl-11 pr-4 py-3 bg-background border border-border rounded-xl text-sm text-foreground placeholder-muted-foreground focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -125,11 +126,11 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Action Button */}
+          {/* Action Button mapped to bg-primary and glowing dropshadow removed for clean card design */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800/50 disabled:text-blue-300/50 text-white font-medium text-sm py-3.5 rounded-xl transition flex items-center justify-center gap-2 mt-2 shadow-lg shadow-blue-600/10"
+            className="w-full bg-primary hover:opacity-90 disabled:bg-primary/50 disabled:text-white/50 text-white font-semibold text-sm py-3.5 rounded-xl transition flex items-center justify-center gap-2 mt-2"
           >
             {loading ? (
               <Loader2 size={16} className="animate-spin" />
@@ -142,15 +143,15 @@ export default function Login() {
         </form>
 
         <div className="text-center mt-6">
-          <p className="text-xs text-gray-600">
-            Having issues? <span className="text-blue-500 cursor-pointer hover:underline">Contact Support</span>
+          <p className="text-xs text-muted-foreground font-medium">
+            Having issues? <span className="text-primary cursor-pointer hover:underline">Contact Support</span>
           </p>
         </div>
       </motion.div>
 
-      <footer className="absolute bottom-6 text-center text-xs text-gray-700">
+      <footer className="absolute bottom-6 text-center text-xs text-muted-foreground font-medium">
         © {new Date().getFullYear()} Sulaiman Graphics. All rights reserved.
       </footer>
     </div>
   );
-}
+            }
