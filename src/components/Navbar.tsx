@@ -11,6 +11,10 @@ const links = [
   { name: "Home", path: "/" },
   // ── ✅ ADDED: Public Blog route ──
   { name: "Blog", path: "/blog" },
+  
+  // ── ✅ ADDED: Public Questionnaire route ──
+  { name: "Get Started", path: "/questionnaire" },
+  
   { name: "Portfolio", path: "/portfolio" },
   { name: "About", path: "/#about", hash: true },
   { name: "Services", path: "/services" },
