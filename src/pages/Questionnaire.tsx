@@ -35,18 +35,16 @@ export default function Questionnaire() {
 
   // PREVENT ENTER KEY AUTO-SUBMIT
   const handleKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
-    // We only allow the Enter key to move steps on step 1 and step 2
-    if (e.key === "Enter" && step < 3) {
+    if (e.key === "Enter") {
+      // Completely prevent Enter from submitting on any step
       e.preventDefault();
       
+      // Still allow Enter to move to the next step on Steps 1 and 2 if valid
       const isStep1Valid = step === 1 && formData.client_name && formData.client_email;
       const isStep2Valid = step === 2 && formData.project_type && formData.project_goal;
       
       if (step === 1 && isStep1Valid) nextStep();
       if (step === 2 && isStep2Valid) nextStep();
-    } else if (e.key === "Enter" && step >= 3) {
-      // Disables the enter key entirely on step 3 and 4 so it cannot force a submission
-      e.preventDefault();
     }
   };
 
@@ -82,6 +80,7 @@ export default function Questionnaire() {
           <h2 className="text-2xl font-display font-black mb-2">Awesome! Received.</h2>
           <p className="text-muted-foreground mb-6">Thank you for taking the time to fill this out. I'll review your details and get back to you shortly!</p>
           <button 
+            type="button"
             onClick={() => setLocation("/")}
             className="w-full bg-primary text-white font-semibold py-3 rounded-xl hover:opacity-90 transition"
           >
@@ -98,6 +97,7 @@ export default function Questionnaire() {
       <header className="border-b border-border bg-background/90 backdrop-blur-md sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <button 
+            type="button"
             onClick={() => setLocation("/")}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm font-medium"
           >
