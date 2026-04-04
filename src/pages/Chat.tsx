@@ -8,9 +8,7 @@ import {
   MoreVertical, 
   Smile, 
   FolderOpen, 
-  Clock, 
   CheckCircle2, 
-  User,
   ExternalLink
 } from "lucide-react";
 
@@ -39,6 +37,9 @@ export default function Chat() {
       setActiveProjectId(projects[0].id);
     }
   }, [projects]);
+
+  // Find the active project object for showing names/details in the UI
+  const activeProject = projects?.find(p => p.id === activeProjectId);
 
   // 2. Fetch the actual chat messages for the selected project
   const { data: chatMessages } = useQuery({
@@ -105,13 +106,6 @@ export default function Chat() {
     sendMessageMutation.mutate(message);
   };
 
-  // DUMMY DATA (We will replace this with Step 3 shortly!)
-  const clients = [
-    { id: 1, name: "David Adebayo", active: true, unread: 2, project: "Brand Identity" },
-    { id: 2, name: "Zara Mensah", active: false, unread: 0, project: "E-Commerce Site" },
-    { id: 3, name: "Chinedu Okafor", active: false, unread: 0, project: "Mobile App UI" },
-  ];
-
   return (
     <div className="bg-[#0B0C10] min-h-screen text-gray-100 flex flex-col">
       <div className="flex-grow flex h-[calc(100vh-140px)] w-full max-w-[1600px] mx-auto p-4 md:p-6 gap-6">
@@ -131,46 +125,47 @@ export default function Chat() {
           </div>
 
           <div className="flex-grow overflow-y-auto p-3 space-y-2">
-            {clients.map((client) => (
-              <div 
-                key={client.id}
-                className={`flex items-center gap-3 p-4 rounded-2xl cursor-pointer transition-all duration-200 ${
-                  client.active 
-                    ? "bg-gradient-to-r from-cyan-600/10 to-transparent border border-cyan-500/20" 
-                    : "hover:bg-[#1A1F29]/50 border border-transparent hover:border-gray-800"
-                }`}
-              >
-                <div className="relative">
-                  <div className="w-11 h-11 bg-gradient-to-br from-gray-700 to-gray-800 rounded-xl flex items-center justify-center border border-gray-700 font-semibold text-white">
-                    {client.name.split(' ').map(n => n[0]).join('')}
+            {projects?.map((project: any) => {
+              const isActive = project.id === activeProjectId;
+              const clientName = project.profiles?.full_name || "Client";
+              
+              return (
+                <div 
+                  key={project.id}
+                  onClick={() => setActiveProjectId(project.id)}
+                  className={`flex items-center gap-3 p-4 rounded-2xl cursor-pointer transition-all duration-200 ${
+                    isActive 
+                      ? "bg-gradient-to-r from-cyan-600/10 to-transparent border border-cyan-500/20" 
+                      : "hover:bg-[#1A1F29]/50 border border-transparent hover:border-gray-800"
+                  }`}
+                >
+                  <div className="relative">
+                    <div className="w-11 h-11 bg-gradient-to-br from-gray-700 to-gray-800 rounded-xl flex items-center justify-center border border-gray-700 font-semibold text-white">
+                      {clientName.split(' ').map((n: string) => n[0]).join('')}
+                    </div>
                   </div>
-                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-[#11141A]"></div>
-                </div>
-                <div className="flex-grow min-w-0">
-                  <div className="flex justify-between items-center mb-0.5">
-                    <h3 className="font-medium text-sm text-gray-100 truncate">{client.name}</h3>
-                    {client.unread > 0 && (
-                      <span className="text-xs bg-gradient-to-r from-cyan-500 to-blue-500 text-black font-bold px-1.5 py-0.5 rounded-full">
-                        {client.unread}
-                      </span>
-                    )}
+                  <div className="flex-grow min-w-0">
+                    <div className="flex justify-between items-center mb-0.5">
+                      <h3 className="font-medium text-sm text-gray-100 truncate">{clientName}</h3>
+                    </div>
+                    <p className="text-xs text-gray-500 truncate">{project.title}</p>
                   </div>
-                  <p className="text-xs text-gray-500 truncate">{client.project}</p>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
         {/* ==================== CENTER AREA: THE CHAT ==================== */}
         <div className="flex-grow flex flex-col bg-[#11141A]/60 backdrop-blur-xl border border-gray-800 rounded-3xl overflow-hidden">
+          {/* Top Navbar for the current chat */}
           <div className="p-5 border-b border-gray-800 flex justify-between items-center bg-[#11141A]/80">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center font-bold text-black">
-                DA
+                {activeProject?.profiles?.full_name?.split(' ').map((n: string) => n[0]).join('') || "C"}
               </div>
               <div>
-                <h2 className="font-semibold text-gray-100">David Adebayo</h2>
+                <h2 className="font-semibold text-gray-100">{activeProject?.profiles?.full_name || "Select a client"}</h2>
                 <p className="text-xs text-cyan-500 flex items-center gap-1">
                   <span className="w-1.5 h-1.5 bg-cyan-500 rounded-full"></span> Active Now
                 </p>
@@ -186,36 +181,40 @@ export default function Chat() {
             </div>
           </div>
 
+          {/* Chat Messages Scrolling Area */}
           <div className="flex-grow overflow-y-auto p-6 space-y-6">
-            
-            <div className="flex items-end gap-3 max-w-[75%]">
-              <div className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-semibold text-gray-400">
-                DA
-              </div>
-              <div>
-                <div className="bg-[#1A1F29] border border-gray-800 text-gray-200 p-4 rounded-t-2xl rounded-br-2xl text-sm leading-relaxed">
-                  Hi Sulaiman! Just checked the new designs. I really love the direction you're heading with the color palette. Can we adjust the logo sizing slightly in the header?
-                </div>
-                <span className="text-[11px] text-gray-600 mt-1 block ml-1">10:24 AM</span>
-              </div>
-            </div>
+            {chatMessages?.map((msg: any) => {
+              const isMe = msg.is_admin;
+              const formattedTime = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-            <div className="flex items-end gap-3 max-w-[75%] ml-auto flex-row-reverse">
-              <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-bold text-black">
-                SG
-              </div>
-              <div className="text-right">
-                <div className="bg-gradient-to-br from-cyan-600 to-blue-700 text-white p-4 rounded-t-2xl rounded-bl-2xl text-sm leading-relaxed shadow-lg shadow-cyan-900/10">
-                  Thanks David! Absolutely. I'll increase the scale by about 15% to give it breathing room and render a new version for you by this afternoon.
+              return (
+                <div 
+                  key={msg.id}
+                  className={`flex items-end gap-3 max-w-[75%] ${isMe ? 'ml-auto flex-row-reverse' : ''}`}
+                >
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-semibold ${
+                    isMe ? 'bg-gradient-to-br from-cyan-500 to-blue-600 text-black font-bold' : 'bg-gray-800 text-gray-400'
+                  }`}>
+                    {isMe ? 'SG' : (activeProject?.profiles?.full_name?.split(' ').map((n: string) => n[0]).join('') || 'C')}
+                  </div>
+                  <div className={isMe ? 'text-right' : ''}>
+                    <div className={`p-4 rounded-t-2xl text-sm leading-relaxed ${
+                      isMe 
+                        ? 'bg-gradient-to-br from-cyan-600 to-blue-700 text-white rounded-bl-2xl shadow-lg shadow-cyan-900/10' 
+                        : 'bg-[#1A1F29] border border-gray-800 text-gray-200 rounded-br-2xl'
+                    }`}>
+                      {msg.message}
+                    </div>
+                    <span className={`text-[11px] text-gray-600 mt-1 flex items-center gap-1 ${isMe ? 'justify-end mr-1' : 'ml-1'}`}>
+                      {formattedTime} {isMe && <CheckCircle2 className="w-3 h-3 text-cyan-500" />}
+                    </span>
+                  </div>
                 </div>
-                <span className="text-[11px] text-gray-600 mt-1 block mr-1 flex items-center justify-end gap-1">
-                  10:28 AM <CheckCircle2 className="w-3 h-3 text-cyan-500" />
-                </span>
-              </div>
-            </div>
-
+              );
+            })}
           </div>
 
+          {/* Bottom Message Input Bar */}
           <div className="p-5 border-top border-gray-800 bg-[#11141A]/80">
             <div className="flex items-center gap-3 bg-[#1A1F29] border border-gray-800 rounded-2xl p-2.5 focus-within:border-cyan-500/50 transition-colors">
               <button className="p-2 text-gray-500 hover:text-cyan-500 transition-colors">
@@ -225,6 +224,7 @@ export default function Chat() {
                 type="text" 
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                 placeholder="Type your message here..." 
                 className="flex-grow bg-transparent border-none outline-none text-sm text-gray-200 placeholder-gray-600"
               />
@@ -248,10 +248,11 @@ export default function Chat() {
           <div className="bg-[#1A1F29] border border-gray-800 rounded-2xl p-4 mb-4">
             <div className="flex justify-between items-center mb-3">
               <span className="text-xs text-gray-500 font-medium tracking-wide uppercase">Active Phase</span>
-              <span className="text-xs bg-cyan-500/10 text-cyan-400 px-2 py-0.5 rounded-full font-medium">In Progress</span>
+              <span className="text-xs bg-cyan-500/10 text-cyan-400 px-2 py-0.5 rounded-full font-medium">
+                {activeProject?.status || "Loading..."}
+              </span>
             </div>
-            <h3 className="font-semibold text-gray-100 mb-1">Brand Strategy</h3>
-            <p className="text-xs text-gray-500">Scheduled Delivery: Friday, April 10</p>
+            <h3 className="font-semibold text-gray-100 mb-1">{activeProject?.title || "Project Name"}</h3>
           </div>
 
           <div className="space-y-3">
@@ -269,16 +270,6 @@ export default function Chat() {
               <div className="flex-grow min-w-0">
                 <p className="text-xs font-medium text-gray-200 truncate">Moodboard_v1.pdf</p>
                 <p className="text-[10px] text-gray-600">4.2 MB • Oct 24</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 p-3 bg-[#1A1F29]/50 hover:bg-[#1A1F29] border border-gray-800 rounded-xl cursor-pointer transition-colors">
-              <div className="w-9 h-9 bg-emerald-500/10 text-emerald-500 rounded-lg flex items-center justify-center">
-                <FolderOpen className="w-4 h-4" />
-              </div>
-              <div className="flex-grow min-w-0">
-                <p className="text-xs font-medium text-gray-200 truncate">Logo-Concepts.png</p>
-                <p className="text-[10px] text-gray-600">12.5 MB • Oct 25</p>
               </div>
             </div>
           </div>
