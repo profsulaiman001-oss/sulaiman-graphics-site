@@ -1,0 +1,210 @@
+import { useState } from "react";
+import { 
+  Search, 
+  Send, 
+  Paperclip, 
+  MoreVertical, 
+  Smile, 
+  FolderOpen, 
+  Clock, 
+  CheckCircle2, 
+  User,
+  ExternalLink
+} from "lucide-react";
+
+export default function Chat() {
+  const [message, setMessage] = useState("");
+
+  // DUMMY DATA FOR VISUALS (We'll wire your Supabase DB to this later!)
+  const clients = [
+    { id: 1, name: "David Adebayo", active: true, unread: 2, project: "Brand Identity" },
+    { id: 2, name: "Zara Mensah", active: false, unread: 0, project: "E-Commerce Site" },
+    { id: 3, name: "Chinedu Okafor", active: false, unread: 0, project: "Mobile App UI" },
+  ];
+
+  return (
+    <div className="bg-[#0B0C10] min-h-screen text-gray-100 flex flex-col">
+      {/* Dynamic Grid Container */}
+      <div className="flex-grow flex h-[calc(100vh-140px)] w-full max-w-[1600px] mx-auto p-4 md:p-6 gap-6">
+        
+        {/* ==================== LEFT SIDEBAR: CLIENT LIST ==================== */}
+        <div className="hidden md:flex w-1/4 flex-col bg-[#11141A]/60 backdrop-blur-xl border border-gray-800 rounded-3xl overflow-hidden">
+          {/* Header & Search */}
+          <div className="p-5 border-b border-gray-800">
+            <h1 className="text-xl font-bold mb-4 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Conversations</h1>
+            <div className="relative">
+              <Search className="absolute left-3 top-3 w-4 h-4 text-gray-500" />
+              <input 
+                type="text" 
+                placeholder="Search clients..." 
+                className="w-full bg-[#1A1F29] border border-gray-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-gray-200 focus:outline-none focus:border-cyan-500/50 transition-colors"
+              />
+            </div>
+          </div>
+
+          {/* List of Clients */}
+          <div className="flex-grow overflow-y-auto p-3 space-y-2">
+            {clients.map((client) => (
+              <div 
+                key={client.id}
+                className={`flex items-center gap-3 p-4 rounded-2xl cursor-pointer transition-all duration-200 ${
+                  client.active 
+                    ? "bg-gradient-to-r from-cyan-600/10 to-transparent border border-cyan-500/20" 
+                    : "hover:bg-[#1A1F29]/50 border border-transparent hover:border-gray-800"
+                }`}
+              >
+                <div className="relative">
+                  <div className="w-11 h-11 bg-gradient-to-br from-gray-700 to-gray-800 rounded-xl flex items-center justify-center border border-gray-700 font-semibold text-white">
+                    {client.name.split(' ').map(n => n[0]).join('')}
+                  </div>
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-[#11141A]"></div>
+                </div>
+                <div className="flex-grow min-w-0">
+                  <div className="flex justify-between items-center mb-0.5">
+                    <h3 className="font-medium text-sm text-gray-100 truncate">{client.name}</h3>
+                    {client.unread > 0 && (
+                      <span className="text-xs bg-gradient-to-r from-cyan-500 to-blue-500 text-black font-bold px-1.5 py-0.5 rounded-full">
+                        {client.unread}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 truncate">{client.project}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ==================== CENTER AREA: THE CHAT ==================== */}
+        <div className="flex-grow flex flex-col bg-[#11141A]/60 backdrop-blur-xl border border-gray-800 rounded-3xl overflow-hidden">
+          {/* Top Navbar for the current chat */}
+          <div className="p-5 border-b border-gray-800 flex justify-between items-center bg-[#11141A]/80">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center font-bold text-black">
+                DA
+              </div>
+              <div>
+                <h2 className="font-semibold text-gray-100">David Adebayo</h2>
+                <p className="text-xs text-cyan-500 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 bg-cyan-500 rounded-full"></span> Active Now
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button className="p-2.5 hover:bg-[#1A1F29] rounded-xl border border-gray-800 text-gray-400 hover:text-gray-200 transition-colors">
+                <Search className="w-5 h-5" />
+              </button>
+              <button className="p-2.5 hover:bg-[#1A1F29] rounded-xl border border-gray-800 text-gray-400 hover:text-gray-200 transition-colors">
+                <MoreVertical className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Chat Messages Scrolling Area */}
+          <div className="flex-grow overflow-y-auto p-6 space-y-6">
+            
+            {/* Client Message */}
+            <div className="flex items-end gap-3 max-w-[75%]">
+              <div className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-semibold text-gray-400">
+                DA
+              </div>
+              <div>
+                <div className="bg-[#1A1F29] border border-gray-800 text-gray-200 p-4 rounded-t-2xl rounded-br-2xl text-sm leading-relaxed">
+                  Hi Sulaiman! Just checked the new designs. I really love the direction you're heading with the color palette. Can we adjust the logo sizing slightly in the header?
+                </div>
+                <span className="text-[11px] text-gray-600 mt-1 block ml-1">10:24 AM</span>
+              </div>
+            </div>
+
+            {/* My Message (The Designer) */}
+            <div className="flex items-end gap-3 max-w-[75%] ml-auto flex-row-reverse">
+              <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-bold text-black">
+                SG
+              </div>
+              <div className="text-right">
+                <div className="bg-gradient-to-br from-cyan-600 to-blue-700 text-white p-4 rounded-t-2xl rounded-bl-2xl text-sm leading-relaxed shadow-lg shadow-cyan-900/10">
+                  Thanks David! Absolutely. I'll increase the scale by about 15% to give it breathing room and render a new version for you by this afternoon.
+                </div>
+                <span className="text-[11px] text-gray-600 mt-1 block mr-1 flex items-center justify-end gap-1">
+                  10:28 AM <CheckCircle2 className="w-3 h-3 text-cyan-500" />
+                </span>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Bottom Message Input Bar */}
+          <div className="p-5 border-top border-gray-800 bg-[#11141A]/80">
+            <div className="flex items-center gap-3 bg-[#1A1F29] border border-gray-800 rounded-2xl p-2.5 focus-within:border-cyan-500/50 transition-colors">
+              <button className="p-2 text-gray-500 hover:text-cyan-500 transition-colors">
+                <Paperclip className="w-5 h-5" />
+              </button>
+              <input 
+                type="text" 
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Type your message here..." 
+                className="flex-grow bg-transparent border-none outline-none text-sm text-gray-200 placeholder-gray-600"
+              />
+              <button className="p-2 text-gray-500 hover:text-cyan-500 transition-colors hidden sm:block">
+                <Smile className="w-5 h-5" />
+              </button>
+              <button className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-black font-bold h-10 w-10 flex items-center justify-center rounded-xl transition-all shadow-lg shadow-cyan-500/10">
+                <Send className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ==================== RIGHT SIDEBAR: PROJECT OVERVIEW ==================== */}
+        <div className="hidden xl:flex w-1/4 flex-col bg-[#11141A]/60 backdrop-blur-xl border border-gray-800 rounded-3xl p-5 overflow-y-auto">
+          <h2 className="font-semibold text-lg text-gray-100 mb-5">Project Details</h2>
+          
+          {/* Active Status Card */}
+          <div className="bg-[#1A1F29] border border-gray-800 rounded-2xl p-4 mb-4">
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-xs text-gray-500 font-medium tracking-wide uppercase">Active Phase</span>
+              <span className="text-xs bg-cyan-500/10 text-cyan-400 px-2 py-0.5 rounded-full font-medium">In Progress</span>
+            </div>
+            <h3 className="font-semibold text-gray-100 mb-1">Brand Strategy</h3>
+            <p className="text-xs text-gray-500">Scheduled Delivery: Friday, April 10</p>
+          </div>
+
+          {/* File Attachments Quick Panel */}
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-gray-500 font-medium tracking-wide uppercase">Shared Files</span>
+              <button className="text-xs text-cyan-500 hover:text-cyan-400 flex items-center gap-0.5">
+                View all <ExternalLink className="w-3 h-3" />
+              </button>
+            </div>
+
+            {/* File 1 */}
+            <div className="flex items-center gap-3 p-3 bg-[#1A1F29]/50 hover:bg-[#1A1F29] border border-gray-800 rounded-xl cursor-pointer transition-colors">
+              <div className="w-9 h-9 bg-cyan-500/10 text-cyan-500 rounded-lg flex items-center justify-center">
+                <FolderOpen className="w-4 h-4" />
+              </div>
+              <div className="flex-grow min-w-0">
+                <p className="text-xs font-medium text-gray-200 truncate">Moodboard_v1.pdf</p>
+                <p className="text-[10px] text-gray-600">4.2 MB • Oct 24</p>
+              </div>
+            </div>
+
+            {/* File 2 */}
+            <div className="flex items-center gap-3 p-3 bg-[#1A1F29]/50 hover:bg-[#1A1F29] border border-gray-800 rounded-xl cursor-pointer transition-colors">
+              <div className="w-9 h-9 bg-emerald-500/10 text-emerald-500 rounded-lg flex items-center justify-center">
+                <FolderOpen className="w-4 h-4" />
+              </div>
+              <div className="flex-grow min-w-0">
+                <p className="text-xs font-medium text-gray-200 truncate">Logo-Concepts.png</p>
+                <p className="text-[10px] text-gray-600">12.5 MB • Oct 25</p>
+              </div>
+            </div>
+          </div>
+          
+        </div>
+
+      </div>
+    </div>
+  );
+}
