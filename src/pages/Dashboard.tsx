@@ -120,7 +120,7 @@ export default function Dashboard() {
     try {
       setLoadingQuestionnaires(true);
       const { data, error } = await supabase
-        .from("questionnaires")
+        .from("project_questionnaires")
         .select("*")
         .order("created_at", { ascending: false });
 
