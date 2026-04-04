@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
-import { motion, AnimatePresence } from " framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowRight, Send, CheckCircle, Loader2, ClipboardList } from "lucide-react";
 
 export default function Questionnaire() {
@@ -101,7 +101,7 @@ export default function Questionnaire() {
             <ArrowLeft size={16} /> Exit
           </button>
           <h1 className="font-display font-black text-lg tracking-tighter text-foreground">
-             SULAIMAN <span className="text-primary">GRAPHICS</span>
+              SULAIMAN <span className="text-primary">GRAPHICS</span>
           </h1>
         </div>
       </header>
