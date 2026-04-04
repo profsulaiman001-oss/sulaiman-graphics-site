@@ -8,7 +8,7 @@ import {
 } from "recharts";
 import { 
   Edit3, Trash2, Save, XCircle, Bell, LogOut, CheckCircle, 
-  Clock, Loader2, Plus, HardDrive, Download, Settings, X, Mail, UserCheck, MessageSquare, Send, FileText, ClipboardList
+  Clock, Loader2, Plus, HardDrive, Download, Settings, X, Mail, UserCheck, MessageSquare, Send, FileText, ClipboardList, ArrowLeft
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -47,9 +47,12 @@ export default function Dashboard() {
   const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
 
-  // ── ✅ ADDED: State for Questionnaires (Admin Only) ──
+  // ── ✅ State for Questionnaires (Admin Only) ──
   const [questionnaires, setQuestionnaires] = useState<any[]>([]);
   const [loadingQuestionnaires, setLoadingQuestionnaires] = useState(false);
+  
+  // Toggle between Projects view and Questionnaire Answers view
+  const [showQuestionnairesView, setShowQuestionnairesView] = useState(false);
 
   const COLORS = ["#3b82f6", "#2563eb", "#1d4ed8", "#1e3a8a"];
 
@@ -80,7 +83,7 @@ export default function Dashboard() {
     fetchProfile(user.id);
     fetchProjects(user, adminStatus);
 
-    // ── ✅ ADDED: Fetch questionnaires if admin ──
+    // ── Fetch questionnaires if admin ──
     if (adminStatus) {
       fetchQuestionnaires();
     }
@@ -115,7 +118,7 @@ export default function Dashboard() {
     };
   };
 
-  // ── ✅ ADDED: Fetch Questionnaire Submissions ──
+  // ── Fetch Questionnaire Submissions ──
   const fetchQuestionnaires = async () => {
     try {
       setLoadingQuestionnaires(true);
@@ -841,92 +844,387 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* ✅ ADDED BUTTON HERE AS REQUESTED */}
+        {/* ✅ MODIFIED BUTTONS HERE AS REQUESTED */}
         {isAdmin && (
-          <div className="mb-8">
-            <button
-              onClick={() => setLocation("/create-post")}
-              className="bg-primary hover:opacity-90 text-white font-semibold text-sm px-5 py-3 rounded-xl transition flex items-center justify-center gap-2"
-            >
-              <FileText size={18} />
-              Create A New Post
-            </button>
-          </div>
-        )}
-
-        {isAdmin && (
-          <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 mb-8">
-            <div className="bg-card border border-border rounded-2xl p-5">
-              <h2 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-primary rounded-full"></span> Quick Create Project
-              </h2>
-              <form onSubmit={createProject} className="flex flex-col gap-3">
-                <input
-                  type="text"
-                  placeholder="Project Title (e.g., Brand Identity)"
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  className="bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition text-foreground"
-                />
-                
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <select
-                    value={newClient}
-                    onChange={(e) => setNewClient(e.target.value)}
-                    className="flex-1 bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition text-muted-foreground"
-                  >
-                    <option value="">Assign to Client</option>
-                    {clientEmails.map((email: string) => (
-                      <option key={email} value={email}>{email}</option>
-                    ))}
-                  </select>
-
-                  <button
-                    type="submit"
-                    className="bg-primary hover:opacity-90 text-white font-medium text-sm px-6 py-3 rounded-xl transition flex items-center justify-center gap-2 whitespace-nowrap"
-                  >
-                    <Plus size={16} /> Create
-                  </button>
-                </div>
-              </form>
-            </div>
-
-            <div className="bg-card border border-border rounded-2xl p-5">
-              <h2 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Onboard New Client
-              </h2>
-              <form onSubmit={handleOnboardClient} className="flex flex-col sm:flex-row gap-3">
-                <input
-                  type="email"
-                  placeholder="Client Email Address"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  className="bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none transition text-foreground flex-1"
-                />
+          <div className="mb-8 flex gap-4">
+            {!showQuestionnairesView ? (
+              <>
                 <button
-                  type="submit"
-                  disabled={inviting}
-                  className="bg-background border border-border hover:border-green-500 hover:text-green-500 text-muted-foreground font-medium text-sm px-6 py-3 rounded-xl transition flex items-center justify-center gap-2 whitespace-nowrap"
+                  onClick={() => setLocation("/create-post")}
+                  className="bg-primary hover:opacity-90 text-white font-semibold text-sm px-5 py-3 rounded-xl transition flex items-center justify-center gap-2"
                 >
-                  {inviting ? (
-                    <Loader2 size={16} className="animate-spin" />
-                  ) : (
-                    <Mail size={16} />
-                  )}
-                  {inviting ? "Sending..." : "Send Secure Portal Invite"}
+                  <FileText size={18} />
+                  Create A New Post
                 </button>
-              </form>
-            </div>
-            
+                <button
+                  onClick={() => setShowQuestionnairesView(true)}
+                  className="bg-background border border-border hover:border-primary text-foreground font-semibold text-sm px-5 py-3 rounded-xl transition flex items-center justify-center gap-2"
+                >
+                  <ClipboardList size={18} className="text-primary" />
+                  View Questionnaire Answers
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setShowQuestionnairesView(false)}
+                className="bg-background border border-border hover:border-primary text-foreground font-semibold text-sm px-5 py-3 rounded-xl transition flex items-center justify-center gap-2"
+              >
+                <ArrowLeft size={18} />
+                Back to Projects
+              </button>
+            )}
           </div>
         )}
 
-        {/* ── ✅ ADDED: Questionnaire Submissions Section (Admin Only) ── */}
-        {isAdmin && (
+        {!showQuestionnairesView ? (
+          <>
+            {isAdmin && (
+              <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 mb-8">
+                <div className="bg-card border border-border rounded-2xl p-5">
+                  <h2 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-primary rounded-full"></span> Quick Create Project
+                  </h2>
+                  <form onSubmit={createProject} className="flex flex-col gap-3">
+                    <input
+                      type="text"
+                      placeholder="Project Title (e.g., Brand Identity)"
+                      value={newTitle}
+                      onChange={(e) => setNewTitle(e.target.value)}
+                      className="bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition text-foreground"
+                    />
+                    
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <select
+                        value={newClient}
+                        onChange={(e) => setNewClient(e.target.value)}
+                        className="flex-1 bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition text-muted-foreground"
+                      >
+                        <option value="">Assign to Client</option>
+                        {clientEmails.map((email: string) => (
+                          <option key={email} value={email}>{email}</option>
+                        ))}
+                      </select>
+
+                      <button
+                        type="submit"
+                        className="bg-primary hover:opacity-90 text-white font-medium text-sm px-6 py-3 rounded-xl transition flex items-center justify-center gap-2 whitespace-nowrap"
+                      >
+                        <Plus size={16} /> Create
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                <div className="bg-card border border-border rounded-2xl p-5">
+                  <h2 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Onboard New Client
+                  </h2>
+                  <form onSubmit={handleOnboardClient} className="flex flex-col sm:flex-row gap-3">
+                    <input
+                      type="email"
+                      placeholder="Client Email Address"
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                      className="bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none transition text-foreground flex-1"
+                    />
+                    <button
+                      type="submit"
+                      disabled={inviting}
+                      className="bg-background border border-border hover:border-green-500 hover:text-green-500 text-muted-foreground font-medium text-sm px-6 py-3 rounded-xl transition flex items-center justify-center gap-2 whitespace-nowrap"
+                    >
+                      {inviting ? (
+                        <Loader2 size={16} className="animate-spin" />
+                      ) : (
+                        <Mail size={16} />
+                      )}
+                      {inviting ? "Sending..." : "Send Secure Portal Invite"}
+                    </button>
+                  </form>
+                </div>
+                
+              </div>
+            )}
+
+            <div className="flex justify-between items-center mb-5">
+              <h2 className="font-display font-black text-xl text-foreground">Active Projects</h2>
+              {loading && <Loader2 size={18} className="text-primary animate-spin" />}
+            </div>
+
+            {projects.length === 0 && !loading ? (
+              <div className="text-center py-16 bg-card border border-border border-dashed rounded-3xl">
+                <div className="text-muted-foreground text-sm mb-2">No projects found.</div>
+                <p className="text-xs text-muted-foreground">When projects are created or assigned, they will appear here.</p>
+              </div>
+            ) : (
+              <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                {projects.map((project: any, index) => (
+                  <motion.div 
+                    key={project.id} 
+                    className="bg-card border border-border rounded-3xl p-6 flex flex-col gap-5 hover:border-primary/30 hover:shadow-[0_8px_30px_rgba(59,130,246,0.05)] transition-all group relative"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 * index }}
+                  >
+                    <div className="flex justify-between items-start gap-4">
+                      <div className="flex-1">
+                        {editingId === project.id ? (
+                          <input
+                            value={editTitle}
+                            onChange={(e) => setEditTitle(e.target.value)}
+                            className="p-3 rounded-lg w-full bg-background border border-primary focus:ring-1 focus:ring-primary text-foreground font-medium mb-1"
+                            autoFocus
+                          />
+                        ) : (
+                          <h3 className="font-bold text-lg tracking-tight line-clamp-2 leading-tight text-foreground group-hover:text-primary transition-colors">
+                            {project.title}
+                          </h3>
+                        )}
+                        <p className="text-xs text-muted-foreground tracking-wide break-all mt-1 flex items-center gap-1.5">
+                          👤 {project.client_email || "Unassigned"}
+                        </p>
+                      </div>
+                      
+                      <span className={`text-[11px] font-bold px-3 py-1 uppercase rounded-full tracking-wider border ${statusColors[project.status] || statusColors["Pending"]}`}>
+                          {project.status}
+                      </span>
+                    </div>
+
+                    {/* FIXED: Premium client approval & download box */}
+                    <div className="bg-background border border-border rounded-xl p-3 flex flex-col gap-3">
+                      {project.file_url ? (
+                        <>
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="text-xs text-green-400 font-medium flex items-center gap-1">
+                              <CheckCircle size={12} /> Design ready
+                            </span>
+                            <button 
+                              onClick={async () => {
+                                window.open(project.file_url, '_blank');
+                                setNotifications(prev => ["Downloading your design file... Check your browser downloads!", ...prev]);
+
+                                try {
+                                  const response = await fetch(project.file_url);
+                                  const blob = await response.blob();
+                                  const blobUrl = window.URL.createObjectURL(blob);
+                                  
+                                  const link = document.createElement('a');
+                                  link.href = blobUrl;
+                                  
+                                  const fileName = project.file_url.split('/').pop() || 'design-file';
+                                  link.download = fileName; 
+                                  
+                                  document.body.appendChild(link);
+                                  link.click();
+                                  
+                                  document.body.removeChild(link);
+                                  window.URL.revokeObjectURL(blobUrl);
+                                } catch (error) {
+                                  console.error("Background physical save failed, but tab opened.");
+                                }
+                              }}
+                              className="text-xs bg-primary/10 hover:bg-primary text-primary hover:text-white px-3 py-1.5 rounded-lg border border-primary/30 transition-colors font-semibold flex items-center gap-1"
+                            >
+                              <Download size={12} /> View & Download
+                            </button>
+                          </div>
+
+                          <div className="border-t border-border/50 pt-2 mt-1">
+                            {project.client_approval === 'Approved' ? (
+                              <div className="text-center py-1.5 bg-green-500/10 border border-green-500/20 rounded-lg text-green-500 text-xs font-bold flex items-center justify-center gap-1">
+                                 <CheckCircle size={12} /> Project Approved
+                              </div>
+                            ) : project.client_approval === 'Revision Requested' ? (
+                              <div className="text-center py-1.5 bg-yellow-500/10 border border-yellow-500/20 rounded-lg text-yellow-500 text-xs font-bold flex items-center justify-center gap-1">
+                                 <Edit3 size={12} /> Revisions Requested
+                              </div>
+                            ) : !isAdmin ? (
+                              <div className="grid grid-cols-2 gap-2">
+                                <button
+                                  onClick={() => handleClientApproval(project.id, 'Revision Requested')}
+                                  className="text-xs bg-background hover:bg-yellow-500/10 text-muted-foreground hover:text-yellow-500 py-2 rounded-lg border border-border hover:border-yellow-500/30 transition-colors font-semibold"
+                                >
+                                  Request Changes
+                                </button>
+                                <button
+                                  onClick={() => handleClientApproval(project.id, 'Approved')}
+                                  className="text-xs bg-primary hover:opacity-90 text-white py-2 rounded-lg transition-opacity font-semibold"
+                                >
+                                  Approve Project
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="text-center py-1.5 bg-muted rounded-lg text-muted-foreground text-xs font-medium">
+                                Waiting for client review
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      ) : (
+                        <span className="text-xs text-muted-foreground italic flex items-center gap-1">
+                          <Clock size={12} /> No files attached yet
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Collapsible Interactive Comments Area */}
+                    <div className="border-t border-border pt-4">
+                      <button 
+                        onClick={() => toggleComments(project.id)}
+                        className="flex items-center justify-between w-full text-xs text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        <span className="flex items-center gap-1.5 font-medium">
+                          <MessageSquare size={14} /> 
+                          {openCommentsId === project.id ? "Hide Discussion" : "Request Changes / Chat"}
+                        </span>
+                        
+                        {unreadCounts[project.id] > 0 && openCommentsId !== project.id ? (
+                          <span className="text-[10px] bg-red-500 text-white px-1.5 py-0.5 rounded-full font-bold flex items-center justify-center animate-pulse">
+                            {unreadCounts[project.id]} new
+                          </span>
+                        ) : (
+                          <span className="text-[10px] bg-background border border-border px-1.5 py-0.5 rounded-full">
+                            Tap to open
+                          </span>
+                        )}
+                      </button>
+
+                      <AnimatePresence>
+                        {openCommentsId === project.id && (
+                          <motion.div 
+                            className="mt-3 space-y-3"
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <div className="max-h-40 overflow-y-auto space-y-2 bg-background/50 p-2 rounded-lg border border-border">
+                              {comments.length === 0 ? (
+                                <div className="text-[11px] text-muted-foreground text-center py-2">No messages yet. Start the thread below!</div>
+                              ) : (
+                                comments.map((msg) => (
+                                  <div 
+                                    key={msg.id} 
+                                    className={`p-2 rounded-lg text-xs max-w-[85%] ${
+                                      msg.is_admin 
+                                        ? "bg-primary/10 border border-primary/20 ml-auto text-foreground" 
+                                        : "bg-muted border border-border text-foreground"
+                                    }`}
+                                  >
+                                    <div className="flex justify-between items-center gap-2 mb-0.5">
+                                      <span className={`font-bold text-[10px] uppercase ${msg.is_admin ? "text-primary" : "text-muted-foreground"}`}>
+                                        {msg.is_admin ? "Sulaiman" : "Client"}
+                                      </span>
+                                      <span className="text-[9px] text-muted-foreground">
+                                        {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                      </span>
+                                    </div>
+                                    <p className="leading-snug">{msg.message}</p>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+
+                            <div className="flex gap-2">
+                              <input 
+                                type="text"
+                                placeholder="Type a message..."
+                                value={newComment}
+                                onChange={(e) => setNewComment(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && sendComment(project.id)}
+                                className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-xs focus:border-primary focus:ring-1 focus:ring-primary outline-none text-foreground"
+                              />
+                              <button
+                                onClick={() => sendComment(project.id)}
+                                disabled={sendingComment || !newComment.trim()}
+                                className="bg-primary hover:opacity-90 disabled:opacity-50 w-9 h-9 flex items-center justify-center rounded-lg text-white transition-colors"
+                              >
+                                {sendingComment ? (
+                                  <Loader2 size={12} className="animate-spin" />
+                                ) : (
+                                  <Send size={12} />
+                                )}
+                              </button>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    <div className="mt-auto pt-4 border-t border-border flex flex-wrap justify-between items-center gap-3">
+                      <div className="flex gap-2 flex-wrap">
+                            <select
+                              value={project.status}
+                              onChange={(e) => updateStatus(project.id, e.target.value)}
+                              className="bg-background border border-border text-foreground text-xs rounded-lg px-2.5 py-1.5 focus:border-primary transition"
+                          >
+                              <option value="Pending">Pending</option>
+                              <option value="In Progress">In Progress</option>
+                              <option value="Completed">Completed</option>
+                          </select>
+
+                          {isAdmin && (
+                              <select
+                              value={project.client_email || ""}
+                              onChange={(e) => assignUser(project.id, e.target.value)}
+                              className="bg-background border border-border text-foreground text-xs rounded-lg px-2.5 py-1.5 focus:border-primary transition"
+                              >
+                                <option value="">Client Assign</option>
+                              {clientEmails.map((email: string) => (
+                                  <option key={email} value={email}>{email}</option>
+                              ))}
+                              </select>
+                          )}
+                      </div>
+
+                      <div className="flex gap-2.5 ml-auto">
+                        {editingId === project.id ? (
+                          <>
+                            <button onClick={saveEdit} className="w-9 h-9 flex items-center justify-center rounded-lg border border-green-700 text-green-500 bg-background hover:bg-green-600/10 hover:border-green-600 transition">
+                              <Save size={16}/>
+                            </button>
+                            <button onClick={() => setEditingId(null)} className="w-9 h-9 flex items-center justify-center rounded-lg border border-border text-muted-foreground bg-background hover:bg-card hover:border-border transition">
+                              <XCircle size={16}/>
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            {isAdmin && (
+                              <label className="w-9 h-9 flex items-center justify-center rounded-lg border border-blue-700/60 text-primary bg-background hover:bg-primary/10 hover:border-primary transition cursor-pointer">
+                                <input
+                                  type="file"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    if (e.target.files && e.target.files[0]) {
+                                      handleFileUpload(project.id, e.target.files[0]);
+                                    }
+                                  }}
+                                />
+                                <HardDrive size={16} />
+                              </label>
+                            )}
+                            
+                            <button onClick={() => startEdit(project)} className="w-9 h-9 flex items-center justify-center rounded-lg border border-yellow-700/60 text-yellow-500 bg-background hover:bg-yellow-600/10 hover:border-yellow-600 transition">
+                              <Edit3 size={16}/>
+                            </button>
+                            
+                            <button onClick={() => handleDelete(project.id)} className="w-9 h-9 flex items-center justify-center rounded-lg border border-red-700/60 text-red-500 bg-background hover:bg-red-600/10 hover:border-red-600 transition">
+                              <Trash2 size={16}/>
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          /* ── ✅ RELOCATED: Questionnaire Submissions Section (Admin Only) ── */
           <div className="mb-8 bg-card border border-border rounded-2xl p-5">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span> Questionnaire Submissions
+              <h2 className="font-display font-black text-xl text-foreground flex items-center gap-2">
+                Questionnaire Submissions
               </h2>
               {loadingQuestionnaires && <Loader2 size={14} className="text-primary animate-spin" />}
             </div>
@@ -969,280 +1267,6 @@ export default function Dashboard() {
                 ))}
               </div>
             )}
-          </div>
-        )}
-
-        <div className="flex justify-between items-center mb-5">
-          <h2 className="font-display font-black text-xl text-foreground">Active Projects</h2>
-          {loading && <Loader2 size={18} className="text-primary animate-spin" />}
-        </div>
-
-        {projects.length === 0 && !loading ? (
-          <div className="text-center py-16 bg-card border border-border border-dashed rounded-3xl">
-            <div className="text-muted-foreground text-sm mb-2">No projects found.</div>
-            <p className="text-xs text-muted-foreground">When projects are created or assigned, they will appear here.</p>
-          </div>
-        ) : (
-          <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-            {projects.map((project: any, index) => (
-              <motion.div 
-                key={project.id} 
-                className="bg-card border border-border rounded-3xl p-6 flex flex-col gap-5 hover:border-primary/30 hover:shadow-[0_8px_30px_rgba(59,130,246,0.05)] transition-all group relative"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 * index }}
-              >
-                <div className="flex justify-between items-start gap-4">
-                  <div className="flex-1">
-                    {editingId === project.id ? (
-                      <input
-                        value={editTitle}
-                        onChange={(e) => setEditTitle(e.target.value)}
-                        className="p-3 rounded-lg w-full bg-background border border-primary focus:ring-1 focus:ring-primary text-foreground font-medium mb-1"
-                        autoFocus
-                      />
-                    ) : (
-                      <h3 className="font-bold text-lg tracking-tight line-clamp-2 leading-tight text-foreground group-hover:text-primary transition-colors">
-                        {project.title}
-                      </h3>
-                    )}
-                    <p className="text-xs text-muted-foreground tracking-wide break-all mt-1 flex items-center gap-1.5">
-                      👤 {project.client_email || "Unassigned"}
-                    </p>
-                  </div>
-                  
-                  <span className={`text-[11px] font-bold px-3 py-1 uppercase rounded-full tracking-wider border ${statusColors[project.status] || statusColors["Pending"]}`}>
-                      {project.status}
-                  </span>
-                </div>
-
-                {/* FIXED: Premium client approval & download box */}
-                <div className="bg-background border border-border rounded-xl p-3 flex flex-col gap-3">
-                  {project.file_url ? (
-                    <>
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-xs text-green-400 font-medium flex items-center gap-1">
-                          <CheckCircle size={12} /> Design ready
-                        </span>
-                        <button 
-                          onClick={async () => {
-                            window.open(project.file_url, '_blank');
-                            setNotifications(prev => ["Downloading your design file... Check your browser downloads!", ...prev]);
-
-                            try {
-                              const response = await fetch(project.file_url);
-                              const blob = await response.blob();
-                              const blobUrl = window.URL.createObjectURL(blob);
-                              
-                              const link = document.createElement('a');
-                              link.href = blobUrl;
-                              
-                              const fileName = project.file_url.split('/').pop() || 'design-file';
-                              link.download = fileName; 
-                              
-                              document.body.appendChild(link);
-                              link.click();
-                              
-                              document.body.removeChild(link);
-                              window.URL.revokeObjectURL(blobUrl);
-                            } catch (error) {
-                              console.error("Background physical save failed, but tab opened.");
-                            }
-                          }}
-                          className="text-xs bg-primary/10 hover:bg-primary text-primary hover:text-white px-3 py-1.5 rounded-lg border border-primary/30 transition-colors font-semibold flex items-center gap-1"
-                        >
-                          <Download size={12} /> View & Download
-                        </button>
-                      </div>
-
-                      <div className="border-t border-border/50 pt-2 mt-1">
-                        {project.client_approval === 'Approved' ? (
-                          <div className="text-center py-1.5 bg-green-500/10 border border-green-500/20 rounded-lg text-green-500 text-xs font-bold flex items-center justify-center gap-1">
-                             <CheckCircle size={12} /> Project Approved
-                          </div>
-                        ) : project.client_approval === 'Revision Requested' ? (
-                          <div className="text-center py-1.5 bg-yellow-500/10 border border-yellow-500/20 rounded-lg text-yellow-500 text-xs font-bold flex items-center justify-center gap-1">
-                             <Edit3 size={12} /> Revisions Requested
-                          </div>
-                        ) : !isAdmin ? (
-                          <div className="grid grid-cols-2 gap-2">
-                            <button
-                              onClick={() => handleClientApproval(project.id, 'Revision Requested')}
-                              className="text-xs bg-background hover:bg-yellow-500/10 text-muted-foreground hover:text-yellow-500 py-2 rounded-lg border border-border hover:border-yellow-500/30 transition-colors font-semibold"
-                            >
-                              Request Changes
-                            </button>
-                            <button
-                              onClick={() => handleClientApproval(project.id, 'Approved')}
-                              className="text-xs bg-primary hover:opacity-90 text-white py-2 rounded-lg transition-opacity font-semibold"
-                            >
-                              Approve Project
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="text-center py-1.5 bg-muted rounded-lg text-muted-foreground text-xs font-medium">
-                            Waiting for client review
-                          </div>
-                        )}
-                      </div>
-                    </>
-                  ) : (
-                    <span className="text-xs text-muted-foreground italic flex items-center gap-1">
-                      <Clock size={12} /> No files attached yet
-                    </span>
-                  )}
-                </div>
-
-                {/* Collapsible Interactive Comments Area */}
-                <div className="border-t border-border pt-4">
-                  <button 
-                    onClick={() => toggleComments(project.id)}
-                    className="flex items-center justify-between w-full text-xs text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    <span className="flex items-center gap-1.5 font-medium">
-                      <MessageSquare size={14} /> 
-                      {openCommentsId === project.id ? "Hide Discussion" : "Request Changes / Chat"}
-                    </span>
-                    
-                    {unreadCounts[project.id] > 0 && openCommentsId !== project.id ? (
-                      <span className="text-[10px] bg-red-500 text-white px-1.5 py-0.5 rounded-full font-bold flex items-center justify-center animate-pulse">
-                        {unreadCounts[project.id]} new
-                      </span>
-                    ) : (
-                      <span className="text-[10px] bg-background border border-border px-1.5 py-0.5 rounded-full">
-                        Tap to open
-                      </span>
-                    )}
-                  </button>
-
-                  <AnimatePresence>
-                    {openCommentsId === project.id && (
-                      <motion.div 
-                        className="mt-3 space-y-3"
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <div className="max-h-40 overflow-y-auto space-y-2 bg-background/50 p-2 rounded-lg border border-border">
-                          {comments.length === 0 ? (
-                            <div className="text-[11px] text-muted-foreground text-center py-2">No messages yet. Start the thread below!</div>
-                          ) : (
-                            comments.map((msg) => (
-                              <div 
-                                key={msg.id} 
-                                className={`p-2 rounded-lg text-xs max-w-[85%] ${
-                                  msg.is_admin 
-                                    ? "bg-primary/10 border border-primary/20 ml-auto text-foreground" 
-                                    : "bg-muted border border-border text-foreground"
-                                }`}
-                              >
-                                <div className="flex justify-between items-center gap-2 mb-0.5">
-                                  <span className={`font-bold text-[10px] uppercase ${msg.is_admin ? "text-primary" : "text-muted-foreground"}`}>
-                                    {msg.is_admin ? "Sulaiman" : "Client"}
-                                  </span>
-                                  <span className="text-[9px] text-muted-foreground">
-                                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                  </span>
-                                </div>
-                                <p className="leading-snug">{msg.message}</p>
-                              </div>
-                            ))
-                          )}
-                        </div>
-
-                        <div className="flex gap-2">
-                          <input 
-                            type="text"
-                            placeholder="Type a message..."
-                            value={newComment}
-                            onChange={(e) => setNewComment(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && sendComment(project.id)}
-                            className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-xs focus:border-primary focus:ring-1 focus:ring-primary outline-none text-foreground"
-                          />
-                          <button
-                            onClick={() => sendComment(project.id)}
-                            disabled={sendingComment || !newComment.trim()}
-                            className="bg-primary hover:opacity-90 disabled:opacity-50 w-9 h-9 flex items-center justify-center rounded-lg text-white transition-colors"
-                          >
-                            {sendingComment ? (
-                              <Loader2 size={12} className="animate-spin" />
-                            ) : (
-                              <Send size={12} />
-                            )}
-                          </button>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                <div className="mt-auto pt-4 border-t border-border flex flex-wrap justify-between items-center gap-3">
-                  <div className="flex gap-2 flex-wrap">
-                        <select
-                          value={project.status}
-                          onChange={(e) => updateStatus(project.id, e.target.value)}
-                          className="bg-background border border-border text-foreground text-xs rounded-lg px-2.5 py-1.5 focus:border-primary transition"
-                      >
-                          <option value="Pending">Pending</option>
-                          <option value="In Progress">In Progress</option>
-                          <option value="Completed">Completed</option>
-                      </select>
-
-                      {isAdmin && (
-                          <select
-                          value={project.client_email || ""}
-                          onChange={(e) => assignUser(project.id, e.target.value)}
-                          className="bg-background border border-border text-foreground text-xs rounded-lg px-2.5 py-1.5 focus:border-primary transition"
-                          >
-                            <option value="">Client Assign</option>
-                          {clientEmails.map((email: string) => (
-                              <option key={email} value={email}>{email}</option>
-                          ))}
-                          </select>
-                      )}
-                  </div>
-
-                  <div className="flex gap-2.5 ml-auto">
-                    {editingId === project.id ? (
-                      <>
-                        <button onClick={saveEdit} className="w-9 h-9 flex items-center justify-center rounded-lg border border-green-700 text-green-500 bg-background hover:bg-green-600/10 hover:border-green-600 transition">
-                          <Save size={16}/>
-                        </button>
-                        <button onClick={() => setEditingId(null)} className="w-9 h-9 flex items-center justify-center rounded-lg border border-border text-muted-foreground bg-background hover:bg-card hover:border-border transition">
-                          <XCircle size={16}/>
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        {isAdmin && (
-                          <label className="w-9 h-9 flex items-center justify-center rounded-lg border border-blue-700/60 text-primary bg-background hover:bg-primary/10 hover:border-primary transition cursor-pointer">
-                            <input
-                              type="file"
-                              className="hidden"
-                              onChange={(e) => {
-                                if (e.target.files && e.target.files[0]) {
-                                  handleFileUpload(project.id, e.target.files[0]);
-                                }
-                              }}
-                            />
-                            <HardDrive size={16} />
-                          </label>
-                        )}
-                        
-                        <button onClick={() => startEdit(project)} className="w-9 h-9 flex items-center justify-center rounded-lg border border-yellow-700/60 text-yellow-500 bg-background hover:bg-yellow-600/10 hover:border-yellow-600 transition">
-                          <Edit3 size={16}/>
-                        </button>
-                        
-                        <button onClick={() => handleDelete(project.id)} className="w-9 h-9 flex items-center justify-center rounded-lg border border-red-700/60 text-red-500 bg-background hover:bg-red-600/10 hover:border-red-600 transition">
-                          <Trash2 size={16}/>
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            ))}
           </div>
         )}
       </main>
