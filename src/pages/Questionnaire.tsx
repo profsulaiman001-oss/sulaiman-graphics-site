@@ -78,11 +78,11 @@ export default function Questionnaire() {
             <CheckCircle size={32} className="text-green-500" />
           </div>
           <h2 className="text-2xl font-display font-black mb-2">Awesome! Received.</h2>
-          <p className="text-muted-foreground mb-6">Thank you for taking the time to fill this out. I'll review your details and get back to you shortly!</p>
+          <p className="text-base text-muted-foreground mb-6">Thank you for taking the time to fill this out. I'll review your details and get back to you shortly!</p>
           <button 
             type="button"
             onClick={() => setLocation("/")}
-            className="w-full bg-primary text-white font-semibold py-3 rounded-xl hover:opacity-90 transition"
+            className="w-full bg-primary text-white font-semibold py-3 rounded-xl hover:opacity-90 transition text-base"
           >
             Back to Home
           </button>
@@ -99,26 +99,26 @@ export default function Questionnaire() {
           <button 
             type="button"
             onClick={() => setLocation("/")}
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm font-medium"
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-base font-medium"
           >
-            <ArrowLeft size={16} /> Exit
+            <ArrowLeft size={18} /> Exit
           </button>
-          <h1 className="font-display font-black text-lg tracking-tighter text-foreground">
+          <h1 className="font-display font-black text-xl tracking-tighter text-foreground">
               SULAIMAN <span className="text-primary">GRAPHICS</span>
           </h1>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-12 flex-1 flex flex-col items-center justify-center">
-        <div className="w-full max-w-xl">
+        <div className="w-full max-xl: max-w-xl">
           
           {/* Progress Bar */}
           <div className="mb-8">
-            <div className="flex justify-between text-xs text-muted-foreground mb-2">
+            <div className="flex justify-between text-sm text-muted-foreground mb-2">
               <span>Step {step} of 4</span>
               <span>{Math.round((step / 4) * 100)}% Complete</span>
             </div>
-            <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+            <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
               <div 
                 className="h-full bg-primary transition-all duration-300" 
                 style={{ width: `${(step / 4) * 100}%` }}
@@ -142,43 +142,43 @@ export default function Questionnaire() {
                   exit={{ opacity: 0, x: -10 }}
                 >
                   <div className="mb-6">
-                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mb-3">
-                      <ClipboardList size={20} className="text-primary" />
+                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-3">
+                      <ClipboardList size={24} className="text-primary" />
                     </div>
-                    <h2 className="text-xl font-bold mb-1">Let's get to know you</h2>
-                    <p className="text-sm text-muted-foreground">Please provide your basic contact details.</p>
+                    <h2 className="text-2xl font-bold mb-1">Let's get to know you</h2>
+                    <p className="text-base text-muted-foreground">Please provide your basic contact details.</p>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-5">
                     <div>
-                      <label className="text-xs text-muted-foreground font-semibold uppercase mb-1 block">Your Name *</label>
+                      <label className="text-sm text-muted-foreground font-bold uppercase mb-2 block">Your Name *</label>
                       <input
                         type="text"
                         required
                         value={formData.client_name}
                         onChange={(e) => updateField("client_name", e.target.value)}
-                        className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-none transition"
+                        className="w-full bg-background border border-border rounded-xl px-4 py-3.5 text-base focus:border-primary outline-none transition"
                         placeholder="John Doe"
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-muted-foreground font-semibold uppercase mb-1 block">Your Email *</label>
+                      <label className="text-sm text-muted-foreground font-bold uppercase mb-2 block">Your Email *</label>
                       <input
                         type="email"
                         required
                         value={formData.client_email}
                         onChange={(e) => updateField("client_email", e.target.value)}
-                        className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-none transition"
+                        className="w-full bg-background border border-border rounded-xl px-4 py-3.5 text-base focus:border-primary outline-none transition"
                         placeholder="john@example.com"
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-muted-foreground font-semibold uppercase mb-1 block">Business/Company Name</label>
+                      <label className="text-sm text-muted-foreground font-bold uppercase mb-2 block">Business/Company Name</label>
                       <input
                         type="text"
                         value={formData.business_name}
                         onChange={(e) => updateField("business_name", e.target.value)}
-                        className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-none transition"
+                        className="w-full bg-background border border-border rounded-xl px-4 py-3.5 text-base focus:border-primary outline-none transition"
                         placeholder="Acme Inc. (Optional)"
                       />
                     </div>
@@ -195,18 +195,18 @@ export default function Questionnaire() {
                   exit={{ opacity: 0, x: -10 }}
                 >
                   <div className="mb-6">
-                    <h2 className="text-xl font-bold mb-1">Project Details</h2>
-                    <p className="text-sm text-muted-foreground">Tell me about what we are building or designing.</p>
+                    <h2 className="text-2xl font-bold mb-1">Project Details</h2>
+                    <p className="text-base text-muted-foreground">Tell me about what we are building or designing.</p>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-5">
                     <div>
-                      <label className="text-xs text-muted-foreground font-semibold uppercase mb-1 block">Project Type *</label>
+                      <label className="text-sm text-muted-foreground font-bold uppercase mb-2 block">Project Type *</label>
                       <select
                         required
                         value={formData.project_type}
                         onChange={(e) => updateField("project_type", e.target.value)}
-                        className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-none transition"
+                        className="w-full bg-background border border-border rounded-xl px-4 py-3.5 text-base focus:border-primary outline-none transition"
                       >
                         <option value="">Select a type...</option>
                         <option value="Logo Design">Logo & Brand Identity</option>
@@ -217,23 +217,23 @@ export default function Questionnaire() {
                       </select>
                     </div>
                     <div>
-                      <label className="text-xs text-muted-foreground font-semibold uppercase mb-1 block">What is the main goal of this project? *</label>
+                      <label className="text-sm text-muted-foreground font-bold uppercase mb-2 block">What is the main goal of this project? *</label>
                       <textarea
                         required
                         value={formData.project_goal}
                         onChange={(e) => updateField("project_goal", e.target.value)}
-                        className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-none transition resize-none"
+                        className="w-full bg-background border border-border rounded-xl px-4 py-3.5 text-base focus:border-primary outline-none transition resize-none"
                         rows={3}
                         placeholder="Ex: I need a modern logo to attract younger customers to my new cafe."
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-muted-foreground font-semibold uppercase mb-1 block">Who is your target audience?</label>
+                      <label className="text-sm text-muted-foreground font-bold uppercase mb-2 block">Who is your target audience?</label>
                       <input
                         type="text"
                         value={formData.target_audience}
                         onChange={(e) => updateField("target_audience", e.target.value)}
-                        className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-none transition"
+                        className="w-full bg-background border border-border rounded-xl px-4 py-3.5 text-base focus:border-primary outline-none transition"
                         placeholder="Ex: Small business owners aged 25-40"
                       />
                     </div>
@@ -250,37 +250,37 @@ export default function Questionnaire() {
                   exit={{ opacity: 0, x: -10 }}
                 >
                   <div className="mb-6">
-                    <h2 className="text-xl font-bold mb-1">Visual Style</h2>
-                    <p className="text-sm text-muted-foreground">Help me understand your aesthetic tastes.</p>
+                    <h2 className="text-2xl font-bold mb-1">Visual Style</h2>
+                    <p className="text-base text-muted-foreground">Help me understand your aesthetic tastes.</p>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-5">
                     <div>
-                      <label className="text-xs text-muted-foreground font-semibold uppercase mb-1 block">Preferred Colors</label>
+                      <label className="text-sm text-muted-foreground font-bold uppercase mb-2 block">Preferred Colors</label>
                       <input
                         type="text"
                         value={formData.brand_colors}
                         onChange={(e) => updateField("brand_colors", e.target.value)}
-                        className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-none transition"
+                        className="w-full bg-background border border-border rounded-xl px-4 py-3.5 text-base focus:border-primary outline-none transition"
                         placeholder="Ex: Minimalist black and gold, or ocean blue."
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-muted-foreground font-semibold uppercase mb-1 block">Design Style Keywords</label>
+                      <label className="text-sm text-muted-foreground font-bold uppercase mb-2 block">Design Style Keywords</label>
                       <input
                         type="text"
                         value={formData.design_style}
                         onChange={(e) => updateField("design_style", e.target.value)}
-                        className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-none transition"
+                        className="w-full bg-background border border-border rounded-xl px-4 py-3.5 text-base focus:border-primary outline-none transition"
                         placeholder="Ex: Bold, Corporate, Playful, Luxury"
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-muted-foreground font-semibold uppercase mb-1 block">Inspiration Links</label>
+                      <label className="text-sm text-muted-foreground font-bold uppercase mb-2 block">Inspiration Links</label>
                       <textarea
                         value={formData.reference_links}
                         onChange={(e) => updateField("reference_links", e.target.value)}
-                        className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-none transition resize-none"
+                        className="w-full bg-background border border-border rounded-xl px-4 py-3.5 text-base focus:border-primary outline-none transition resize-none"
                         rows={2}
                         placeholder="Drop links to Pinterest, Behance or websites you love."
                       />
@@ -298,37 +298,37 @@ export default function Questionnaire() {
                   exit={{ opacity: 0, x: -10 }}
                 >
                   <div className="mb-6">
-                    <h2 className="text-xl font-bold mb-1">Logistics & Submission</h2>
-                    <p className="text-sm text-muted-foreground">Almost done! Just a few final details.</p>
+                    <h2 className="text-2xl font-bold mb-1">Logistics & Submission</h2>
+                    <p className="text-base text-muted-foreground">Almost done! Just a few final details.</p>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-5">
                     <div>
-                      <label className="text-xs text-muted-foreground font-semibold uppercase mb-1 block">Budget Range</label>
+                      <label className="text-sm text-muted-foreground font-bold uppercase mb-2 block">Budget Range</label>
                       <input
                         type="text"
                         value={formData.budget_range}
                         onChange={(e) => updateField("budget_range", e.target.value)}
-                        className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-none transition"
+                        className="w-full bg-background border border-border rounded-xl px-4 py-3.5 text-base focus:border-primary outline-none transition"
                         placeholder="Ex: $500 - $1,000"
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-muted-foreground font-semibold uppercase mb-1 block">Desired Deadline</label>
+                      <label className="text-sm text-muted-foreground font-bold uppercase mb-2 block">Desired Deadline</label>
                       <input
                         type="text"
                         value={formData.deadline}
                         onChange={(e) => updateField("deadline", e.target.value)}
-                        className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-none transition"
+                        className="w-full bg-background border border-border rounded-xl px-4 py-3.5 text-base focus:border-primary outline-none transition"
                         placeholder="Ex: End of this month"
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-muted-foreground font-semibold uppercase mb-1 block">Anything else I should know?</label>
+                      <label className="text-sm text-muted-foreground font-bold uppercase mb-2 block">Anything else I should know?</label>
                       <textarea
                         value={formData.additional_notes}
                         onChange={(e) => updateField("additional_notes", e.target.value)}
-                        className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-none transition resize-none"
+                        className="w-full bg-background border border-border rounded-xl px-4 py-3.5 text-base focus:border-primary outline-none transition resize-none"
                         rows={3}
                         placeholder="Any extra details or questions..."
                       />
@@ -344,9 +344,9 @@ export default function Questionnaire() {
                 <button
                   type="button"
                   onClick={prevStep}
-                  className="px-5 py-2.5 bg-background border border-border rounded-xl text-sm font-medium hover:bg-muted transition flex items-center gap-2"
+                  className="px-6 py-3 bg-background border border-border rounded-xl text-base font-medium hover:bg-muted transition flex items-center gap-2"
                 >
-                  <ArrowLeft size={16} /> Back
+                  <ArrowLeft size={18} /> Back
                 </button>
               ) : (
                 <div></div>
@@ -354,23 +354,25 @@ export default function Questionnaire() {
 
               {step < 4 ? (
                 <button
+                  key="next-button" // 🌟 Distinct key prevents overlap click submission
                   type="button"
                   onClick={nextStep}
                   disabled={
                     (step === 1 && (!formData.client_name || !formData.client_email)) ||
                     (step === 2 && (!formData.project_type || !formData.project_goal))
                   }
-                  className="px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 transition flex items-center gap-2 disabled:opacity-50"
+                  className="px-6 py-3 bg-primary text-white rounded-xl text-base font-semibold hover:opacity-90 transition flex items-center gap-2 disabled:opacity-50"
                 >
-                  Next <ArrowRight size={16} />
+                  Next <ArrowRight size={18} />
                 </button>
               ) : (
                 <button
+                  key="submit-button" // 🌟 Distinct key ensures this acts fresh on step 4
                   type="submit"
                   disabled={loading}
-                  className="px-5 py-2.5 bg-green-600 text-white rounded-xl text-sm font-semibold hover:opacity-90 transition flex items-center gap-2 disabled:opacity-50"
+                  className="px-6 py-3 bg-green-600 text-white rounded-xl text-base font-semibold hover:opacity-90 transition flex items-center gap-2 disabled:opacity-50"
                 >
-                  {loading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                  {loading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
                   {loading ? "Submitting..." : "Submit Project"}
                 </button>
               )}
@@ -380,4 +382,4 @@ export default function Questionnaire() {
       </main>
     </div>
   );
-}
+                         }
