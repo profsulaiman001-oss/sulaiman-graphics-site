@@ -34,7 +34,6 @@ export default function Dashboard() {
   const [fullName, setFullName] = useState("");
   const [showNamePrompt, setShowNamePrompt] = useState(false);
   const [submittingName, setSubmittingName] = useState(false);
-  
   // Comments states
   const [openCommentsId, setOpenCommentsId] = useState<string | null>(null);
   const [comments, setComments] = useState<any[]>([]);
@@ -119,7 +118,6 @@ export default function Dashboard() {
   const saveProfileName = async () => {
     if (!fullName.trim()) return;
     setSubmittingName(true);
-
     try {
       const { error } = await supabase
         .from("profiles")
@@ -148,7 +146,7 @@ export default function Dashboard() {
       
       const projectsData = data || [];
       setProjects(projectsData);
-      
+
       const uniqueEmails = [
         ...new Set(projectsData.map((p: any) => p.client_email).filter(Boolean))
       ] as string[];
@@ -402,6 +400,7 @@ export default function Dashboard() {
     try {
       const { error } = await supabase.from("projects").delete().eq("id", projectId);
       if (error) throw error;
+
       fetchProjects(user, isAdmin);
     } catch (error: any) {
       alert(error.message);
@@ -781,19 +780,11 @@ export default function Dashboard() {
 
         {isAdmin && (
           <div className="mb-8 flex flex-wrap gap-4">
-            <button 
-              onClick={() => setLocation("/create-post")}
-              className="bg-primary hover:opacity-90 text-white font-semibold text-sm px-5 py-3 rounded-xl transition flex items-center justify-center gap-2"
-            >
-              <FileText size={18} />
-              Create A New Post
+            <button onClick={() => setLocation("/create-post")} className="bg-primary hover:opacity-90 text-white font-semibold text-sm px-5 py-3 rounded-xl transition flex items-center justify-center gap-2">
+              <FileText size={18} /> Create A New Post
             </button>
-            <button 
-              onClick={() => setLocation("/questionnaires")}
-              className="bg-background border border-border hover:border-blue-500 hover:text-blue-500 text-foreground font-semibold text-sm px-5 py-3 rounded-xl transition flex items-center justify-center gap-2"
-            >
-              <ClipboardList size={18} />
-              View Questionnaires
+            <button onClick={() => setLocation("/questionnaires")} className="bg-background border border-border hover:border-blue-500 hover:text-blue-500 text-foreground font-semibold text-sm px-5 py-3 rounded-xl transition flex items-center justify-center gap-2">
+              <ClipboardList size={18} /> View Questionnaires
             </button>
           </div>
         )}
@@ -805,16 +796,16 @@ export default function Dashboard() {
                 <span className="w-1.5 h-1.5 bg-primary rounded-full"></span> Quick Create Project
               </h2>
               <form onSubmit={createProject} className="flex flex-col gap-3">
-                <input 
-                  type="text" 
-                  placeholder="Project Title (e.g., Brand Identity)" 
+                <input
+                  type="text"
+                  placeholder="Project Title (e.g., Brand Identity)"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
                   className="bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition text-foreground"
                 />
                 
                 <div className="flex flex-col sm:flex-row gap-3">
-                  <select 
+                  <select
                     value={newClient}
                     onChange={(e) => setNewClient(e.target.value)}
                     className="flex-1 bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition text-muted-foreground"
@@ -824,7 +815,7 @@ export default function Dashboard() {
                       <option key={email} value={email}>{email}</option>
                     ))}
                   </select>
-                  
+
                   <button type="submit" className="bg-primary hover:opacity-90 text-white font-medium text-sm px-6 py-3 rounded-xl transition flex items-center justify-center gap-2 whitespace-nowrap">
                     <Plus size={16} /> Create
                   </button>
@@ -837,9 +828,9 @@ export default function Dashboard() {
                 <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Onboard New Client
               </h2>
               <form onSubmit={handleOnboardClient} className="flex flex-col sm:flex-row gap-3">
-                <input 
-                  type="email" 
-                  placeholder="Client Email Address" 
+                <input
+                  type="email"
+                  placeholder="Client Email Address"
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
                   className="bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none transition text-foreground flex-1"
@@ -873,122 +864,144 @@ export default function Dashboard() {
           <div className="space-y-4">
             {projects.map((project: any) => (
               <motion.div 
-                key={project.id}
+                key={project.id} 
                 className="bg-card border border-border rounded-2xl overflow-hidden"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.2 }}
               >
-                <div className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-3 mb-1">
+                <div className="p-5 flex flex-wrap justify-between items-center gap-4">
+                  <div className="flex-1 min-w-[200px]">
+                    <div className="flex items-center gap-3 mb-1">
                       {editingId === project.id ? (
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           value={editTitle}
                           onChange={(e) => setEditTitle(e.target.value)}
                           className="bg-background border border-border rounded-lg px-2 py-1 text-sm focus:border-primary outline-none text-foreground"
                           autoFocus
                         />
                       ) : (
-                        <h3 className="font-bold text-foreground text-base truncate">{project.title}</h3>
+                        <h3 className="font-bold text-foreground">{project.title}</h3>
                       )}
-                      
-                      {isAdmin ? (
-                        <select
-                          value={project.status}
-                          onChange={(e) => updateStatus(project.id, e.target.value)}
-                          className={`text-xs px-2 py-0.5 rounded-full border font-medium cursor-pointer outline-none transition focus:ring-1 focus:ring-primary ${statusColors[project.status] || "bg-muted text-muted-foreground"}`}
-                        >
-                          <option value="Pending" className="bg-background text-foreground">Pending</option>
-                          <option value="In Progress" className="bg-background text-foreground">In Progress</option>
-                          <option value="Completed" className="bg-background text-foreground">Completed</option>
-                        </select>
-                      ) : (
-                        <span className={`text-xs px-2.5 py-0.5 rounded-full border font-medium ${statusColors[project.status] || "bg-muted text-muted-foreground"}`}>
-                          {project.status}
-                        </span>
-                      )}
+                      <span className={`text-xs px-2.5 py-0.5 rounded-full border font-medium ${statusColors[project.status] || "bg-muted text-muted-foreground"}`}>
+                        {project.status}
+                      </span>
                     </div>
-                    
+
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                       {isAdmin && (
+                        <div className="flex items-center gap-1">
+                          <UserCheck size={12} />
+                          <select
+                            value={project.client_email || ""}
+                            onChange={(e) => assignUser(project.id, e.target.value)}
+                            className="bg-transparent border-none p-0 text-xs focus:ring-0 text-muted-foreground cursor-pointer outline-none"
+                          >
+                            <option value="">Assign Client</option>
+                            {clientEmails.map((email: string) => (
+                              <option key={email} value={email}>{email}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                      {!isAdmin && (
                         <span className="flex items-center gap-1">
-                          <UserCheck size={12} /> {project.client_email || "Unassigned"}
+                          <Mail size={12} /> {project.client_email}
                         </span>
                       )}
+                      
+                      {/* Box that shows 'no designs attached yet' or 'view and download' */}
                       <span className="flex items-center gap-1">
-                        <Clock size={12} /> {new Date(project.created_at).toLocaleDateString()}
+                        <HardDrive size={12} />
+                        {project.file_url ? (
+                          <div className="flex items-center gap-2">
+                            <a href={project.file_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                              View
+                            </a>
+                            <span>|</span>
+                            <a href={project.file_url} download className="text-primary hover:underline">
+                              Download
+                            </a>
+                          </div>
+                        ) : (
+                          "No designs attached yet"
+                        )}
                       </span>
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
-                    {/* Chat Bubble with unread counter badge */}
+                  <div className="flex items-center gap-2">
                     <button 
                       onClick={() => toggleComments(project.id)} 
-                      className={`relative w-9 h-9 flex items-center justify-center rounded-lg border transition ${
+                      className={`w-9 h-9 flex items-center justify-center rounded-lg border transition relative ${
                         openCommentsId === project.id 
-                          ? 'border-primary text-primary bg-primary/10' 
-                          : 'border-border text-muted-foreground bg-background hover:bg-muted hover:text-foreground'
+                          ? 'border-primary text-primary bg-primary/5' 
+                          : 'border-border text-muted-foreground hover:border-primary hover:text-foreground'
                       }`}
                     >
                       <MessageSquare size={16} />
-                      {unreadCounts[project.id] > 0 && (
-                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
+                      {(unreadCounts[project.id] || 0) > 0 && (
+                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-white text-[10px] rounded-full flex items-center justify-center font-bold">
                           {unreadCounts[project.id]}
                         </span>
                       )}
                     </button>
 
-                    {project.file_url ? (
-                      <a href={project.file_url} target="_blank" rel="noopener noreferrer" className="w-9 h-9 flex items-center justify-center rounded-lg border border-border text-primary bg-background hover:bg-muted transition">
-                        <Download size={16} />
-                      </a>
-                    ) : (
-                      !isAdmin && (
-                        <span className="text-xs text-muted-foreground flex items-center gap-1 border border-border/50 px-3 py-1.5 rounded-lg bg-background">
-                          <Loader2 size={10} className="animate-spin" /> Waiting for designs
-                        </span>
-                      )
+                    {isAdmin && (
+                      <div className="flex items-center gap-1.5 border border-border p-1.5 rounded-lg bg-background">
+                        <button onClick={() => updateStatus(project.id, "Pending")} className={`p-1.5 rounded-md transition ${project.status === "Pending" ? "bg-yellow-500/10 text-yellow-500" : "text-muted-foreground hover:bg-muted"}`}>
+                          <Clock size={14} />
+                        </button>
+                        <button onClick={() => updateStatus(project.id, "In Progress")} className={`p-1.5 rounded-md transition ${project.status === "In Progress" ? "bg-blue-500/10 text-primary" : "text-muted-foreground hover:bg-muted"}`}>
+                          <Loader2 size={14} />
+                        </button>
+                        <button onClick={() => updateStatus(project.id, "Completed")} className={`p-1.5 rounded-md transition ${project.status === "Completed" ? "bg-green-500/10 text-green-500" : "text-muted-foreground hover:bg-muted"}`}>
+                          <CheckCircle size={14} />
+                        </button>
+                      </div>
                     )}
 
-                    {!isAdmin && project.file_url && (
-                      <div className="flex gap-1.5 ml-2">
-                        <button 
-                          onClick={() => handleClientApproval(project.id, 'Approved')} 
-                          className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg transition font-medium border ${
-                            project.client_approval === 'Approved'
-                              ? 'bg-green-500/20 text-green-500 border-green-500/30'
-                              : 'bg-background border-border text-muted-foreground hover:text-green-500 hover:border-green-500/50'
-                          }`}
-                        >
-                          <CheckCircle size={12} /> Approve
-                        </button>
-                        <button 
-                          onClick={() => handleClientApproval(project.id, 'Revision Requested')} 
-                          className={`flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg transition font-medium border ${
-                            project.client_approval === 'Revision Requested'
-                              ? 'bg-yellow-500/20 text-yellow-500 border-yellow-500/30'
-                              : 'bg-background border-border text-muted-foreground hover:text-yellow-500 hover:border-yellow-500/50'
-                          }`}
-                        >
-                          <Edit3 size={12} /> Revise
-                        </button>
+                    {!isAdmin && (
+                      <div className="flex items-center gap-2">
+                        {project.client_approval === 'Approved' ? (
+                          <span className="text-xs font-semibold text-green-500 flex items-center gap-1 bg-green-500/10 px-3 py-1.5 rounded-lg border border-green-500/20">
+                            <CheckCircle size={14} /> Approved
+                          </span>
+                        ) : project.client_approval === 'Revision Requested' ? (
+                          <span className="text-xs font-semibold text-yellow-500 flex items-center gap-1 bg-yellow-500/10 px-3 py-1.5 rounded-lg border border-yellow-500/20">
+                            <Edit3 size={14} /> Revisions Pending
+                          </span>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => handleClientApproval(project.id, 'Approved')}
+                              className="text-xs font-semibold bg-green-500/10 hover:bg-green-500 text-green-500 hover:text-white px-3 py-1.5 rounded-lg border border-green-500/20 transition flex items-center gap-1"
+                            >
+                              <CheckCircle size={14} /> Approve
+                            </button>
+                            <button
+                              onClick={() => handleClientApproval(project.id, 'Revision Requested')}
+                              className="text-xs font-semibold bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white px-3 py-1.5 rounded-lg border border-red-500/20 transition flex items-center gap-1"
+                            >
+                              <XCircle size={14} /> Revisions
+                            </button>
+                          </>
+                        )}
                       </div>
                     )}
 
                     {isAdmin && (
                       <>
                         {editingId === project.id ? (
-                          <button onClick={saveEdit} className="w-9 h-9 flex items-center justify-center rounded-lg bg-primary text-white hover:opacity-90 transition">
-                            <Save size={16} />
+                          <button onClick={saveEdit} className="w-9 h-9 flex items-center justify-center rounded-lg border border-green-700/60 text-green-500 bg-background hover:bg-green-600/10 hover:border-green-600 transition">
+                            <Save size={16}/>
                           </button>
                         ) : (
-                          <label className="w-9 h-9 flex items-center justify-center rounded-lg border border-primary/40 text-primary bg-background hover:bg-primary/10 cursor-pointer transition">
-                            <input 
-                              type="file" 
-                              className="hidden" 
+                          <label className="w-9 h-9 flex items-center justify-center rounded-lg border border-primary/60 text-primary bg-background hover:bg-primary/10 hover:border-primary transition cursor-pointer">
+                            <input
+                              type="file"
+                              className="hidden"
                               onChange={(e) => {
                                 if (e.target.files && e.target.files[0]) {
                                   handleFileUpload(project.id, e.target.files[0]);
@@ -1014,41 +1027,58 @@ export default function Dashboard() {
                 <AnimatePresence>
                   {openCommentsId === project.id && (
                     <motion.div 
-                      className="border-t border-border bg-background"
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.2 }}
+                      className="border-t border-border overflow-hidden"
                     >
-                      <div className="p-4">
-                        <div className="max-h-48 overflow-y-auto mb-4 space-y-3 p-1">
-                          {comments.length > 0 ? (
+                      <div className="p-5 bg-background/50">
+                        <div className="flex justify-between items-center mb-4">
+                          <h4 className="text-xs font-semibold uppercase text-muted-foreground flex items-center gap-1.5">
+                            <MessageSquare size={12} className="text-primary" /> Project Discussion
+                          </h4>
+                          <span className="text-xs text-muted-foreground">
+                            {comments.length} {comments.length === 1 ? 'message' : 'messages'}
+                          </span>
+                        </div>
+                        
+                        <div className="space-y-4 max-h-[300px] overflow-y-auto mb-4 p-2 rounded-lg bg-card/50">
+                          {comments.length === 0 ? (
+                            <div className="text-center py-6 text-muted-foreground text-xs italic">
+                              No messages yet. Start the conversation below.
+                            </div>
+                          ) : (
                             comments.map((msg: any) => {
                               const isMe = isAdmin ? msg.is_admin : !msg.is_admin;
                               return (
                                 <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                                  <div className={`max-w-[80%] px-3 py-2 rounded-xl text-xs ${
+                                  <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-xs shadow-sm ${
                                     isMe 
-                                      ? 'bg-primary text-white rounded-br-none' 
-                                      : 'bg-card border border-border text-foreground rounded-bl-none'
+                                      ? 'bg-primary text-white rounded-tr-none' 
+                                      : 'bg-muted text-foreground rounded-tl-none border border-border'
                                   }`}>
-                                    <p className="whitespace-pre-wrap">{msg.message}</p>
-                                    <div className={`text-[10px] mt-1 ${isMe ? 'text-white/70' : 'text-muted-foreground'}`}>
+                                    <div className="font-semibold mb-0.5 flex items-center gap-1">
+                                      {msg.is_admin ? "Sulaiman Graphics" : "Client"}
+                                      {!msg.is_admin && isAdmin && (
+                                        <span className="text-[10px] opacity-75">({project.client_email})</span>
+                                      )}
+                                    </div>
+                                    <p className="leading-relaxed break-words">{msg.message}</p>
+                                    <div className={`text-[10px] mt-1 text-right ${isMe ? 'text-white/70' : 'text-muted-foreground'}`}>
                                       {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </div>
                                   </div>
                                 </div>
                               );
                             })
-                          ) : (
-                            <p className="text-xs text-muted-foreground text-center py-4 italic">No messages yet. Send a message to start the conversation.</p>
                           )}
                         </div>
 
                         <div className="flex gap-2">
                           <input
                             type="text"
-                            placeholder="Type a message..."
+                            placeholder="Type your message..."
                             value={newComment}
                             onChange={(e) => setNewComment(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && sendComment(project.id)}
@@ -1079,4 +1109,4 @@ export default function Dashboard() {
       </footer>
     </div>
   );
-    }
+            }
