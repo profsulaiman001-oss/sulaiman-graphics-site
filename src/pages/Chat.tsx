@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase";
 import { 
   Search, 
   Send, 
@@ -14,8 +16,96 @@ import {
 
 export default function Chat() {
   const [message, setMessage] = useState("");
+  const queryClient = useQueryClient();
 
-  // DUMMY DATA FOR VISUALS (We'll wire your Supabase DB to this later!)
+  // 1. Fetch all active projects for the sidebar
+  const { data: projects } = useQuery({
+    queryKey: ['projects'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*, profiles(full_name)');
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  // Track which project chat is currently open
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (projects?.length && !activeProjectId) {
+      setActiveProjectId(projects[0].id);
+    }
+  }, [projects]);
+
+  // 2. Fetch the actual chat messages for the selected project
+  const { data: chatMessages } = useQuery({
+    queryKey: ['messages', activeProjectId],
+    queryFn: async () => {
+      if (!activeProjectId) return [];
+      const { data, error } = await supabase
+        .from('comments')
+        .select('*')
+        .eq('project_id', activeProjectId)
+        .order('created_at', { ascending: true });
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!activeProjectId,
+  });
+
+  // 3. Set up a real-time listener for instant messages!
+  useEffect(() => {
+    if (!activeProjectId) return;
+
+    const channel = supabase
+      .channel('realtime_chat')
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'comments',
+        filter: `project_id=eq.${activeProjectId}` 
+      }, () => {
+        // Optimistically update the UI!
+        queryClient.invalidateQueries({ queryKey: ['messages', activeProjectId] });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activeProjectId, queryClient]);
+
+  // 4. Function to send a message
+  const sendMessageMutation = useMutation({
+    mutationFn: async (messageText: string) => {
+      const { data: userData } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from('comments')
+        .insert([{
+          project_id: activeProjectId,
+          user_id: userData.user?.id,
+          message: messageText,
+          is_admin: true 
+        }]);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setMessage("");
+      queryClient.invalidateQueries({ queryKey: ['messages', activeProjectId] });
+    }
+  });
+
+  const handleSend = () => {
+    if (!message.trim()) return;
+    sendMessageMutation.mutate(message);
+  };
+
+  // DUMMY DATA (We will replace this with Step 3 shortly!)
   const clients = [
     { id: 1, name: "David Adebayo", active: true, unread: 2, project: "Brand Identity" },
     { id: 2, name: "Zara Mensah", active: false, unread: 0, project: "E-Commerce Site" },
@@ -24,12 +114,10 @@ export default function Chat() {
 
   return (
     <div className="bg-[#0B0C10] min-h-screen text-gray-100 flex flex-col">
-      {/* Dynamic Grid Container */}
       <div className="flex-grow flex h-[calc(100vh-140px)] w-full max-w-[1600px] mx-auto p-4 md:p-6 gap-6">
         
         {/* ==================== LEFT SIDEBAR: CLIENT LIST ==================== */}
         <div className="hidden md:flex w-1/4 flex-col bg-[#11141A]/60 backdrop-blur-xl border border-gray-800 rounded-3xl overflow-hidden">
-          {/* Header & Search */}
           <div className="p-5 border-b border-gray-800">
             <h1 className="text-xl font-bold mb-4 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Conversations</h1>
             <div className="relative">
@@ -42,7 +130,6 @@ export default function Chat() {
             </div>
           </div>
 
-          {/* List of Clients */}
           <div className="flex-grow overflow-y-auto p-3 space-y-2">
             {clients.map((client) => (
               <div 
@@ -77,7 +164,6 @@ export default function Chat() {
 
         {/* ==================== CENTER AREA: THE CHAT ==================== */}
         <div className="flex-grow flex flex-col bg-[#11141A]/60 backdrop-blur-xl border border-gray-800 rounded-3xl overflow-hidden">
-          {/* Top Navbar for the current chat */}
           <div className="p-5 border-b border-gray-800 flex justify-between items-center bg-[#11141A]/80">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center font-bold text-black">
@@ -100,10 +186,8 @@ export default function Chat() {
             </div>
           </div>
 
-          {/* Chat Messages Scrolling Area */}
           <div className="flex-grow overflow-y-auto p-6 space-y-6">
             
-            {/* Client Message */}
             <div className="flex items-end gap-3 max-w-[75%]">
               <div className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-semibold text-gray-400">
                 DA
@@ -116,7 +200,6 @@ export default function Chat() {
               </div>
             </div>
 
-            {/* My Message (The Designer) */}
             <div className="flex items-end gap-3 max-w-[75%] ml-auto flex-row-reverse">
               <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-bold text-black">
                 SG
@@ -133,7 +216,6 @@ export default function Chat() {
 
           </div>
 
-          {/* Bottom Message Input Bar */}
           <div className="p-5 border-top border-gray-800 bg-[#11141A]/80">
             <div className="flex items-center gap-3 bg-[#1A1F29] border border-gray-800 rounded-2xl p-2.5 focus-within:border-cyan-500/50 transition-colors">
               <button className="p-2 text-gray-500 hover:text-cyan-500 transition-colors">
@@ -149,7 +231,10 @@ export default function Chat() {
               <button className="p-2 text-gray-500 hover:text-cyan-500 transition-colors hidden sm:block">
                 <Smile className="w-5 h-5" />
               </button>
-              <button className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-black font-bold h-10 w-10 flex items-center justify-center rounded-xl transition-all shadow-lg shadow-cyan-500/10">
+              <button 
+                onClick={handleSend}
+                className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-black font-bold h-10 w-10 flex items-center justify-center rounded-xl transition-all shadow-lg shadow-cyan-500/10"
+              >
                 <Send className="w-4 h-4" />
               </button>
             </div>
@@ -160,7 +245,6 @@ export default function Chat() {
         <div className="hidden xl:flex w-1/4 flex-col bg-[#11141A]/60 backdrop-blur-xl border border-gray-800 rounded-3xl p-5 overflow-y-auto">
           <h2 className="font-semibold text-lg text-gray-100 mb-5">Project Details</h2>
           
-          {/* Active Status Card */}
           <div className="bg-[#1A1F29] border border-gray-800 rounded-2xl p-4 mb-4">
             <div className="flex justify-between items-center mb-3">
               <span className="text-xs text-gray-500 font-medium tracking-wide uppercase">Active Phase</span>
@@ -170,7 +254,6 @@ export default function Chat() {
             <p className="text-xs text-gray-500">Scheduled Delivery: Friday, April 10</p>
           </div>
 
-          {/* File Attachments Quick Panel */}
           <div className="space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-xs text-gray-500 font-medium tracking-wide uppercase">Shared Files</span>
@@ -179,7 +262,6 @@ export default function Chat() {
               </button>
             </div>
 
-            {/* File 1 */}
             <div className="flex items-center gap-3 p-3 bg-[#1A1F29]/50 hover:bg-[#1A1F29] border border-gray-800 rounded-xl cursor-pointer transition-colors">
               <div className="w-9 h-9 bg-cyan-500/10 text-cyan-500 rounded-lg flex items-center justify-center">
                 <FolderOpen className="w-4 h-4" />
@@ -190,7 +272,6 @@ export default function Chat() {
               </div>
             </div>
 
-            {/* File 2 */}
             <div className="flex items-center gap-3 p-3 bg-[#1A1F29]/50 hover:bg-[#1A1F29] border border-gray-800 rounded-xl cursor-pointer transition-colors">
               <div className="w-9 h-9 bg-emerald-500/10 text-emerald-500 rounded-lg flex items-center justify-center">
                 <FolderOpen className="w-4 h-4" />
