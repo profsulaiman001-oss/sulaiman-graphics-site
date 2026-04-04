@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
-import { motion, AnimatePresence } from " f|ramer-motion";
+import { motion, AnimatePresence } from " framer-motion";
 import { ArrowLeft, ArrowRight, Send, CheckCircle, Loader2, ClipboardList } from "lucide-react";
 
 export default function Questionnaire() {
