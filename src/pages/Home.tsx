@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Link } from "wouter";
-import { ArrowRight, Star, Users, CheckCircle, Palette, Film, Layers } from "lucide-react";
+import { ArrowRight, Star, Users, CheckCircle, Palette, Film, Layers, Plus, Minus } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/Button";
 import { AnimatedSection } from "@/components/AnimatedSection";
 import { ProjectCard } from "@/components/ProjectCard";
@@ -8,6 +10,31 @@ import { useProjects, useTestimonials, CATEGORIES } from "@/hooks/use-portfolio"
 export default function Home() {
   const { data: projects, isLoading: projectsLoading } = useProjects();
   const { data: testimonials } = useTestimonials();
+  
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+  const faqs = [
+    {
+      question: "What is your typical turnaround time for a project?",
+      answer: "Turnaround times vary depending on the scope of the project. A logo design typically takes 3-5 business days, while a full brand identity or complex website can take 1-2 weeks. I prioritize quality to ensure you get the best results!"
+    },
+    {
+      question: "How do revisions work?",
+      answer: "Every package comes with a set number of revision rounds (usually 2 to 3 depending on the project tier). During a revision round, you can request adjustments to colors, fonts, layouts, or small details. Major concept changes after approval may incur an additional fee."
+    },
+    {
+      question: "What files do I receive at the end of a project?",
+      answer: "Once the project is completed and final payment is made, you will receive all necessary high-resolution files. This typically includes source files (AI or PSD), print-ready PDFs, and web-ready PNG/JPG formats."
+    },
+    {
+      question: "Do you require a deposit before starting?",
+      answer: "Yes, I require a 50% upfront deposit to secure your spot in my schedule. The remaining 50% is paid upon project completion before the final source files are delivered."
+    }
+  ];
+
+  const toggleFAQ = (index: number) => {
+    setOpenIndex(openIndex === index ? null : index);
+  };
 
   return (
     <main className="w-full">
@@ -161,7 +188,7 @@ export default function Home() {
                 <p className="text-sm font-semibold uppercase tracking-widest text-primary mb-3">
                   About Me
                 </p>
-                <h2 className="font-display font-black text-4xl sm:text-5xl text-foreground leading-tight mb-6">
+                <h2 className="font-display font-black text-4xl sm:text-5px text-foreground leading-tight mb-6">
                   Hello! I'm{" "}
                   <span className="text-gradient">Sulaiman Rabiu</span>
                 </h2>
@@ -334,6 +361,70 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* FAQ Section */}
+      <section className="py-32 bg-background border-t border-border">
+        <div className="container mx-auto px-4 max-w-4xl">
+          
+          {/* Header */}
+          <div className="text-center mb-12">
+            <span className="text-primary text-sm font-semibold uppercase tracking-wider">Got Questions?</span>
+            <h2 className="font-display font-black text-3xl sm:text-4xl text-foreground mt-2">
+              Frequently Asked Questions
+            </h2>
+            <p className="text-muted-foreground mt-3 text-sm sm:text-base">
+              Everything you need to know about working with Sulaiman Graphics.
+            </p>
+          </div>
+
+          {/* FAQ Accordion */}
+          <div className="space-y-4">
+            {faqs.map((faq, index) => {
+              const isOpen = openIndex === index;
+              
+              return (
+                <div 
+                  key={index} 
+                  className={`border rounded-2xl transition-colors ${
+                    isOpen ? 'border-primary bg-card' : 'border-border bg-card/50'
+                  }`}
+                >
+                  <button
+                    className="w-full flex justify-between items-center text-left p-5 outline-none focus:outline-none"
+                    onClick={() => toggleFAQ(index)}
+                  >
+                    <span className="font-semibold text-foreground text-sm sm:text-base pr-4">
+                      {faq.question}
+                    </span>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center border transition-colors flex-shrink-0 ${
+                      isOpen ? 'bg-primary text-white border-primary' : 'bg-background border-border text-muted-foreground'
+                    }`}>
+                      {isOpen ? <Minus size={14} /> : <Plus size={14} />}
+                    </div>
+                  </button>
+
+                  <AnimatePresence initial={false}>
+                    {isOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2, ease: "easeInOut" }}
+                        className="overflow-hidden"
+                      >
+                        <div className="p-5 pt-0 text-sm text-muted-foreground leading-relaxed border-t border-border mt-0">
+                          <p className="pt-4">{faq.answer}</p>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
+          </div>
+          
+        </div>
+      </section>
     </main>
   );
-          }
+}
