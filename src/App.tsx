@@ -35,6 +35,9 @@ import BlogPost from "@/pages/BlogPost";
 // ── ✅ ADDED: Import for your new Questionnaire page ──
 import Questionnaire from "@/pages/Questionnaire";
 
+// ── 🚨 NEW IMPORT: For managing & deleting submissions ──
+import ViewQuestionnaires from "@/pages/ViewQuestionnaires";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -123,6 +126,13 @@ function Router() {
           <Route path="/create-post">
             <ProtectedRoute>
               <CreatePost />
+            </ProtectedRoute>
+          </Route>
+
+          {/* ── 🚨 NEW SECURE ROUTE: For managing questionnaire submissions ── */}
+          <Route path="/questionnaires">
+            <ProtectedRoute>
+              <ViewQuestionnaires />
             </ProtectedRoute>
           </Route>
 
