@@ -35,15 +35,18 @@ export default function Questionnaire() {
 
   // PREVENT ENTER KEY AUTO-SUBMIT
   const handleKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
-    if (e.key === "Enter" && step < 4) {
+    // We only allow the Enter key to move steps on step 1 and step 2
+    if (e.key === "Enter" && step < 3) {
       e.preventDefault();
-      // If valid, move them to the next step on enter
+      
       const isStep1Valid = step === 1 && formData.client_name && formData.client_email;
       const isStep2Valid = step === 2 && formData.project_type && formData.project_goal;
       
       if (step === 1 && isStep1Valid) nextStep();
       if (step === 2 && isStep2Valid) nextStep();
-      if (step === 3) nextStep();
+    } else if (e.key === "Enter" && step >= 3) {
+      // Disables the enter key entirely on step 3 and 4 so it cannot force a submission
+      e.preventDefault();
     }
   };
 
