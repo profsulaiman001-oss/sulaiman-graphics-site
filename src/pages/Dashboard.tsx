@@ -476,7 +476,6 @@ export default function Dashboard() {
     Completed: "bg-green-500/10 text-green-500 border-green-500/20"
   };
 
-  // Helper function to force download from URL
   const downloadFile = async (url: string, filename: string) => {
     try {
       const response = await fetch(url);
@@ -912,7 +911,6 @@ export default function Dashboard() {
                   </span>
                 </div>
 
-                {/* MODIFICATION: Handled toggle visibility between messages and main stats to prevent overlay on square layouts */}
                 <div className="p-4 flex-1 flex flex-col items-center justify-center text-center relative overflow-hidden">
                   <AnimatePresence mode="wait">
                     {openCommentsId === project.id ? (
@@ -1091,21 +1089,20 @@ export default function Dashboard() {
                         
                         {isAdmin && (
                           <>
-                            {!project.file_url && (
-                              <label className="w-7 h-7 flex items-center justify-center rounded-lg border border-primary/40 text-primary bg-background hover:bg-primary/10 hover:border-primary transition cursor-pointer">
-                                <input
-                                  type="file"
-                                  className="hidden"
-                                  accept="image/png, image/jpeg, image/jpg, image/webp, application/pdf"
-                                  onChange={(e) => {
-                                    if (e.target.files && e.target.files[0]) {
-                                      handleFileUpload(project.id, e.target.files[0]);
-                                    }
-                                  }}
-                                />
-                                <HardDrive size={10} />
-                              </label>
-                            )}
+                            {/* MODIFICATION: The harddrive icon now stays visible here regardless of file_url, allowing seamless multi-uploads */}
+                            <label className="w-7 h-7 flex items-center justify-center rounded-lg border border-primary/40 text-primary bg-background hover:bg-primary/10 hover:border-primary transition cursor-pointer">
+                              <input
+                                type="file"
+                                className="hidden"
+                                accept="image/png, image/jpeg, image/jpg, image/webp, application/pdf"
+                                onChange={(e) => {
+                                  if (e.target.files && e.target.files[0]) {
+                                    handleFileUpload(project.id, e.target.files[0]);
+                                  }
+                                }}
+                              />
+                              <HardDrive size={10} />
+                            </label>
                             
                             <button onClick={() => startEdit(project)} className="w-7 h-7 flex items-center justify-center rounded-lg border border-yellow-700/60 text-yellow-500 bg-background hover:bg-yellow-600/10 hover:border-yellow-600 transition">
                               <Edit3 size={10}/>
@@ -1133,4 +1130,4 @@ export default function Dashboard() {
       </footer>
     </div>
   );
-    }
+}
