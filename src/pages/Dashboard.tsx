@@ -42,14 +42,10 @@ export default function Dashboard() {
   const [sendingComment, setSendingComment] = useState(false);
 
   const [unreadCounts, setUnreadCounts] = useState<{[key: string]: number}>({});
+
+  // State for mobile-friendly notification drawer and a click-outside listener
   const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
-
-  const [questionnaires, setQuestionnaires] = useState<any[]>([]);
-  const [loadingQuestionnaires, setLoadingQuestionnaires] = useState(false);
-  
-  // 🌟 FIX 1: State to track which questionnaire is currently open
-  const [openQuestionnaireId, setOpenQuestionnaireId] = useState<string | null>(null);
 
   const COLORS = ["#3b82f6", "#2563eb", "#1d4ed8", "#1e3a8a"];
 
@@ -67,21 +63,20 @@ export default function Dashboard() {
 
   const checkUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
+
     if (!user) {
       setLocation("/login");
       return;
     }
     setUser(user);
+
     const adminStatus = user.email === "profsulaiman001@gmail.com";
     setIsAdmin(adminStatus);
     
     fetchProfile(user.id);
     fetchProjects(user, adminStatus);
 
-    if (adminStatus) {
-      fetchQuestionnaires();
-    }
-
+    // Real-time notifications for status changes and inserts
     const channel = supabase
       .channel('schema-db-changes')
       .on(
@@ -91,7 +86,6 @@ export default function Dashboard() {
           if (payload.eventType === 'UPDATE') {
              const oldStatus = payload.old.status;
              const newStatus = payload.new.status;
-  
              if (oldStatus !== newStatus) {
                 setNotifications(prev => [`Project "${payload.new.title}" status updated to ${newStatus}`, ...prev]);
              }
@@ -112,44 +106,13 @@ export default function Dashboard() {
     };
   };
 
-  const fetchQuestionnaires = async () => {
-    try {
-      setLoadingQuestionnaires(true);
-      const { data, error } = await supabase
-        .from("project_questionnaires")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      setQuestionnaires(data || []);
-    } catch (error: any) {
-      console.error("Error fetching questionnaires:", error.message);
-    } finally {
-      setLoadingQuestionnaires(false);
-    }
-  };
-
-  const handleDeleteQuestionnaire = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this questionnaire submission?")) return;
-    try {
-      const { error } = await supabase
-        .from("project_questionnaires")
-        .delete()
-        .eq("id", id);
-      if (error) throw error;
-      
-      setQuestionnaires(prev => prev.filter(q => q.id !== id));
-      setNotifications(prev => ["Questionnaire deleted successfully", ...prev]);
-    } catch (error: any) {
-      alert("Error deleting: " + error.message);
-    }
-  };
-
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
       .from("profiles")
       .select("full_name")
       .eq("id", userId)
       .single();
+
     if (data && data.full_name) {
       setFullName(data.full_name);
     } else if (!isAdmin) {
@@ -160,10 +123,12 @@ export default function Dashboard() {
   const saveProfileName = async () => {
     if (!fullName.trim()) return;
     setSubmittingName(true);
+
     try {
       const { error } = await supabase
         .from("profiles")
         .upsert({ id: user.id, full_name: fullName.trim(), updated_at: new Date() });
+
       if (error) throw error;
       setShowNamePrompt(false);
     } catch (error: any) {
@@ -176,6 +141,7 @@ export default function Dashboard() {
   const fetchProjects = async (currentUser: any, admin: boolean) => {
     try {
       setLoading(true);
+
       let query = supabase.from("projects").select("*").order("created_at", { ascending: false });
       
       if (!admin) {
@@ -183,13 +149,16 @@ export default function Dashboard() {
       }
       
       const { data, error } = await query;
+
       if (error) throw error;
       
       const projectsData = data || [];
       setProjects(projectsData);
+
       const uniqueEmails = [
         ...new Set(projectsData.map((p: any) => p.client_email).filter(Boolean))
       ] as string[];
+
       setClientEmails(uniqueEmails);
 
       if (projectsData.length > 0) {
@@ -209,8 +178,10 @@ export default function Dashboard() {
       .select("project_id, is_admin")
       .in("project_id", projectIds)
       .eq("is_read", false);
+
     if (!error && data) {
       const counts: {[key: string]: number} = {};
+
       data.forEach((msg: any) => {
         const isUnreadForMe = admin ? !msg.is_admin : msg.is_admin;
         
@@ -218,6 +189,7 @@ export default function Dashboard() {
           counts[msg.project_id] = (counts[msg.project_id] || 0) + 1;
         }
       });
+
       setUnreadCounts(counts);
     }
   };
@@ -228,6 +200,7 @@ export default function Dashboard() {
       .select("*")
       .eq("project_id", projectId)
       .order("created_at", { ascending: true });
+
     if (!error && data) {
       setComments(data);
     }
@@ -240,6 +213,7 @@ export default function Dashboard() {
       .eq("project_id", projectId)
       .eq("is_read", false)
       .eq("is_admin", !isAdmin);
+
     if (!error) {
       setUnreadCounts(prev => ({ ...prev, [projectId]: 0 }));
     }
@@ -290,6 +264,7 @@ export default function Dashboard() {
     if (!newComment.trim() || !user) return;
     
     setSendingComment(true);
+
     const { error } = await supabase
       .from("comments")
       .insert([{
@@ -299,6 +274,7 @@ export default function Dashboard() {
         is_admin: isAdmin,
         is_read: false
       }]);
+
     if (!error) {
       setNewComment("");
       fetchComments(projectId);
@@ -306,9 +282,9 @@ export default function Dashboard() {
     setSendingComment(false);
   };
 
-  // 🌟 FIX 2: Wrapped database calls strictly inside a verified check.
   const createProject = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!newTitle.trim() || !newClient.trim()) {
       alert("Please provide both a project title and a client email!");
       return;
@@ -316,20 +292,20 @@ export default function Dashboard() {
 
     try {
       const { error } = await supabase.from("projects").insert([{
-        title: newTitle.trim(),
+        title: newTitle,
         status: "Pending",
-        client_email: newClient.trim(),
-        user_id: user.id // 👈 Passes the authenticated user ID if active RLS policies demand it
+        client_email: newClient
       }]);
-      
+
       if (error) throw error;
       
       setNewTitle("");
       setNewClient("");
       setNotifications(prev => ["Project created successfully!", ...prev]);
       fetchProjects(user, isAdmin);
+
     } catch (error: any) {
-      alert("Database error: " + error.message);
+      alert(error.message);
     }
   };
 
@@ -338,6 +314,7 @@ export default function Dashboard() {
     if (!inviteEmail.trim()) return;
 
     setInviting(true);
+
     try {
       const response = await fetch('/api/onboard', {
         method: 'POST',
@@ -346,6 +323,7 @@ export default function Dashboard() {
         },
         body: JSON.stringify({ email: inviteEmail }),
       });
+
       const result = await response.json();
 
       if (!response.ok) {
@@ -355,6 +333,7 @@ export default function Dashboard() {
       setNotifications(prev => [result.message, ...prev]);
       setClientEmails(prev => [...new Set([...prev, inviteEmail])]);
       setInviteEmail("");
+
     } catch (err: any) {
       alert(err.message || "An error occurred.");
     } finally {
@@ -373,6 +352,7 @@ export default function Dashboard() {
         .from("projects")
         .update({ title: editTitle })
         .eq("id", editingId);
+
       if (error) throw error;
       setEditingId(null);
       fetchProjects(user, isAdmin);
@@ -387,6 +367,7 @@ export default function Dashboard() {
         .from("projects")
         .update({ status })
         .eq("id", projectId);
+
       if (error) throw error;
       fetchProjects(user, isAdmin);
     } catch (error: any) {
@@ -400,6 +381,7 @@ export default function Dashboard() {
         .from("projects")
         .update({ client_approval: decision })
         .eq("id", projectId);
+
       if (error) throw error;
       
       const noteMessage = decision === 'Approved' 
@@ -408,6 +390,7 @@ export default function Dashboard() {
         
       setNotifications(prev => [noteMessage, ...prev]);
       fetchProjects(user, isAdmin);
+
     } catch (error: any) {
       alert(error.message);
     }
@@ -419,6 +402,7 @@ export default function Dashboard() {
         .from("projects")
         .update({ client_email: email })
         .eq("id", projectId);
+
       if (error) throw error;
       fetchProjects(user, isAdmin);
     } catch (error: any) {
@@ -428,9 +412,11 @@ export default function Dashboard() {
 
   const handleDelete = async (projectId: string) => {
     if (!confirm("Are you sure you want to delete this project?")) return;
+
     try {
       const { error } = await supabase.from("projects").delete().eq("id", projectId);
       if (error) throw error;
+
       fetchProjects(user, isAdmin);
     } catch (error: any) {
       alert(error.message);
@@ -445,6 +431,8 @@ export default function Dashboard() {
   const handleFileUpload = async (projectId: string, file: File) => {
     try {
       setLoading(true);
+
+      // 1. LIMIT FILE SIZE (5MB max)
       const maxFileSize = 5 * 1024 * 1024;
 
       if (file.size > maxFileSize) {
@@ -453,7 +441,9 @@ export default function Dashboard() {
         return;
       }
 
+      // 2. LIMIT FILE TYPES
       const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'application/pdf'];
+
       if (!allowedTypes.includes(file.type)) {
         alert("Unsupported file type! Please upload only PNG, JPG, WEBP, or PDF files.");
         setLoading(false);
@@ -463,22 +453,29 @@ export default function Dashboard() {
       const fileExt = file.name.split('.').pop();
       const fileName = `${projectId}-${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
+
       const { error: uploadError } = await supabase.storage
         .from('project-files')
         .upload(filePath, file);
+
       if (uploadError) throw uploadError;
 
       const { data: urlData } = supabase.storage
         .from('project-files')
         .getPublicUrl(filePath);
+
       const publicUrl = urlData.publicUrl;
+
       const targetProject = projects.find((p: any) => p.id === projectId);
+
       const { error: updateError } = await supabase
         .from('projects')
         .update({ file_url: publicUrl })
         .eq('id', projectId);
+
       if (updateError) throw updateError;
 
+      // 3. TRIGGER AUTOMATED EMAIL
       if (targetProject && targetProject.client_email) {
         try {
           await fetch('/api/send-design-email', {
@@ -509,6 +506,7 @@ export default function Dashboard() {
     const pending = projects.filter((p: any) => p.status?.toLowerCase() === "pending").length;
     const inProgress = projects.filter((p: any) => p.status?.toLowerCase() === "in progress").length;
     const completed = projects.filter((p: any) => p.status?.toLowerCase() === "completed").length;
+
     return [
       { name: "Pending", value: pending },
       { name: "In Progress", value: inProgress },
@@ -812,13 +810,22 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* ✅ FIXED: View Questionnaires button added next to Create Post */}
         {isAdmin && (
-          <div className="mb-8">
+          <div className="mb-8 flex flex-wrap gap-4">
             <button
               onClick={() => setLocation("/create-post")}
               className="bg-primary hover:opacity-90 text-white font-semibold text-sm px-5 py-3 rounded-xl transition flex items-center justify-center gap-2"
             >
-              <FileText size={18} /> Create A New Post
+              <FileText size={18} />
+              Create A New Post
+            </button>
+            <button
+              onClick={() => setLocation("/questionnaires")}
+              className="bg-background border border-border hover:border-primary text-foreground hover:text-primary font-semibold text-sm px-5 py-3 rounded-xl transition flex items-center justify-center gap-2"
+            >
+              <ClipboardList size={18} />
+              View Questionnaires
             </button>
           </div>
         )}
@@ -837,6 +844,7 @@ export default function Dashboard() {
                   onChange={(e) => setNewTitle(e.target.value)}
                   className="bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition text-foreground"
                 />
+                
                 <div className="flex flex-col sm:flex-row gap-3">
                   <select
                     value={newClient}
@@ -848,6 +856,7 @@ export default function Dashboard() {
                       <option key={email} value={email}>{email}</option>
                     ))}
                   </select>
+
                   <button
                     type="submit"
                     className="bg-primary hover:opacity-90 text-white font-medium text-sm px-6 py-3 rounded-xl transition flex items-center justify-center gap-2 whitespace-nowrap"
@@ -884,81 +893,7 @@ export default function Dashboard() {
                 </button>
               </form>
             </div>
-          </div>
-        )}
-
-        {/* ── QUESTIONNAIRES SECTION ── */}
-        {isAdmin && (
-          <div className="mb-8 bg-card border border-border rounded-2xl p-5">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span> Questionnaire Submissions
-              </h2>
-              {loadingQuestionnaires && <Loader2 size={14} className="text-primary animate-spin" />}
-            </div>
-
-            {questionnaires.length === 0 && !loadingQuestionnaires ? (
-              <div className="text-center py-6 bg-background rounded-xl border border-dashed border-border">
-                <p className="text-xs text-muted-foreground">No submissions found yet.</p>
-              </div>
-            ) : (
-              <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-                {questionnaires.map((form) => (
-                  <div key={form.id} className="bg-background border border-border rounded-xl p-4 hover:border-primary/30 transition-colors">
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <h3 className="text-base font-bold text-foreground truncate max-w-[200px]">
-                          {form.business_name || form.client_name || "New Lead"}
-                        </h3>
-                        <span className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                          <Clock size={12} /> {new Date(form.created_at).toLocaleDateString()} at {new Date(form.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        {/* 🌟 FIX: Interactive toggle handler for state mapping */}
-                        <button 
-                          onClick={() => setOpenQuestionnaireId(openQuestionnaireId === form.id ? null : form.id)}
-                          className="text-xs font-semibold px-3 py-1.5 rounded-lg border bg-muted hover:bg-muted/80 transition-colors"
-                        >
-                          {openQuestionnaireId === form.id ? "Hide Questionnaire" : "View Questionnaire"}
-                        </button>
-                        
-                        <button 
-                          onClick={() => handleDeleteQuestionnaire(form.id)}
-                          className="w-7 h-7 flex items-center justify-center rounded-full border border-red-700/60 text-red-500 bg-background hover:bg-red-600/10 hover:border-red-600 transition"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* 🌟 FIX: Wrap mapped fields in Framer Motion height constraints */}
-                    <AnimatePresence>
-                      {openQuestionnaireId === form.id && (
-                        <motion.div 
-                          className="space-y-3 max-h-48 overflow-y-auto bg-card p-4 rounded-lg border border-border/50 text-sm text-foreground mt-3"
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          {Object.entries(form).map(([key, val]) => {
-                            if (['id', 'created_at'].includes(key)) return null;
-                            return (
-                              <div key={key} className="flex flex-col border-b border-border/30 last:border-0 pb-2 mb-2 last:pb-0 last:mb-0">
-                                <span className="font-bold text-primary uppercase text-xs tracking-wider mb-1">{key.replace(/_/g, ' ')}:</span>
-                                <span className="break-words leading-snug">{typeof val === 'object' ? JSON.stringify(val) : String(val)}</span>
-                              </div>
-                            );
-                          })}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                ))}
-              </div>
-            )}
+            
           </div>
         )}
 
@@ -975,211 +910,236 @@ export default function Dashboard() {
         ) : (
           <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {projects.map((project: any, index) => (
-              <motion.div
-                key={project.id}
-                className="bg-card border border-border rounded-2xl p-5 hover:border-primary/30 transition-colors flex flex-col justify-between"
+              <motion.div 
+                key={project.id} 
+                className="bg-card border border-border rounded-3xl p-6 flex flex-col gap-5 hover:border-primary/30 hover:shadow-[0_8px_30px_rgba(59,130,246,0.05)] transition-all group relative"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
+                transition={{ delay: 0.1 * index }}
               >
-                <div>
-                  <div className="flex justify-between items-start mb-3">
+                <div className="flex justify-between items-start gap-4">
+                  <div className="flex-1">
                     {editingId === project.id ? (
                       <input
-                        type="text"
                         value={editTitle}
                         onChange={(e) => setEditTitle(e.target.value)}
-                        className="bg-background border border-border rounded-lg px-3 py-1.5 text-sm focus:border-primary outline-none transition text-foreground w-full mr-2"
+                        className="p-3 rounded-lg w-full bg-background border border-primary focus:ring-1 focus:ring-primary text-foreground font-medium mb-1"
+                        autoFocus
                       />
                     ) : (
-                      <h3 className="text-base font-bold text-foreground truncate max-w-[180px]">{project.title}</h3>
+                      <h3 className="font-bold text-lg tracking-tight line-clamp-2 leading-tight text-foreground group-hover:text-primary transition-colors">
+                        {project.title}
+                      </h3>
                     )}
-                    
-                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${statusColors[project.status] || "bg-muted text-muted-foreground border-border"}`}>
+                    <p className="text-xs text-muted-foreground tracking-wide break-all mt-1 flex items-center gap-1.5">
+                      👤 {project.client_email || "Unassigned"}
+                    </p>
+                  </div>
+                  
+                  <span className={`text-[11px] font-bold px-3 py-1 uppercase rounded-full tracking-wider border ${statusColors[project.status] || statusColors["Pending"]}`}>
                       {project.status}
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-muted-foreground mb-4 flex items-center gap-1">
-                    <Clock size={12} /> Created: {new Date(project.created_at).toLocaleDateString()}
-                  </p>
-
-                  <div className="bg-background border border-border/50 rounded-xl p-3 mb-4">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-xs text-muted-foreground font-medium">Assigned Client:</span>
-                      {isAdmin && (
-                        <span className="text-[10px] text-primary font-bold uppercase">Admin View</span>
-                      )}
-                    </div>
-                    {isAdmin ? (
-                      <select 
-                        value={project.client_email || ""} 
-                        onChange={(e) => assignUser(project.id, e.target.value)}
-                        className="w-full bg-transparent border-0 p-0 text-sm font-semibold text-foreground outline-none focus:ring-0 cursor-pointer"
-                      >
-                        <option value="" className="bg-card">Unassigned</option>
-                        {clientEmails.map((email: string) => (
-                          <option key={email} value={email} className="bg-card">{email}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <p className="text-sm font-semibold text-foreground truncate">{project.client_email || "Unassigned"}</p>
-                    )}
-                  </div>
+                  </span>
                 </div>
 
-                <div className="space-y-3">
-                  {!isAdmin && project.file_url && (
-                    <div className="bg-background border border-border/50 rounded-xl p-3">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-xs text-muted-foreground font-medium">Your Approval:</span>
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${
-                          project.client_approval === 'Approved' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
-                          project.client_approval === 'Revision Requested' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' :
-                          'bg-muted text-muted-foreground border-border'
-                        }`}>
-                          {project.client_approval || 'Pending Action'}
+                <div className="bg-background border border-border rounded-xl p-3 flex flex-col gap-3">
+                  {project.file_url ? (
+                    <>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-xs text-green-400 font-medium flex items-center gap-1">
+                          <CheckCircle size={12} /> Design ready
                         </span>
+                        <button 
+                          onClick={async () => {
+                            window.open(project.file_url, '_blank');
+                            setNotifications(prev => ["Downloading your design file... Check your browser downloads!", ...prev]);
+
+                            try {
+                              const response = await fetch(project.file_url);
+                              const blob = await response.blob();
+                              const blobUrl = window.URL.createObjectURL(blob);
+                              
+                              const link = document.createElement('a');
+                              link.href = blobUrl;
+                              
+                              const fileName = project.file_url.split('/').pop() || 'design-file';
+                              link.download = fileName; 
+                              
+                              document.body.appendChild(link);
+                              link.click();
+                              
+                              document.body.removeChild(link);
+                              window.URL.revokeObjectURL(blobUrl);
+                            } catch (error) {
+                              console.error("Background physical save failed, but tab opened.");
+                            }
+                          }}
+                          className="text-xs bg-primary/10 hover:bg-primary text-primary hover:text-white px-3 py-1.5 rounded-lg border border-primary/30 transition-colors font-semibold flex items-center gap-1"
+                        >
+                          <Download size={12} /> View & Download
+                        </button>
                       </div>
-                      
-                      {(!project.client_approval || project.client_approval === 'Revision Requested') && (
-                        <div className="flex gap-2 mt-2">
-                          <button 
-                            onClick={() => handleClientApproval(project.id, 'Approved')}
-                            className="flex-1 bg-green-500 hover:opacity-90 text-white text-xs font-semibold py-2 rounded-lg transition flex items-center justify-center gap-1"
-                          >
-                            <CheckCircle size={12} /> Approve
-                          </button>
-                          <button 
-                            onClick={() => handleClientApproval(project.id, 'Revision Requested')}
-                            className="flex-1 bg-background border border-border hover:border-yellow-500 hover:text-yellow-500 text-foreground text-xs font-semibold py-2 rounded-lg transition flex items-center justify-center gap-1"
-                          >
-                            <MessageSquare size={12} /> Request Changes
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
 
-                  {isAdmin && (
-                    <div className="bg-background border border-border/50 rounded-xl p-2 flex justify-between items-center">
-                      <span className="text-xs text-muted-foreground font-medium pl-1">Client Decision:</span>
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${
-                        project.client_approval === 'Approved' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
-                        project.client_approval === 'Revision Requested' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' :
-                        'bg-muted text-muted-foreground border-border'
-                      }`}>
-                        {project.client_approval || 'Waiting...'}
-                      </span>
-                    </div>
+                      <div className="border-t border-border/50 pt-2 mt-1">
+                        {project.client_approval === 'Approved' ? (
+                          <div className="text-center py-1.5 bg-green-500/10 border border-green-500/20 rounded-lg text-green-500 text-xs font-bold flex items-center justify-center gap-1">
+                             <CheckCircle size={12} /> Project Approved
+                          </div>
+                        ) : project.client_approval === 'Revision Requested' ? (
+                          <div className="text-center py-1.5 bg-yellow-500/10 border border-yellow-500/20 rounded-lg text-yellow-500 text-xs font-bold flex items-center justify-center gap-1">
+                             <Edit3 size={12} /> Revisions Requested
+                          </div>
+                        ) : !isAdmin ? (
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              onClick={() => handleClientApproval(project.id, 'Revision Requested')}
+                              className="text-xs bg-background hover:bg-yellow-500/10 text-muted-foreground hover:text-yellow-500 py-2 rounded-lg border border-border hover:border-yellow-500/30 transition-colors font-semibold"
+                            >
+                              Request Changes
+                            </button>
+                            <button
+                              onClick={() => handleClientApproval(project.id, 'Approved')}
+                              className="text-xs bg-primary hover:opacity-90 text-white py-2 rounded-lg transition-opacity font-semibold"
+                            >
+                              Approve Project
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="text-center py-1.5 bg-muted rounded-lg text-muted-foreground text-xs font-medium">
+                            Waiting for client review
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <span className="text-xs text-muted-foreground italic flex items-center gap-1">
+                      <Clock size={12} /> No files attached yet
+                    </span>
                   )}
+                </div>
 
-                  <div className="flex items-center gap-2">
-                    <button 
-                      onClick={() => toggleComments(project.id)}
-                      className={`flex-1 font-semibold text-sm px-4 py-2.5 rounded-xl transition flex items-center justify-center gap-2 relative ${
-                        openCommentsId === project.id 
-                          ? "bg-foreground text-background" 
-                          : "bg-background border border-border hover:border-primary text-foreground"
-                      }`}
-                    >
+                <div className="border-t border-border pt-4">
+                  <button 
+                    onClick={() => toggleComments(project.id)}
+                    className="flex items-center justify-between w-full text-xs text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    <span className="flex items-center gap-1.5 font-medium">
                       <MessageSquare size={14} /> 
-                      {openCommentsId === project.id ? "Close Chat" : "Discussion"}
-                      
-                      {unreadCounts[project.id] > 0 && openCommentsId !== project.id && (
-                        <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
-                          {unreadCounts[project.id]}
-                        </span>
-                      )}
-                    </button>
-
-                    {project.file_url && (
-                      <a 
-                        href={project.file_url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-primary hover:opacity-90 text-white transition"
-                      >
-                        <Download size={14} />
-                      </a>
+                      {openCommentsId === project.id ? "Hide Discussion" : "Request Changes / Chat"}
+                    </span>
+                    
+                    {unreadCounts[project.id] > 0 && openCommentsId !== project.id ? (
+                      <span className="text-[10px] bg-red-500 text-white px-1.5 py-0.5 rounded-full font-bold flex items-center justify-center animate-pulse">
+                        {unreadCounts[project.id]} new
+                      </span>
+                    ) : (
+                      <span className="text-[10px] bg-background border border-border px-1.5 py-0.5 rounded-full">
+                        Tap to open
+                      </span>
                     )}
-                  </div>
+                  </button>
 
                   <AnimatePresence>
                     {openCommentsId === project.id && (
                       <motion.div 
-                        className="bg-background border border-border rounded-xl p-3 mt-2"
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
+                        className="mt-3 space-y-3"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
                       >
-                        <div className="space-y-2 max-h-40 overflow-y-auto mb-3 pr-1 text-xs">
+                        <div className="max-h-40 overflow-y-auto space-y-2 bg-background/50 p-2 rounded-lg border border-border">
                           {comments.length === 0 ? (
-                            <p className="text-muted-foreground text-center py-4 italic">No messages yet. Start the conversation!</p>
+                            <div className="text-[11px] text-muted-foreground text-center py-2">No messages yet. Start the thread below!</div>
                           ) : (
-                            comments.map((msg) => {
-                              const isMe = isAdmin ? msg.is_admin : !msg.is_admin;
-                              return (
-                                <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
-                                  <div className={`max-w-[80%] rounded-lg px-3 py-2 ${
-                                    isMe 
-                                      ? "bg-primary text-white" 
-                                      : "bg-muted text-foreground border border-border/50"
-                                  }`}>
-                                    <p className="leading-snug break-words">{msg.message}</p>
-                                    <span className={`text-[10px] block mt-1 text-right ${isMe ? "text-white/70" : "text-muted-foreground"}`}>
-                                      {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </span>
-                                  </div>
+                            comments.map((msg) => (
+                              <div 
+                                key={msg.id} 
+                                className={`p-2 rounded-lg text-xs max-w-[85%] ${
+                                  msg.is_admin 
+                                    ? "bg-primary/10 border border-primary/20 ml-auto text-foreground" 
+                                    : "bg-muted border border-border text-foreground"
+                                }`}
+                              >
+                                <div className="flex justify-between items-center gap-2 mb-0.5">
+                                  <span className={`font-bold text-[10px] uppercase ${msg.is_admin ? "text-primary" : "text-muted-foreground"}`}>
+                                    {msg.is_admin ? "Sulaiman" : "Client"}
+                                  </span>
+                                  <span className="text-[9px] text-muted-foreground">
+                                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
                                 </div>
-                              );
-                            })
+                                <p className="leading-snug">{msg.message}</p>
+                              </div>
+                            ))
                           )}
                         </div>
 
                         <div className="flex gap-2">
-                          <input
+                          <input 
                             type="text"
                             placeholder="Type a message..."
                             value={newComment}
                             onChange={(e) => setNewComment(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && sendComment(project.id)}
-                            className="flex-1 bg-card border border-border rounded-lg px-3 py-2 text-xs focus:border-primary focus:ring-0 outline-none transition text-foreground"
+                            onKeyDown={(e) => e.key === 'Enter' && sendComment(project.id)}
+                            className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-xs focus:border-primary focus:ring-1 focus:ring-primary outline-none text-foreground"
                           />
                           <button
                             onClick={() => sendComment(project.id)}
                             disabled={sendingComment || !newComment.trim()}
-                            className="w-8 h-8 flex items-center justify-center rounded-lg bg-primary hover:opacity-90 disabled:opacity-50 text-white transition"
+                            className="bg-primary hover:opacity-90 disabled:opacity-50 w-9 h-9 flex items-center justify-center rounded-lg text-white transition-colors"
                           >
-                            {sendingComment ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+                            {sendingComment ? (
+                              <Loader2 size={12} className="animate-spin" />
+                            ) : (
+                              <Send size={12} />
+                            )}
                           </button>
                         </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
+                </div>
 
-                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/50">
+                <div className="mt-auto pt-4 border-t border-border flex flex-wrap justify-between items-center gap-3">
+                  <div className="flex gap-2 flex-wrap">
+                        <select
+                          value={project.status}
+                          onChange={(e) => updateStatus(project.id, e.target.value)}
+                          className="bg-background border border-border text-foreground text-xs rounded-lg px-2.5 py-1.5 focus:border-primary transition"
+                      >
+                          <option value="Pending">Pending</option>
+                          <option value="In Progress">In Progress</option>
+                          <option value="Completed">Completed</option>
+                      </select>
+
+                      {isAdmin && (
+                          <select
+                          value={project.client_email || ""}
+                          onChange={(e) => assignUser(project.id, e.target.value)}
+                          className="bg-background border border-border text-foreground text-xs rounded-lg px-2.5 py-1.5 focus:border-primary transition"
+                          >
+                            <option value="">Client Assign</option>
+                          {clientEmails.map((email: string) => (
+                              <option key={email} value={email}>{email}</option>
+                          ))}
+                          </select>
+                      )}
+                  </div>
+
+                  <div className="flex gap-2.5 ml-auto">
                     {editingId === project.id ? (
                       <>
-                        <button onClick={saveEdit} className="w-9 h-9 flex items-center justify-center rounded-lg border border-green-700/60 text-green-500 bg-background hover:bg-green-600/10 hover:border-green-600 transition">
+                        <button onClick={saveEdit} className="w-9 h-9 flex items-center justify-center rounded-lg border border-green-700 text-green-500 bg-background hover:bg-green-600/10 hover:border-green-600 transition">
                           <Save size={16}/>
                         </button>
-                        <button onClick={() => setEditingId(null)} className="w-9 h-9 flex items-center justify-center rounded-lg border border-border hover:bg-muted transition text-muted-foreground hover:text-foreground">
+                        <button onClick={() => setEditingId(null)} className="w-9 h-9 flex items-center justify-center rounded-lg border border-border text-muted-foreground bg-background hover:bg-card hover:border-border transition">
                           <XCircle size={16}/>
                         </button>
                       </>
                     ) : (
                       <>
                         {isAdmin && (
-                          <div className="mr-auto flex gap-1">
-                            <button onClick={() => updateStatus(project.id, "Pending")} className={`w-6 h-6 text-[10px] font-bold rounded flex items-center justify-center transition ${project.status === 'Pending' ? 'bg-yellow-500 text-black' : 'bg-muted text-muted-foreground hover:bg-yellow-500/20'}`}>P</button>
-                            <button onClick={() => updateStatus(project.id, "In Progress")} className={`w-6 h-6 text-[10px] font-bold rounded flex items-center justify-center transition ${project.status === 'In Progress' ? 'bg-blue-500 text-white' : 'bg-muted text-muted-foreground hover:bg-blue-500/20'}`}>A</button>
-                            <button onClick={() => updateStatus(project.id, "Completed")} className={`w-6 h-6 text-[10px] font-bold rounded flex items-center justify-center transition ${project.status === 'Completed' ? 'bg-green-500 text-white' : 'bg-muted text-muted-foreground hover:bg-green-500/20'}`}>C</button>
-                          </div>
-                        )}
-                        
-                        {isAdmin && (
-                          <label className="w-9 h-9 flex items-center justify-center rounded-lg border border-blue-700/60 text-primary bg-background hover:bg-blue-600/10 hover:border-blue-600 transition cursor-pointer">
+                          <label className="w-9 h-9 flex items-center justify-center rounded-lg border border-blue-700/60 text-primary bg-background hover:bg-primary/10 hover:border-primary transition cursor-pointer">
                             <input
                               type="file"
                               className="hidden"
@@ -1217,4 +1177,4 @@ export default function Dashboard() {
       </footer>
     </div>
   );
-          }
+                                           }
