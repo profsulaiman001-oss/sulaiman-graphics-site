@@ -38,6 +38,9 @@ import Questionnaire from "@/pages/Questionnaire";
 // ── 🚨 NEW IMPORT: For managing & deleting submissions ──
 import ViewQuestionnaires from "@/pages/ViewQuestionnaires";
 
+// ── 💬 NEW IMPORT: For your brand new dedicated Chat page ──
+import Chat from "@/pages/Chat";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -133,6 +136,13 @@ function Router() {
           <Route path="/questionnaires">
             <ProtectedRoute>
               <ViewQuestionnaires />
+            </ProtectedRoute>
+          </Route>
+
+          {/* ── 💬 NEW SECURE ROUTE: For your dedicated Chat page ── */}
+          <Route path="/chat">
+            <ProtectedRoute>
+              <Chat />
             </ProtectedRoute>
           </Route>
 
