@@ -7,21 +7,18 @@ import { Button } from "./Button";
 /* ── Added the import for your new Settings Dropdown ── */
 import { SettingsDropdown } from "@/components/SettingsDropdown";
 
+// 🔥 ORDER UPDATED: Home, About, Services, Portfolio, Blog, Get started, Chat, Contact, Login, Settings
 const links = [
   { name: "Home", path: "/" },
-  // ── ✅ ADDED: Public Blog route ──
-  { name: "Blog", path: "/blog" },
-  
-  // ── ✅ ADDED: Public Questionnaire route ──
-  { name: "Get Started", path: "/questionnaire" },
-  
-  { name: "Portfolio", path: "/portfolio" },
   { name: "About", path: "/#about", hash: true },
   { name: "Services", path: "/services" },
+  { name: "Portfolio", path: "/portfolio" },
+  { name: "Blog", path: "/blog" },
+  { name: "Get Started", path: "/questionnaire" },
+  { name: "Chat", path: "/chat" },
   { name: "Contact", path: "/contact" },
-
-  // 👉 ADDED LOGIN
   { name: "Login", path: "/login" },
+  { name: "Settings", path: "/settings" }, // Added settings path here
 ];
 
 export function Navbar() {
@@ -56,7 +53,7 @@ export function Navbar() {
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-6 lg:gap-8">
             {links.map((link) => {
               const isActive =
                 !link.hash &&
@@ -112,7 +109,7 @@ export function Navbar() {
               );
             })}
 
-            {/* ── Settings Dropdown Inserted Here ── */}
+            {/* ── Settings Dropdown Inserted Here (Icon fallback) ── */}
             <div className="ml-2">
               <SettingsDropdown />
             </div>
@@ -182,7 +179,7 @@ export function Navbar() {
 
               {/* ── Mobile Settings Option ── */}
               <div className="border-t border-border mt-3 pt-3 px-4 flex justify-between items-center">
-                <span className="text-lg font-medium text-muted-foreground">Settings</span>
+                <span className="text-lg font-medium text-muted-foreground">Quick Settings</span>
                 <SettingsDropdown />
               </div>
             </div>
