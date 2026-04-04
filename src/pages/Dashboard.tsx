@@ -360,26 +360,6 @@ export default function Dashboard() {
     }
   };
 
-  const handleClientApproval = async (projectId: string, decision: 'Approved' | 'Revision Requested') => {
-    try {
-      const { error } = await supabase
-        .from("projects")
-        .update({ client_approval: decision })
-        .eq("id", projectId);
-
-      if (error) throw error;
-      
-      const noteMessage = decision === 'Approved' 
-        ? "🎉 Project approved by client!" 
-        : "✍️ Client requested revisions.";
-        
-      setNotifications(prev => [noteMessage, ...prev]);
-      fetchProjects(user, isAdmin);
-    } catch (error: any) {
-      alert(error.message);
-    }
-  };
-
   const assignUser = async (projectId: string, email: string) => {
     try {
       const { error } = await supabase
@@ -892,7 +872,6 @@ export default function Dashboard() {
             </p>
           </div>
         ) : (
-          /* Grid display to force rectangular rows to become squares */
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {projects.map((project: any) => (
               <motion.div 
@@ -933,29 +912,105 @@ export default function Dashboard() {
                   </span>
                 </div>
 
-                <div className="p-4 flex-1 flex flex-col items-center justify-center text-center">
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-3 border ${
-                    project.status === "Completed" ? "bg-green-500/10 border-green-500/20 text-green-500" :
-                    project.status === "In Progress" ? "bg-blue-500/10 border-blue-500/20 text-primary" :
-                    "bg-yellow-500/10 border-yellow-500/20 text-yellow-500"
-                  }`}>
-                    {project.status === "Completed" ? <CheckCircle size={28} /> :
-                     project.status === "In Progress" ? <Clock size={28} /> :
-                     <Clock size={28} />}
-                  </div>
-                  
-                  {project.client_approval && (
-                    <div className={`text-[10px] font-semibold mb-2 flex items-center gap-1 ${
-                      project.client_approval === 'Approved' ? 'text-green-500' : 'text-yellow-500'
-                    }`}>
-                      {project.client_approval === 'Approved' ? <CheckCircle size={10} /> : <Clock size={10} />}
-                      {project.client_approval === 'Approved' ? 'Approved by Client' : 'Revision Requested'}
-                    </div>
-                  )}
-                  
-                  <div className="text-[10px] text-muted-foreground line-clamp-2 max-w-[180px]">
-                    Created on {new Date(project.created_at).toLocaleDateString()}
-                  </div>
+                {/* MODIFICATION: Handled toggle visibility between messages and main stats to prevent overlay on square layouts */}
+                <div className="p-4 flex-1 flex flex-col items-center justify-center text-center relative overflow-hidden">
+                  <AnimatePresence mode="wait">
+                    {openCommentsId === project.id ? (
+                      <motion.div 
+                        className="absolute inset-0 p-3 flex flex-col bg-card"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <div className="flex-1 overflow-y-auto space-y-3 mb-2 pr-1 custom-scrollbar text-left">
+                          {comments.length > 0 ? (
+                            comments.map((msg: any) => (
+                              <div 
+                                key={msg.id} 
+                                className={`flex flex-col ${msg.is_admin === isAdmin ? 'items-end' : 'items-start'}`}
+                              >
+                                <span className="text-[8px] font-semibold text-muted-foreground mb-0.5">
+                                  {msg.is_admin ? "Sulaiman Graphics" : "Client"}
+                                </span>
+                                <div 
+                                  className={`p-1.5 rounded-lg max-w-[85%] text-[10px] leading-snug break-words ${
+                                    msg.is_admin === isAdmin 
+                                      ? 'bg-primary text-white' 
+                                      : 'bg-muted border border-border text-foreground'
+                                  }`}
+                                >
+                                  {msg.message}
+                                </div>
+                                <span className="text-[7px] text-muted-foreground mt-0.5">
+                                  {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="text-center text-muted-foreground text-[10px] italic py-2">
+                              No messages yet. Start chatting!
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex gap-1 border-t border-border pt-2 bg-card">
+                          {isAdmin && (
+                            <label className="w-6 h-6 flex items-center justify-center rounded-lg border border-border text-muted-foreground bg-background hover:bg-muted transition cursor-pointer flex-shrink-0">
+                              <input
+                                type="file"
+                                className="hidden"
+                                accept="image/png, image/jpeg, image/jpg, image/webp, application/pdf"
+                                onChange={(e) => {
+                                  if (e.target.files && e.target.files[0]) {
+                                    handleFileUpload(project.id, e.target.files[0]);
+                                  }
+                                }}
+                              />
+                              <HardDrive size={10} />
+                            </label>
+                          )}
+                          
+                          <input
+                            type="text"
+                            placeholder="Type here..."
+                            value={newComment}
+                            onChange={(e) => setNewComment(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && sendComment(project.id)}
+                            className="flex-1 bg-background border border-border rounded-lg px-2 py-1 text-[10px] outline-none text-foreground min-w-0 h-6 focus:border-primary"
+                          />
+                          <button
+                            onClick={() => sendComment(project.id)}
+                            disabled={sendingComment || !newComment.trim()}
+                            className="bg-primary hover:opacity-90 disabled:opacity-50 text-white font-medium text-[10px] w-6 h-6 rounded-lg transition flex items-center justify-center flex-shrink-0"
+                          >
+                            {sendingComment ? <Loader2 size={10} className="animate-spin" /> : <Send size={10} />}
+                          </button>
+                        </div>
+                      </motion.div>
+                    ) : (
+                      <motion.div 
+                        className="flex flex-col items-center justify-center"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                      >
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-3 border ${
+                          project.status === "Completed" ? "bg-green-500/10 border-green-500/20 text-green-500" :
+                          project.status === "In Progress" ? "bg-blue-500/10 border-blue-500/20 text-primary" :
+                          "bg-yellow-500/10 border-yellow-500/20 text-yellow-500"
+                        }`}>
+                          {project.status === "Completed" ? <CheckCircle size={28} /> :
+                           project.status === "In Progress" ? <Clock size={28} /> :
+                           <Clock size={28} />}
+                        </div>
+                        
+                        <div className="text-[10px] text-muted-foreground line-clamp-2 max-w-[180px]">
+                          Created on {new Date(project.created_at).toLocaleDateString()}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 <div className="p-3 bg-muted/20 border-t border-border mt-auto">
@@ -971,25 +1026,6 @@ export default function Dashboard() {
                           <Download size={10} />
                           Download Assets
                         </button>
-                        
-                        {!isAdmin && (
-                          <>
-                            <button 
-                              onClick={() => handleClientApproval(project.id, 'Approved')}
-                              className="w-7 h-7 flex items-center justify-center rounded-lg border border-green-700/60 text-green-500 bg-background hover:bg-green-600/10 hover:border-green-600 transition"
-                              title="Approve"
-                            >
-                              <CheckCircle size={10} />
-                            </button>
-                            <button 
-                              onClick={() => handleClientApproval(project.id, 'Revision Requested')}
-                              className="w-7 h-7 flex items-center justify-center rounded-lg border border-yellow-700/60 text-yellow-500 bg-background hover:bg-yellow-600/10 hover:border-yellow-600 transition"
-                              title="Request Revision"
-                            >
-                              <Edit3 size={10} />
-                            </button>
-                          </>
-                        )}
                       </div>
                     ) : (
                       !isAdmin && (
@@ -1040,84 +1076,6 @@ export default function Dashboard() {
                         )}
                       </div>
                     </div>
-
-                    <AnimatePresence>
-                      {openCommentsId === project.id && (
-                        <motion.div 
-                          className="mt-2 pt-2 border-t border-border/50 flex flex-col h-40"
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                        >
-                          <div className="flex-1 overflow-y-auto space-y-3 mb-2 pr-1 custom-scrollbar">
-                            {comments.length > 0 ? (
-                              comments.map((msg: any) => (
-                                <div 
-                                  key={msg.id} 
-                                  className={`flex flex-col ${msg.is_admin === isAdmin ? 'items-end' : 'items-start'}`}
-                                >
-                                  {/* Added dynamic naming at the top of messages */}
-                                  <span className="text-[8px] font-semibold text-muted-foreground mb-0.5">
-                                    {msg.is_admin ? "Sulaiman Graphics" : "Client"}
-                                  </span>
-                                  <div 
-                                    className={`p-1.5 rounded-lg max-w-[85%] text-[10px] leading-snug break-words ${
-                                      msg.is_admin === isAdmin 
-                                        ? 'bg-primary text-white' 
-                                        : 'bg-card border border-border text-foreground'
-                                    }`}
-                                  >
-                                    {msg.message}
-                                  </div>
-                                  {/* Added dynamic time indicator at the bottom of messages */}
-                                  <span className="text-[7px] text-muted-foreground mt-0.5">
-                                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                  </span>
-                                </div>
-                              ))
-                            ) : (
-                              <div className="text-center text-muted-foreground text-[10px] italic py-2">
-                                No messages yet. Start chatting!
-                              </div>
-                            )}
-                          </div>
-                          
-                          <div className="flex gap-1">
-                            {isAdmin && (
-                              <label className="w-6 h-6 flex items-center justify-center rounded-lg border border-border text-muted-foreground bg-background hover:bg-muted transition cursor-pointer flex-shrink-0">
-                                <input
-                                  type="file"
-                                  className="hidden"
-                                  accept="image/png, image/jpeg, image/jpg, image/webp, application/pdf"
-                                  onChange={(e) => {
-                                    if (e.target.files && e.target.files[0]) {
-                                      handleFileUpload(project.id, e.target.files[0]);
-                                    }
-                                  }}
-                                />
-                                <HardDrive size={10} />
-                              </label>
-                            )}
-                            
-                            <input
-                              type="text"
-                              placeholder="Type..."
-                              value={newComment}
-                              onChange={(e) => setNewComment(e.target.value)}
-                              onKeyDown={(e) => e.key === 'Enter' && sendComment(project.id)}
-                              className="flex-1 bg-background border border-border rounded-lg px-2 py-1.5 text-[10px] outline-none text-foreground min-w-0"
-                            />
-                            <button
-                              onClick={() => sendComment(project.id)}
-                              disabled={sendingComment || !newComment.trim()}
-                              className="bg-primary hover:opacity-90 disabled:opacity-50 text-white font-medium text-[10px] w-6 h-6 rounded-lg transition flex items-center justify-center flex-shrink-0"
-                            >
-                              {sendingComment ? <Loader2 size={10} className="animate-spin" /> : <Send size={10} />}
-                            </button>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
 
                     {isAdmin && (
                       <div className="flex gap-1 pt-1 justify-end">
