@@ -13,7 +13,8 @@ import {
   Mail,
   ArrowRight,
   UserPlus,
-  Loader2 
+  Loader2,
+  Trash2 // 🛠️ Surgical Update: Added Trash icon
 } from "lucide-react";
 
 export default function Chat() {
@@ -104,6 +105,35 @@ export default function Chat() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['chatClients'] });
+    }
+  });
+
+  // 🛠️ Surgical Update: Locked delete function (only executes if you are the admin)
+  const deleteClientMutation = useMutation({
+    mutationFn: async (email: string) => {
+      // STRICT ADMIN CHECK
+      const savedEmail = sessionStorage.getItem("chat_email");
+      if (savedEmail !== "profsulaiman001@gmail.com") {
+        throw new Error("Unauthorized: Only the admin can delete clients.");
+      }
+
+      const { error } = await supabase
+        .from('chat_clients')
+        .delete()
+        .eq('email', email);
+      
+      if (error) throw error;
+    },
+    onSuccess: (_, deletedEmail) => {
+      queryClient.invalidateQueries({ queryKey: ['chatClients'] });
+      
+      // Reset chat view if you deleted the active client
+      if (activeClientEmail === deletedEmail) {
+        setActiveClientEmail(null);
+      }
+    },
+    onError: (error: any) => {
+      alert(error.message || "Failed to delete client.");
     }
   });
 
@@ -356,19 +386,36 @@ export default function Chat() {
                       setActiveClientEmail(c.email);
                       setMobileSidebarOpen(false); 
                     }}
-                    className={`flex items-center gap-3 p-4 rounded-2xl cursor-pointer ${
+                    className={`flex items-center justify-between p-4 rounded-2xl cursor-pointer ${
                       isActive 
                         ? "bg-gradient-to-r from-cyan-600/10 to-transparent border border-cyan-500/20" 
                         : "hover:bg-[#1A1F29]/50 border border-transparent"
                     }`}
                   >
-                    <div className="w-11 h-11 bg-gradient-to-br from-gray-700 to-gray-800 rounded-xl flex items-center justify-center border border-gray-700 text-white font-semibold">
-                      {getInitials(c.email)}
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-11 h-11 flex-shrink-0 bg-gradient-to-br from-gray-700 to-gray-800 rounded-xl flex items-center justify-center border border-gray-700 text-white font-semibold">
+                        {getInitials(c.email)}
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="font-medium text-sm text-gray-100 truncate">{c.email}</h3>
+                        <p className="text-xs text-gray-500 truncate">Client Thread</p>
+                      </div>
                     </div>
-                    <div className="flex-grow min-w-0">
-                      <h3 className="font-medium text-sm text-gray-100 truncate">{c.email}</h3>
-                      <p className="text-xs text-gray-500 truncate">Client Thread</p>
-                    </div>
+                    
+                    {/* 🛠️ Surgical Update: Delete Button ONLY rendered if logged in as Admin */}
+                    {isAdmin && (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevents selecting the chat row
+                          if (confirm(`Are you sure you want to remove ${c.email} from the sidebar?`)) {
+                            deleteClientMutation.mutate(c.email);
+                          }
+                        }}
+                        className="text-gray-600 hover:text-red-500 p-1.5 rounded-lg hover:bg-gray-800 transition-colors ml-2 flex-shrink-0"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 );
               })}
@@ -491,4 +538,4 @@ export default function Chat() {
       </div>
     </div>
   );
-      }
+    }
