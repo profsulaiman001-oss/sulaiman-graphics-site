@@ -25,6 +25,7 @@ export default function Chat() {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUser(user);
+      
       if (user?.email === "profsulaiman001@gmail.com") {
         setIsAdmin(true);
       } else {
@@ -35,72 +36,79 @@ export default function Chat() {
     getUser();
   }, []);
 
-  // 1. Fetch all unique users who have engaged in chats from the 'comments' table
-  const { data: chatUsers, isLoading: usersLoading } = useQuery({
-    queryKey: ['chatUsers'],
+  // 1. Fetch unique clients from the projects table (Just like your dashboard dropdown!)
+  const { data: clients, isLoading: clientsLoading } = useQuery({
+    queryKey: ['chatClients'],
     queryFn: async () => {
-      // We pull comments to see who has been active
       const { data, error } = await supabase
-        .from('comments')
-        .select('user_id, project_id'); 
+        .from('projects')
+        .select('client_email');
       
       if (error) throw error;
 
-      // Filter to unique instances so your sidebar isn't flooded with duplicates
-      const uniqueProjects = Array.from(new Set(data.map(c => c.project_id)))
-        .map(id => data.find(c => c.project_id === id));
-
-      return uniqueProjects;
+      // Get unique emails, filtering out any nulls
+      const uniqueEmails = Array.from(
+        new Set(data.map(p => p.client_email).filter(Boolean))
+      );
+      
+      return uniqueEmails;
     },
     enabled: !!currentUser, 
   });
 
-  // Track which chat/project is currently open
-  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+  // Track which client chat is currently open
+  const [activeClientEmail, setActiveClientEmail] = useState<string | null>(null);
 
   useEffect(() => {
-    if (chatUsers?.length && !activeProjectId) {
-      setActiveProjectId(chatUsers[0].project_id);
+    if (clients?.length && !activeClientEmail) {
+      // If admin, default to the first client. If client, lock to their own email.
+      if (isAdmin) {
+        setActiveClientEmail(clients[0]);
+      } else {
+        setActiveClientEmail(currentUser?.email);
+      }
     }
-  }, [chatUsers]);
+  }, [clients, isAdmin, currentUser]);
 
-  // 2. Fetch the actual chat messages for the selected chat
+  // 2. Fetch the actual chat messages between you and the selected client
   const { data: chatMessages, isLoading: messagesLoading } = useQuery({
-    queryKey: ['messages', activeProjectId],
+    queryKey: ['messages', activeClientEmail],
     queryFn: async () => {
-      if (!activeProjectId) return [];
+      if (!activeClientEmail) return [];
+      
+      // Fetch messages where the project belongs to this specific client email
       const { data, error } = await supabase
         .from('comments')
         .select('*')
-        .eq('project_id', activeProjectId)
+        .eq('project_id', activeClientEmail) // Using email as the thread identifier
         .order('created_at', { ascending: true });
       
       if (error) throw error;
       return data;
     },
-    enabled: !!activeProjectId,
+    enabled: !!activeClientEmail,
   });
 
   // 3. Set up a real-time listener for instant messages!
   useEffect(() => {
-    if (!activeProjectId) return;
+    if (!activeClientEmail) return;
 
     const channel = supabase
-      .channel(`realtime_chat_${activeProjectId}`)
+      .channel(`realtime_chat_${activeClientEmail}`)
       .on('postgres_changes', { 
         event: 'INSERT', 
         schema: 'public', 
         table: 'comments',
-        filter: `project_id=eq.${activeProjectId}` 
+        filter: `project_id=eq.${activeClientEmail}` 
       }, () => {
-        queryClient.invalidateQueries({ queryKey: ['messages', activeProjectId] });
+        queryClient.invalidateQueries({ queryKey: ['messages', activeClientEmail] });
       })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [activeProjectId, queryClient]);
+  }, [activeClientEmail, queryClient]);
 
   // 4. Function to send a message
   const sendMessageMutation = useMutation({
@@ -108,37 +116,37 @@ export default function Chat() {
       const { error } = await supabase
         .from('comments')
         .insert([{
-          project_id: activeProjectId,
+          project_id: activeClientEmail, // Linking the message directly to the client's email thread
           user_id: currentUser?.id,
           message: messageText,
-          is_admin: isAdmin // Smartly flags if it was sent by you or client
+          is_admin: isAdmin 
         }]);
       
       if (error) throw error;
     },
     onSuccess: () => {
       setMessage("");
-      queryClient.invalidateQueries({ queryKey: ['messages', activeProjectId] });
+      queryClient.invalidateQueries({ queryKey: ['messages', activeClientEmail] });
     }
   });
 
   const handleSend = () => {
-    if (!message.trim() || !activeProjectId) return;
+    if (!message.trim() || !activeClientEmail) return;
     sendMessageMutation.mutate(message);
   };
 
   // Helper to get initials
-  const getInitials = (id: string) => {
-    if (!id) return "CL";
-    return "U" + id.substring(0, 1).toUpperCase();
+  const getInitials = (email: string) => {
+    if (!email) return "CL";
+    return email.substring(0, 2).toUpperCase();
   };
 
   // Filter conversations based on the search bar
-  const filteredUsers = chatUsers?.filter((u: any) =>
-    u.project_id?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredClients = clients?.filter((email: string) =>
+    email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (usersLoading) {
+  if (clientsLoading) {
     return <div className="min-h-screen bg-[#0B0C10] flex items-center justify-center text-white">Loading chat room...</div>;
   }
 
@@ -163,14 +171,14 @@ export default function Chat() {
           </div>
 
           <div className="flex-grow overflow-y-auto p-3 space-y-2">
-            {filteredUsers?.map((u: any) => {
-              const isActive = u.project_id === activeProjectId;
+            {filteredClients?.map((email: string) => {
+              const isActive = email === activeClientEmail;
               
               return (
                 <div 
-                  key={u.project_id}
+                  key={email}
                   onClick={() => {
-                    setActiveProjectId(u.project_id);
+                    setActiveClientEmail(email);
                     setMobileSidebarOpen(false); 
                   }}
                   className={`flex items-center gap-3 p-4 rounded-2xl cursor-pointer transition-all duration-200 ${
@@ -181,18 +189,18 @@ export default function Chat() {
                 >
                   <div className="relative">
                     <div className="w-11 h-11 bg-gradient-to-br from-gray-700 to-gray-800 rounded-xl flex items-center justify-center border border-gray-700 font-semibold text-white">
-                      {getInitials(u.project_id)}
+                      {getInitials(email)}
                     </div>
                   </div>
                   <div className="flex-grow min-w-0">
-                    <h3 className="font-medium text-sm text-gray-100 truncate">Project: {u.project_id}</h3>
-                    <p className="text-xs text-gray-500 truncate">Click to view chat</p>
+                    <h3 className="font-medium text-sm text-gray-100 truncate">{email}</h3>
+                    <p className="text-xs text-gray-500 truncate">Client Account</p>
                   </div>
                 </div>
               );
             })}
             
-            {filteredUsers?.length === 0 && (
+            {filteredClients?.length === 0 && (
               <div className="text-center text-gray-600 mt-5 text-sm">No clients found.</div>
             )}
           </div>
@@ -212,11 +220,11 @@ export default function Chat() {
               )}
               
               <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center font-bold text-black">
-                {getInitials(activeProjectId || "C")}
+                {getInitials(activeClientEmail || "C")}
               </div>
               <div>
                 <h2 className="font-semibold text-gray-100 truncate max-w-[150px] sm:max-w-none">
-                  {isAdmin ? `Chat ID: ${activeProjectId}` : "Sulaiman Graphics"}
+                  {isAdmin ? activeClientEmail : "Sulaiman Graphics"}
                 </h2>
                 <p className="text-xs text-cyan-500 flex items-center gap-1">
                   <span className="w-1.5 h-1.5 bg-cyan-500 rounded-full"></span> Active Now
@@ -298,4 +306,4 @@ export default function Chat() {
       </div>
     </div>
   );
-}
+    }
