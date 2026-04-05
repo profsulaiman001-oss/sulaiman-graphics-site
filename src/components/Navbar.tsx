@@ -7,14 +7,15 @@ import { Button } from "./Button";
 /* ── Added the import for your new Settings Dropdown ── */
 import { SettingsDropdown } from "@/components/SettingsDropdown";
 
-// 🔥 UPDATED: Added Assistant, kept Chat public!
+// 🔥 UPDATED: Added Agreement & Assistant, reduced footprint!
 const links = [
   { name: "Home", path: "/" },
   { name: "About", path: "/#about", hash: true },
   { name: "Services", path: "/services" },
   { name: "Portfolio", path: "/portfolio" },
   { name: "Blog", path: "/blog" },
-  { name: "Assistant", path: "/assistant" }, // 👈 🤖 Added your new Receptionist!
+  { name: "Agreement", path: "/agreement" }, // 👈 📄 Added your contract generator!
+  { name: "Assistant", path: "/assistant" }, 
   { name: "Get Started", path: "/questionnaire" },
   { name: "Chat", path: "/chat" },           
   { name: "Contact", path: "/contact" },
@@ -142,7 +143,7 @@ export function Navbar() {
             transition={{ duration: 0.2 }}
             className="absolute top-full left-0 right-0 bg-card border-b border-border shadow-2xl p-4 md:hidden"
           >
-            {/* 🛠️ Fixed: Reduced space-y from 3 to 1 to tighten up the layout */}
+            {/* 🛠️ Fixed: Kept spacing at space-y-1 to keep it tight */}
             <div className="flex flex-col space-y-1">
               {links.map((link) => {
                 const isActive =
@@ -156,8 +157,8 @@ export function Navbar() {
                       key={link.path}
                       href={link.path}
                       onClick={() => setMobileMenuOpen(false)}
-                      // 🛠️ Fixed: Changed py-3 to py-2 and text-lg to text-base
-                      className="px-4 py-2 rounded-xl text-base font-medium transition-colors text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                      // 🛠️ Fixed: Reduced py-2 to py-1.5 and text-base to text-sm
+                      className="px-4 py-1.5 rounded-xl text-sm font-medium transition-colors text-muted-foreground hover:bg-white/5 hover:text-foreground"
                     >
                       {link.name}
                     </a>
@@ -168,9 +169,9 @@ export function Navbar() {
                   <Link
                     key={link.path}
                     href={link.path}
-                    // 🛠️ Fixed: Changed py-3 to py-2 and text-lg to text-base
+                    // 🛠️ Fixed: Reduced py-2 to py-1.5 and text-base to text-sm
                     className={cn(
-                      "px-4 py-2 rounded-xl text-base font-medium transition-colors",
+                      "px-4 py-1.5 rounded-xl text-sm font-medium transition-colors",
                       isActive
                         ? "bg-primary/10 text-primary"
                         : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
@@ -180,13 +181,6 @@ export function Navbar() {
                   </Link>
                 );
               })}
-
-              {/* ── Mobile Settings Option ── */}
-              {/* 🛠️ Fixed: Changed py and text size here too to match */}
-              <div className="border-t border-border mt-2 pt-2 px-4 flex justify-between items-center">
-                <span className="text-base font-medium text-muted-foreground">Quick Settings</span>
-                <SettingsDropdown />
-              </div>
             </div>
           </motion.div>
         )}
