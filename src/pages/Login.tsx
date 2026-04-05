@@ -34,7 +34,10 @@ export default function Login() {
       }
 
       alert("Account created successfully! Welcome to your portal.");
-      setLocation("/dashboard");
+      
+      // Smart Redirect: Go where you intended, or fall back to dashboard
+      const intendedDestination = window.location.pathname;
+      setLocation(intendedDestination === "/login" ? "/dashboard" : intendedDestination);
       setLoading(false);
       return;
     }
@@ -46,9 +49,11 @@ export default function Login() {
       return;
     }
 
-    // 4. If login was successful, proceed to dashboard
+    // 4. If login was successful, proceed intelligently
     if (data.session) {
-      setLocation("/dashboard");
+      // 🔥 SMART REDIRECT: Checks if you clicked a specific page first!
+      const intendedDestination = window.location.pathname;
+      setLocation(intendedDestination === "/login" ? "/dashboard" : intendedDestination);
     } else {
       alert("Login successful but no session found.");
     }
@@ -57,9 +62,7 @@ export default function Login() {
   };
 
   return (
-    // Replaced hardcoded bg-black with the global bg-background variable
     <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground relative overflow-hidden">
-      
       {/* Background aesthetic blobs using your primary glow variable */}
       <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-primary/10 rounded-full filter blur-3xl -z-10 animate-pulse"></div>
       <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-primary/5 rounded-full filter blur-3xl -z-10 animate-pulse delay-1000"></div>
@@ -77,7 +80,6 @@ export default function Login() {
         <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium">Design Portal</p>
       </motion.div>
 
-      {/* Replaced bg-gray-950/40 and border-gray-800 with standard card variables */}
       <motion.div 
         className="w-full max-w-sm bg-card/80 backdrop-blur-xl border border-border rounded-3xl p-8 shadow-[0_8px_30px_rgba(0,0,0,0.5)] relative z-10"
         initial={{ opacity: 0, scale:0.95 }}
@@ -154,4 +156,4 @@ export default function Login() {
       </footer>
     </div>
   );
-            }
+}
