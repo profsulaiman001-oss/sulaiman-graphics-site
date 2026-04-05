@@ -12,7 +12,7 @@ import {
   User,
   Mail,
   ArrowRight,
-  UserPlus // 🆕 Added icon for adding clients
+  UserPlus 
 } from "lucide-react";
 
 export default function Chat() {
@@ -26,8 +26,8 @@ export default function Chat() {
   const [guestEmail, setGuestEmail] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // 🆕 State for the manual client assignment box
   const [newClientEmail, setNewClientEmail] = useState("");
+  const [activeClientEmail, setActiveClientEmail] = useState<string | null>(null);
 
   useEffect(() => {
     const savedEmail = sessionStorage.getItem("chat_email");
@@ -43,6 +43,7 @@ export default function Chat() {
       } else {
         setIsAdmin(false);
         setMobileSidebarOpen(false);
+        setActiveClientEmail("profsulaiman001@gmail.com"); 
       }
     }
   }, []);
@@ -51,123 +52,119 @@ export default function Chat() {
     e.preventDefault();
     if (!guestName.trim() || !guestEmail.trim()) return;
 
-    sessionStorage.setItem("chat_email", guestEmail.trim());
+    const formattedEmail = guestEmail.trim().toLowerCase();
+    sessionStorage.setItem("chat_email", formattedEmail);
     sessionStorage.setItem("chat_name", guestName.trim());
 
-    if (guestEmail.trim() === "profsulaiman001@gmail.com") {
+    if (formattedEmail === "profsulaiman001@gmail.com") {
       setIsAdmin(true);
     } else {
       setIsAdmin(false);
       setMobileSidebarOpen(false);
+      setActiveClientEmail("profsulaiman001@gmail.com"); 
     }
     
     setShowIdentityPopup(false);
   };
 
-  // 1. Fetch conversations based directly on the comments table!
+  // 1. Fetch clean list of clients from our NEW table
   const { data: clients } = useQuery({
     queryKey: ['chatClients'],
     queryFn: async () => {
-      // We grab all comments to see who has been talking
       const { data, error } = await supabase
-        .from('comments') 
-        .select('project_id');
+        .from('chat_messages') 
+        .select('sender_email, receiver_email');
       
       if (error) return [];
 
-      // Get a list of unique client emails we've spoken to
-      const uniqueEmails = Array.from(new Set(data.map(p => p.project_id).filter(Boolean)));
+      const uniqueEmails = new Set<string>();
+      data.forEach(msg => {
+        if (msg.sender_email !== "profsulaiman001@gmail.com") uniqueEmails.add(msg.sender_email);
+        if (msg.receiver_email !== "profsulaiman001@gmail.com") uniqueEmails.add(msg.receiver_email);
+      });
       
-      return uniqueEmails.map(email => ({ email }));
+      return Array.from(uniqueEmails).map(email => ({ email }));
     },
     enabled: !showIdentityPopup && isAdmin, 
   });
 
-  const [activeClientEmail, setActiveClientEmail] = useState<string | null>(null);
-
   useEffect(() => {
-    if (clients?.length && !activeClientEmail) {
-      if (isAdmin) {
-        setActiveClientEmail(clients[0].email);
-      } else {
-        setActiveClientEmail(guestEmail);
-      }
-    } else if (!isAdmin && !activeClientEmail) {
-      setActiveClientEmail(guestEmail);
+    if (isAdmin && clients?.length && !activeClientEmail) {
+      setActiveClientEmail(clients[0].email);
     }
-  }, [clients, isAdmin, guestEmail]);
+  }, [clients, isAdmin]);
 
-  // 🆕 Function for Admin to manually assign a client
   const handleAddClient = (e: React.FormEvent) => {
     e.preventDefault();
     const email = newClientEmail.trim().toLowerCase();
     if (!email) return;
-    
-    // Set the active screen to this new email
     setActiveClientEmail(email);
     setNewClientEmail("");
   };
 
-  // 2. Fetch messages
+  // 2. Fetch clean messages between Admin and Active Client
   const { data: chatMessages } = useQuery({
     queryKey: ['messages', activeClientEmail],
     queryFn: async () => {
       if (!activeClientEmail) return [];
       
+      const adminEmail = "profsulaiman001@gmail.com";
+      const targetEmail = isAdmin ? activeClientEmail : adminEmail;
+      const myEmail = guestEmail;
+
       const { data, error } = await supabase
-        .from('comments')
+        .from('chat_messages')
         .select('*')
-        .eq('project_id', activeClientEmail) 
+        .or(`and(sender_email.eq.${myEmail},receiver_email.eq.${targetEmail}),and(sender_email.eq.${targetEmail},receiver_email.eq.${myEmail})`)
         .order('created_at', { ascending: true });
       
       if (error) throw error;
       return data;
     },
-    enabled: !!activeClientEmail,
+    enabled: !!activeClientEmail && !!guestEmail,
   });
 
   // 3. Real-time listener
   useEffect(() => {
-    if (!activeClientEmail) return;
+    if (!guestEmail) return;
 
     const channel = supabase
-      .channel(`realtime_chat_${activeClientEmail}`)
+      .channel(`realtime_chat_${guestEmail}`)
       .on('postgres_changes', { 
         event: 'INSERT', 
         schema: 'public', 
-        table: 'comments',
-        filter: `project_id=eq.${activeClientEmail}` 
+        table: 'chat_messages'
       }, () => {
         queryClient.invalidateQueries({ queryKey: ['messages', activeClientEmail] });
+        queryClient.invalidateQueries({ queryKey: ['chatClients'] });
       })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [activeClientEmail, queryClient]);
+  }, [guestEmail, activeClientEmail, queryClient]);
 
   // 4. Function to send a message
   const sendMessageMutation = useMutation({
     mutationFn: async (messageText: string) => {
+      const adminEmail = "profsulaiman001@gmail.com";
+      
       const { error } = await supabase
-        .from('comments')
+        .from('chat_messages')
         .insert([{
-          project_id: activeClientEmail, // We use the client's email here
-          user_id: guestEmail,           // We use your email here
+          sender_email: guestEmail,
+          receiver_email: isAdmin ? activeClientEmail : adminEmail,
           message: messageText,
           is_admin: isAdmin 
         }]);
       
-      if (error) {
-        console.error("Supabase Error:", error);
-        throw error;
-      }
+      if (error) throw error;
     },
     onSuccess: () => {
       setMessage("");
       queryClient.invalidateQueries({ queryKey: ['messages', activeClientEmail] });
-      queryClient.invalidateQueries({ queryKey: ['chatClients'] }); // Refresh sidebar too!
+      queryClient.invalidateQueries({ queryKey: ['chatClients'] });
     }
   });
 
@@ -241,11 +238,10 @@ export default function Chat() {
           <div className="p-5 border-b border-gray-800">
             <h1 className="text-xl font-bold mb-4 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Conversations</h1>
             
-            {/* 🆕 NEW: Manual Client Assignment Box for Admin */}
             <form onSubmit={handleAddClient} className="flex gap-2 mb-3">
               <input 
                 type="email" 
-                placeholder="Assign client email..." 
+                placeholder="Type client email to chat..." 
                 value={newClientEmail}
                 onChange={(e) => setNewClientEmail(e.target.value)}
                 className="flex-grow bg-[#1A1F29] border border-gray-800 rounded-xl py-2 px-3 text-xs text-gray-200 focus:outline-none focus:border-cyan-500/50"
@@ -296,7 +292,7 @@ export default function Chat() {
             })}
             
             {(!filteredClients || filteredClients.length === 0) && (
-              <div className="text-center text-gray-600 mt-5 text-sm">No clients found. Type an email above to start.</div>
+              <div className="text-center text-gray-600 mt-5 text-sm">No clients found. Use the box above to start one!</div>
             )}
           </div>
         </div>
@@ -314,9 +310,8 @@ export default function Chat() {
                 </button>
               )}
               
-              {/* 👤 FIXED: If you are client, show "SG" for Sulaiman Graphics. If you are admin, show the client's initials */}
               <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center font-bold text-black">
-                {isAdmin ? getInitials(activeClientEmail || "") : "SG"}
+                {isAdmin ? getInitials(activeClientEmail || "C") : "SG"}
               </div>
               <div>
                 <h2 className="font-semibold text-gray-100 truncate max-w-[150px] sm:max-w-none">
@@ -334,7 +329,7 @@ export default function Chat() {
 
           <div className="flex-grow overflow-y-auto p-6 space-y-6">
             {chatMessages?.map((msg: any) => {
-              const isMe = isAdmin ? msg.is_admin : !msg.is_admin;
+              const isMe = msg.sender_email === guestEmail;
               const formattedTime = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
               return (
@@ -396,4 +391,4 @@ export default function Chat() {
       </div>
     </div>
   );
-      }
+                }
