@@ -7,7 +7,7 @@ import { Button } from "./Button";
 /* ── Added the import for your new Settings Dropdown ── */
 import { SettingsDropdown } from "@/components/SettingsDropdown";
 
-// 🔥 ORDER UPDATED: Home, About, Services, Portfolio, Blog, Get started, Chat, Contact, Login, Settings
+// 🔥 ORDER UPDATED: Home, About, Services, Portfolio, Blog, Get started, Dashboard, Chat, Contact, Login, Settings
 const links = [
   { name: "Home", path: "/" },
   { name: "About", path: "/#about", hash: true },
@@ -15,7 +15,8 @@ const links = [
   { name: "Portfolio", path: "/portfolio" },
   { name: "Blog", path: "/blog" },
   { name: "Get Started", path: "/questionnaire" },
-  { name: "Chat", path: "/chat" },
+  { name: "Dashboard", path: "/dashboard" }, // 👈 ADDED: Dashboard Link
+  { name: "Chat", path: "/chat" },           // 👈 Added Chat path
   { name: "Contact", path: "/contact" },
   { name: "Login", path: "/login" },
   { name: "Settings", path: "/settings" }, // Added settings path here
@@ -44,7 +45,7 @@ export function Navbar() {
         isScrolled ? "bg-background/80 backdrop-blur-md border-border py-4" : "bg-transparent py-6"
       )}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-width-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
           <Link href="/" className="relative z-10 group">
             <span className="font-display font-black text-2xl tracking-tighter text-foreground group-hover:text-primary transition-colors">
