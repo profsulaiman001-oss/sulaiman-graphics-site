@@ -9,32 +9,60 @@ import {
   Smile, 
   CheckCircle2, 
   Menu,
-  ArrowLeft
+  ArrowLeft,
+  User,
+  Mail,
+  ArrowRight
 } from "lucide-react";
 
 export default function Chat() {
   const [message, setMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(true);
   const queryClient = useQueryClient();
 
-  // Get current user on load
+  // ── 🆕 POPUP STATE LOGIC ──
+  const [showIdentityPopup, setShowIdentityPopup] = useState(true);
+  const [guestName, setGuestName] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Check if they already logged in via popup previously in this session
   useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setCurrentUser(user);
+    const savedEmail = sessionStorage.getItem("chat_email");
+    const savedName = sessionStorage.getItem("chat_name");
+    
+    if (savedEmail && savedName) {
+      setGuestEmail(savedEmail);
+      setGuestName(savedName);
+      setShowIdentityPopup(false);
       
-      if (user?.email === "profsulaiman001@gmail.com") {
+      if (savedEmail === "profsulaiman001@gmail.com") {
         setIsAdmin(true);
       } else {
         setIsAdmin(false);
-        setMobileSidebarOpen(false); // Clients don't need a sidebar
+        setMobileSidebarOpen(false);
       }
-    };
-    getUser();
+    }
   }, []);
+
+  const handleIdentitySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!guestName.trim() || !guestEmail.trim()) return;
+
+    // Save to session storage so they don't have to fill it again if they refresh
+    sessionStorage.setItem("chat_email", guestEmail.trim());
+    sessionStorage.setItem("chat_name", guestName.trim());
+
+    if (guestEmail.trim() === "profsulaiman001@gmail.com") {
+      setIsAdmin(true);
+    } else {
+      setIsAdmin(false);
+      setMobileSidebarOpen(false);
+    }
+    
+    setShowIdentityPopup(false);
+  };
 
   // 1. Fetch unique clients from the projects table (Just like your dashboard dropdown!)
   const { data: clients, isLoading: clientsLoading } = useQuery({
@@ -46,41 +74,37 @@ export default function Chat() {
       
       if (error) throw error;
 
-      // Get unique emails, filtering out any nulls
       const uniqueEmails = Array.from(
         new Set(data.map(p => p.client_email).filter(Boolean))
       );
       
       return uniqueEmails;
     },
-    enabled: !!currentUser, 
+    enabled: !showIdentityPopup, 
   });
 
-  // Track which client chat is currently open
   const [activeClientEmail, setActiveClientEmail] = useState<string | null>(null);
 
   useEffect(() => {
     if (clients?.length && !activeClientEmail) {
-      // If admin, default to the first client. If client, lock to their own email.
       if (isAdmin) {
         setActiveClientEmail(clients[0]);
       } else {
-        setActiveClientEmail(currentUser?.email);
+        setActiveClientEmail(guestEmail);
       }
     }
-  }, [clients, isAdmin, currentUser]);
+  }, [clients, isAdmin, guestEmail]);
 
-  // 2. Fetch the actual chat messages between you and the selected client
+  // 2. Fetch messages between you and the selected client
   const { data: chatMessages, isLoading: messagesLoading } = useQuery({
     queryKey: ['messages', activeClientEmail],
     queryFn: async () => {
       if (!activeClientEmail) return [];
       
-      // Fetch messages where the project belongs to this specific client email
       const { data, error } = await supabase
         .from('comments')
         .select('*')
-        .eq('project_id', activeClientEmail) // Using email as the thread identifier
+        .eq('project_id', activeClientEmail) 
         .order('created_at', { ascending: true });
       
       if (error) throw error;
@@ -89,7 +113,7 @@ export default function Chat() {
     enabled: !!activeClientEmail,
   });
 
-  // 3. Set up a real-time listener for instant messages!
+  // 3. Set up real-time listener
   useEffect(() => {
     if (!activeClientEmail) return;
 
@@ -110,14 +134,14 @@ export default function Chat() {
     };
   }, [activeClientEmail, queryClient]);
 
-  // 4. Function to send a message
+  // 4. Function to send a message (FIXED)
   const sendMessageMutation = useMutation({
     mutationFn: async (messageText: string) => {
       const { error } = await supabase
         .from('comments')
         .insert([{
-          project_id: activeClientEmail, // Linking the message directly to the client's email thread
-          user_id: currentUser?.id,
+          project_id: activeClientEmail, 
+          user_id: guestEmail, // 🚀 Use email as the fallback ID to satisfy the non-null constraint
           message: messageText,
           is_admin: isAdmin 
         }]);
@@ -135,23 +159,68 @@ export default function Chat() {
     sendMessageMutation.mutate(message);
   };
 
-  // Helper to get initials
   const getInitials = (email: string) => {
     if (!email) return "CL";
     return email.substring(0, 2).toUpperCase();
   };
 
-  // Filter conversations based on the search bar
   const filteredClients = clients?.filter((email: string) =>
     email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (clientsLoading) {
+  if (!showIdentityPopup && clientsLoading) {
     return <div className="min-h-screen bg-[#0B0C10] flex items-center justify-center text-white">Loading chat room...</div>;
   }
 
   return (
-    <div className="bg-[#0B0C10] min-h-screen text-gray-100 flex flex-col pt-20">
+    <div className="bg-[#0B0C10] min-h-screen text-gray-100 flex flex-col pt-20 relative">
+      
+      {/* ── 🆕 MODAL POPUP FOR NAME & EMAIL ── */}
+      {showIdentityPopup && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#0B0C10]/90 backdrop-blur-md">
+          <div className="bg-[#11141A] border border-gray-800 rounded-3xl p-8 w-full max-w-md mx-4 shadow-2xl">
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent mb-2">Welcome to Chat</h2>
+              <p className="text-sm text-gray-500">Please introduce yourself to continue</p>
+            </div>
+
+            <form onSubmit={handleIdentitySubmit} className="space-y-5">
+              <div className="relative">
+                <User className="absolute left-3 top-3.5 w-5 h-5 text-gray-600" />
+                <input 
+                  type="text" 
+                  placeholder="Your Name" 
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  className="w-full bg-[#1A1F29] border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-sm text-gray-200 focus:outline-none focus:border-cyan-500/50 transition-colors"
+                  required
+                />
+              </div>
+
+              <div className="relative">
+                <Mail className="absolute left-3 top-3.5 w-5 h-5 text-gray-600" />
+                <input 
+                  type="email" 
+                  placeholder="Your Email Address" 
+                  value={guestEmail}
+                  onChange={(e) => setGuestEmail(e.target.value)}
+                  className="w-full bg-[#1A1F29] border border-gray-800 rounded-xl py-3 pl-10 pr-4 text-sm text-gray-200 focus:outline-none focus:border-cyan-500/50 transition-colors"
+                  required
+                />
+              </div>
+
+              <button 
+                type="submit"
+                className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-black font-bold py-3 px-4 rounded-xl transition-all shadow-lg shadow-cyan-500/10 flex items-center justify-center gap-2"
+              >
+                Enter Chat <ArrowRight className="w-4 h-4" />
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── MAIN CHAT INTERFACE ── */}
       <div className="flex-grow flex h-[calc(100vh-140px)] w-full max-w-[1600px] mx-auto p-4 md:p-6 gap-6 relative">
         
         {/* ==================== LEFT SIDEBAR: CLIENT LIST ==================== */}
@@ -272,7 +341,7 @@ export default function Chat() {
               );
             })}
             
-            {!messagesLoading && chatMessages?.length === 0 && (
+            {chatMessages?.length === 0 && (
               <div className="text-center text-gray-600 mt-10">No messages yet. Send a greeting!</div>
             )}
           </div>
@@ -306,4 +375,4 @@ export default function Chat() {
       </div>
     </div>
   );
-    }
+                  }
