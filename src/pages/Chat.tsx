@@ -6,13 +6,13 @@ import {
   Send, 
   Paperclip, 
   MoreVertical, 
-  Smile, 
   CheckCircle2, 
   Menu,
   ArrowLeft,
   User,
   Mail,
-  ArrowRight
+  ArrowRight,
+  UserPlus // 🆕 Added icon for adding clients
 } from "lucide-react";
 
 export default function Chat() {
@@ -25,6 +25,9 @@ export default function Chat() {
   const [guestName, setGuestName] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
+
+  // 🆕 State for the manual client assignment box
+  const [newClientEmail, setNewClientEmail] = useState("");
 
   useEffect(() => {
     const savedEmail = sessionStorage.getItem("chat_email");
@@ -61,24 +64,21 @@ export default function Chat() {
     setShowIdentityPopup(false);
   };
 
-  // 1. FIXED: Let's fetch actual user profiles instead of empty projects!
-  const { data: clients, isLoading: clientsLoading } = useQuery({
+  // 1. Fetch conversations based directly on the comments table!
+  const { data: clients } = useQuery({
     queryKey: ['chatClients'],
     queryFn: async () => {
-      // NOTE: Update 'profiles' to whatever your Supabase user table is named
+      // We grab all comments to see who has been talking
       const { data, error } = await supabase
-        .from('profiles') 
-        .select('email, full_name');
+        .from('comments') 
+        .select('project_id');
       
-      if (error) {
-        // Fallback to project emails if profiles table doesn't work for you
-        const { data: projData } = await supabase.from('projects').select('client_email');
-        const uniqueEmails = Array.from(new Set(projData?.map(p => p.client_email).filter(Boolean)));
-        return uniqueEmails.map(email => ({ email, full_name: email }));
-      }
+      if (error) return [];
 
-      // Filter out admin's own email from list
-      return data.filter(u => u.email !== "profsulaiman001@gmail.com");
+      // Get a list of unique client emails we've spoken to
+      const uniqueEmails = Array.from(new Set(data.map(p => p.project_id).filter(Boolean)));
+      
+      return uniqueEmails.map(email => ({ email }));
     },
     enabled: !showIdentityPopup && isAdmin, 
   });
@@ -92,11 +92,24 @@ export default function Chat() {
       } else {
         setActiveClientEmail(guestEmail);
       }
+    } else if (!isAdmin && !activeClientEmail) {
+      setActiveClientEmail(guestEmail);
     }
   }, [clients, isAdmin, guestEmail]);
 
+  // 🆕 Function for Admin to manually assign a client
+  const handleAddClient = (e: React.FormEvent) => {
+    e.preventDefault();
+    const email = newClientEmail.trim().toLowerCase();
+    if (!email) return;
+    
+    // Set the active screen to this new email
+    setActiveClientEmail(email);
+    setNewClientEmail("");
+  };
+
   // 2. Fetch messages
-  const { data: chatMessages, isLoading: messagesLoading } = useQuery({
+  const { data: chatMessages } = useQuery({
     queryKey: ['messages', activeClientEmail],
     queryFn: async () => {
       if (!activeClientEmail) return [];
@@ -134,23 +147,27 @@ export default function Chat() {
     };
   }, [activeClientEmail, queryClient]);
 
-  // 4. Function to send a message (FIXED)
+  // 4. Function to send a message
   const sendMessageMutation = useMutation({
     mutationFn: async (messageText: string) => {
       const { error } = await supabase
         .from('comments')
         .insert([{
-          project_id: activeClientEmail, 
-          user_id: guestEmail, // Uses session email as user identification
+          project_id: activeClientEmail, // We use the client's email here
+          user_id: guestEmail,           // We use your email here
           message: messageText,
           is_admin: isAdmin 
         }]);
       
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase Error:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       setMessage("");
       queryClient.invalidateQueries({ queryKey: ['messages', activeClientEmail] });
+      queryClient.invalidateQueries({ queryKey: ['chatClients'] }); // Refresh sidebar too!
     }
   });
 
@@ -223,14 +240,29 @@ export default function Chat() {
         <div className={`${isAdmin ? 'flex' : 'hidden'} ${mobileSidebarOpen ? 'flex' : 'hidden md:flex'} absolute inset-y-0 left-0 z-30 md:relative w-full sm:w-80 md:w-1/4 flex-col bg-[#11141A] border border-gray-800 rounded-3xl overflow-hidden`}>
           <div className="p-5 border-b border-gray-800">
             <h1 className="text-xl font-bold mb-4 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Conversations</h1>
+            
+            {/* 🆕 NEW: Manual Client Assignment Box for Admin */}
+            <form onSubmit={handleAddClient} className="flex gap-2 mb-3">
+              <input 
+                type="email" 
+                placeholder="Assign client email..." 
+                value={newClientEmail}
+                onChange={(e) => setNewClientEmail(e.target.value)}
+                className="flex-grow bg-[#1A1F29] border border-gray-800 rounded-xl py-2 px-3 text-xs text-gray-200 focus:outline-none focus:border-cyan-500/50"
+              />
+              <button type="submit" className="bg-gradient-to-r from-cyan-500 to-blue-500 p-2 rounded-xl text-black">
+                <UserPlus className="w-4 h-4" />
+              </button>
+            </form>
+
             <div className="relative">
-              <Search className="absolute left-3 top-3 w-4 h-4 text-gray-500" />
+              <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
               <input 
                 type="text" 
-                placeholder="Search clients..." 
+                placeholder="Search conversations..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-[#1A1F29] border border-gray-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-gray-200 focus:outline-none focus:border-cyan-500/50"
+                className="w-full bg-[#1A1F29] border border-gray-800 rounded-xl py-2 pl-10 pr-4 text-sm text-gray-200 focus:outline-none focus:border-cyan-500/50"
               />
             </div>
           </div>
@@ -256,15 +288,15 @@ export default function Chat() {
                     {getInitials(c.email)}
                   </div>
                   <div className="flex-grow min-w-0">
-                    <h3 className="font-medium text-sm text-gray-100 truncate">{c.full_name || c.email}</h3>
-                    <p className="text-xs text-gray-500 truncate">{c.email}</p>
+                    <h3 className="font-medium text-sm text-gray-100 truncate">{c.email}</h3>
+                    <p className="text-xs text-gray-500 truncate">Client Thread</p>
                   </div>
                 </div>
               );
             })}
             
             {(!filteredClients || filteredClients.length === 0) && (
-              <div className="text-center text-gray-600 mt-5 text-sm">No clients found.</div>
+              <div className="text-center text-gray-600 mt-5 text-sm">No clients found. Type an email above to start.</div>
             )}
           </div>
         </div>
@@ -282,8 +314,9 @@ export default function Chat() {
                 </button>
               )}
               
+              {/* 👤 FIXED: If you are client, show "SG" for Sulaiman Graphics. If you are admin, show the client's initials */}
               <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center font-bold text-black">
-                {getInitials(activeClientEmail || "C")}
+                {isAdmin ? getInitials(activeClientEmail || "") : "SG"}
               </div>
               <div>
                 <h2 className="font-semibold text-gray-100 truncate max-w-[150px] sm:max-w-none">
@@ -294,6 +327,9 @@ export default function Chat() {
                 </p>
               </div>
             </div>
+            <button className="p-2.5 hover:bg-[#1A1F29] rounded-xl border border-gray-800 text-gray-400">
+              <MoreVertical className="w-5 h-5" />
+            </button>
           </div>
 
           <div className="flex-grow overflow-y-auto p-6 space-y-6">
@@ -326,9 +362,12 @@ export default function Chat() {
                 </div>
               );
             })}
+            {chatMessages?.length === 0 && (
+              <div className="text-center text-gray-600 mt-10">No messages yet. Send a greeting to start chatting!</div>
+            )}
           </div>
 
-          {/* 🚨 FIXED: Input bar without layout breakages */}
+          {/* Input bar */}
           <div className="p-4 border-t border-gray-800 bg-[#11141A]/80">
             <div className="flex items-center gap-2 bg-[#1A1F29] border border-gray-800 rounded-xl px-3 py-2 focus-within:border-cyan-500/50 transition-colors">
               <button className="text-gray-500 hover:text-cyan-500 p-1">
@@ -357,4 +396,4 @@ export default function Chat() {
       </div>
     </div>
   );
-        }
+      }
