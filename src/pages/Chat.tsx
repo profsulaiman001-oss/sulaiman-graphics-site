@@ -9,24 +9,50 @@ import {
   Smile, 
   FolderOpen, 
   CheckCircle2, 
-  ExternalLink
+  ExternalLink,
+  Menu,
+  ArrowLeft
 } from "lucide-react";
 
 export default function Chat() {
   const [message, setMessage] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(true);
   const queryClient = useQueryClient();
 
-  // 1. Fetch all active projects for the sidebar
+  // Get current user on load
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUser(user);
+      if (user?.email === "profsulaiman001@gmail.com") {
+        setIsAdmin(true);
+      } else {
+        setIsAdmin(false);
+        setMobileSidebarOpen(false); // Clients don't need a sidebar
+      }
+    };
+    getUser();
+  }, []);
+
+  // 1. Fetch all active projects (Admin sees all, Client sees only theirs)
   const { data: projects, isLoading: projectsLoading } = useQuery({
     queryKey: ['projects'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*'); // Removed profiles join to keep it bulletproof
+      let query = supabase.from('projects').select('*');
       
+      // If it's a client, filter projects to only show their own
+      if (!isAdmin && currentUser?.email) {
+        query = query.eq('client_email', currentUser.email);
+      }
+      
+      const { data, error } = await query;
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!currentUser, // Wait until we know who is logged in
   });
 
   // Track which project chat is currently open
@@ -63,7 +89,7 @@ export default function Chat() {
     if (!activeProjectId) return;
 
     const channel = supabase
-      .channel('realtime_chat')
+      .channel(`realtime_chat_${activeProjectId}`)
       .on('postgres_changes', { 
         event: 'INSERT', 
         schema: 'public', 
@@ -82,14 +108,13 @@ export default function Chat() {
   // 4. Function to send a message
   const sendMessageMutation = useMutation({
     mutationFn: async (messageText: string) => {
-      const { data: userData } = await supabase.auth.getUser();
       const { error } = await supabase
         .from('comments')
         .insert([{
           project_id: activeProjectId,
-          user_id: userData.user?.id,
+          user_id: currentUser?.id,
           message: messageText,
-          is_admin: true 
+          is_admin: isAdmin // Smartly flags if it was sent by you or client
         }]);
       
       if (error) throw error;
@@ -101,9 +126,21 @@ export default function Chat() {
   });
 
   const handleSend = () => {
-    if (!message.trim()) return;
+    if (!message.trim() || !activeProjectId) return;
     sendMessageMutation.mutate(message);
   };
+
+  // Helper to get initials from email
+  const getInitials = (email: string) => {
+    if (!email) return "CL";
+    return email.substring(0, 2).toUpperCase();
+  };
+
+  // Filter projects based on the search bar
+  const filteredProjects = projects?.filter((project: any) =>
+    project.client_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    project.title?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (projectsLoading) {
     return <div className="min-h-screen bg-[#0B0C10] flex items-center justify-center text-white">Loading chat room...</div>;
@@ -111,10 +148,11 @@ export default function Chat() {
 
   return (
     <div className="bg-[#0B0C10] min-h-screen text-gray-100 flex flex-col pt-20">
-      <div className="flex-grow flex h-[calc(100vh-140px)] w-full max-w-[1600px] mx-auto p-4 md:p-6 gap-6">
+      <div className="flex-grow flex h-[calc(100vh-140px)] w-full max-w-[1600px] mx-auto p-4 md:p-6 gap-6 relative">
         
         {/* ==================== LEFT SIDEBAR: CLIENT LIST ==================== */}
-        <div className="hidden md:flex w-1/4 flex-col bg-[#11141A]/60 backdrop-blur-xl border border-gray-800 rounded-3xl overflow-hidden">
+        {/* Added dynamic classes to slide in and out on mobile */}
+        <div className={`${isAdmin ? 'flex' : 'hidden'} ${mobileSidebarOpen ? 'flex' : 'hidden md:flex'} absolute inset-y-0 left-0 z-30 md:relative w-full sm:w-80 md:w-1/4 flex-col bg-[#11141A] backdrop-blur-xl border border-gray-800 rounded-3xl overflow-hidden transition-all duration-300`}>
           <div className="p-5 border-b border-gray-800">
             <h1 className="text-xl font-bold mb-4 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Conversations</h1>
             <div className="relative">
@@ -122,19 +160,24 @@ export default function Chat() {
               <input 
                 type="text" 
                 placeholder="Search clients..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full bg-[#1A1F29] border border-gray-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-gray-200 focus:outline-none focus:border-cyan-500/50 transition-colors"
               />
             </div>
           </div>
 
           <div className="flex-grow overflow-y-auto p-3 space-y-2">
-            {projects?.map((project: any) => {
+            {filteredProjects?.map((project: any) => {
               const isActive = project.id === activeProjectId;
               
               return (
                 <div 
                   key={project.id}
-                  onClick={() => setActiveProjectId(project.id)}
+                  onClick={() => {
+                    setActiveProjectId(project.id);
+                    setMobileSidebarOpen(false); // Close sidebar on click for mobile
+                  }}
                   className={`flex items-center gap-3 p-4 rounded-2xl cursor-pointer transition-all duration-200 ${
                     isActive 
                       ? "bg-gradient-to-r from-cyan-600/10 to-transparent border border-cyan-500/20" 
@@ -143,7 +186,7 @@ export default function Chat() {
                 >
                   <div className="relative">
                     <div className="w-11 h-11 bg-gradient-to-br from-gray-700 to-gray-800 rounded-xl flex items-center justify-center border border-gray-700 font-semibold text-white">
-                      CL
+                      {getInitials(project.client_email)}
                     </div>
                   </div>
                   <div className="flex-grow min-w-0">
@@ -155,6 +198,10 @@ export default function Chat() {
                 </div>
               );
             })}
+            
+            {filteredProjects?.length === 0 && (
+              <div className="text-center text-gray-600 mt-5 text-sm">No clients found.</div>
+            )}
           </div>
         </div>
 
@@ -163,18 +210,30 @@ export default function Chat() {
           {/* Top Navbar for the current chat */}
           <div className="p-5 border-b border-gray-800 flex justify-between items-center bg-[#11141A]/80">
             <div className="flex items-center gap-3">
+              {/* Mobile Menu / Back Button */}
+              {isAdmin && (
+                <button 
+                  className="md:hidden p-2 hover:bg-[#1A1F29] rounded-xl text-gray-400"
+                  onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+                >
+                  {mobileSidebarOpen ? <ArrowLeft className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                </button>
+              )}
+              
               <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center font-bold text-black">
-                C
+                {getInitials(activeProject?.client_email || "C")}
               </div>
               <div>
-                <h2 className="font-semibold text-gray-100">{activeProject?.client_email || "Select a client"}</h2>
+                <h2 className="font-semibold text-gray-100 truncate max-w-[150px] sm:max-w-none">
+                  {isAdmin ? activeProject?.client_email : "Sulaiman Graphics"}
+                </h2>
                 <p className="text-xs text-cyan-500 flex items-center gap-1">
                   <span className="w-1.5 h-1.5 bg-cyan-500 rounded-full"></span> Active Now
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button className="p-2.5 hover:bg-[#1A1F29] rounded-xl border border-gray-800 text-gray-400 hover:text-gray-200 transition-colors">
+              <button className="p-2.5 hover:bg-[#1A1F29] rounded-xl border border-gray-800 text-gray-400 hover:text-gray-200 transition-colors hidden sm:block">
                 <Search className="w-5 h-5" />
               </button>
               <button className="p-2.5 hover:bg-[#1A1F29] rounded-xl border border-gray-800 text-gray-400 hover:text-gray-200 transition-colors">
@@ -186,7 +245,8 @@ export default function Chat() {
           {/* Chat Messages Scrolling Area */}
           <div className="flex-grow overflow-y-auto p-6 space-y-6">
             {chatMessages?.map((msg: any) => {
-              const isMe = msg.is_admin;
+              // message is colored right if 'is_admin' is true and user is admin, OR if 'is_admin' is false and user is client
+              const isMe = isAdmin ? msg.is_admin : !msg.is_admin;
               const formattedTime = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
               return (
@@ -197,7 +257,7 @@ export default function Chat() {
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-semibold ${
                     isMe ? 'bg-gradient-to-br from-cyan-500 to-blue-600 text-black font-bold' : 'bg-gray-800 text-gray-400'
                   }`}>
-                    {isMe ? 'SG' : 'C'}
+                    {isMe ? (isAdmin ? 'SG' : 'ME') : (isAdmin ? 'C' : 'SG')}
                   </div>
                   <div className={isMe ? 'text-right' : ''}>
                     <div className={`p-4 rounded-t-2xl text-sm leading-relaxed ${
@@ -221,9 +281,9 @@ export default function Chat() {
           </div>
 
           {/* Bottom Message Input Bar */}
-          <div className="p-5 border-top border-gray-800 bg-[#11141A]/80">
+          <div className="p-5 border-t border-gray-800 bg-[#11141A]/80">
             <div className="flex items-center gap-3 bg-[#1A1F29] border border-gray-800 rounded-2xl p-2.5 focus-within:border-cyan-500/50 transition-colors">
-              <button className="p-2 text-gray-500 hover:text-cyan-500 transition-colors">
+              <button className="p-2 text-gray-500 hover:text-cyan-500 transition-colors" title="Attach file (not yet active)">
                 <Paperclip className="w-5 h-5" />
               </button>
               <input 
@@ -234,12 +294,13 @@ export default function Chat() {
                 placeholder="Type your message here..." 
                 className="flex-grow bg-transparent border-none outline-none text-sm text-gray-200 placeholder-gray-600"
               />
-              <button className="p-2 text-gray-500 hover:text-cyan-500 transition-colors hidden sm:block">
+              <button className="p-2 text-gray-500 hover:text-cyan-500 transition-colors hidden sm:block" title="Emojis (not yet active)">
                 <Smile className="w-5 h-5" />
               </button>
               <button 
                 onClick={handleSend}
-                className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-black font-bold h-10 w-10 flex items-center justify-center rounded-xl transition-all shadow-lg shadow-cyan-500/10"
+                disabled={sendMessageMutation.isPending}
+                className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-black font-bold h-10 w-10 flex items-center justify-center rounded-xl transition-all shadow-lg shadow-cyan-500/10 disabled:opacity-50"
               >
                 <Send className="w-4 h-4" />
               </button>
@@ -279,9 +340,7 @@ export default function Chat() {
               </div>
             </div>
           </div>
-          
         </div>
-
       </div>
     </div>
   );
