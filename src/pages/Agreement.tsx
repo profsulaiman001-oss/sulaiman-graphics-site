@@ -1,0 +1,179 @@
+import { useState } from "react";
+import { ShieldCheck, File text, PenLine, Download } from "lucide-react";
+
+export default function Agreement() {
+  const [clientName, setClientName] = useState("");
+  const [projectName, setProjectName] = useState("");
+  const [projectPrice, setProjectPrice] = useState("");
+  const [scope, setScope] = useState("");
+  
+  const [signature, setSignature] = useState("");
+  const [isAgreed, setIsAgreed] = useState(false);
+
+  const today = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+
+  return (
+    <div className="bg-[#0B0C10] min-h-screen text-gray-100 flex flex-col items-center justify-center p-4 pt-24 pb-12">
+      <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        {/* Left Side: Contract Setup Inputs */}
+        <div className="md:col-span-1 space-y-4">
+          <div className="bg-[#11141A] border border-gray-800 rounded-2xl p-5 sticky top-24">
+            <h3 className="font-bold text-lg mb-4 text-white flex items-center gap-2">
+              <PenLine className="w-4 h-4 text-cyan-500" /> Contract Setup
+            </h3>
+            <p className="text-xs text-gray-500 mb-4">Fill this out to generate the agreement for your client.</p>
+            
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-gray-400">Client Name</label>
+                <input 
+                  type="text" 
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                  placeholder="e.g. John Doe"
+                  className="w-full bg-[#1A1F29] border border-gray-800 rounded-lg py-2 px-3 text-sm text-gray-200 focus:outline-none focus:border-cyan-500/50"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-400">Project Name</label>
+                <input 
+                  type="text" 
+                  value={projectName}
+                  onChange={(e) => setProjectName(e.target.value)}
+                  placeholder="e.g. Brand Identity Pack"
+                  className="w-full bg-[#1A1F29] border border-gray-800 rounded-lg py-2 px-3 text-sm text-gray-200 focus:outline-none focus:border-cyan-500/50"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-400">Total Price ($)</label>
+                <input 
+                  type="text" 
+                  value={projectPrice}
+                  onChange={(e) => setProjectPrice(e.target.value)}
+                  placeholder="e.g. 500"
+                  className="w-full bg-[#1A1F29] border border-gray-800 rounded-lg py-2 px-3 text-sm text-gray-200 focus:outline-none focus:border-cyan-500/50"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-400">Project Scope</label>
+                <textarea 
+                  value={scope}
+                  onChange={(e) => setScope(e.target.value)}
+                  placeholder="e.g. 1 Logo, 3 Social Media Flyers, and 1 Video Ad..."
+                  rows={4}
+                  className="w-full bg-[#1A1F29] border border-gray-800 rounded-lg py-2 px-3 text-sm text-gray-200 focus:outline-none focus:border-cyan-500/50"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side: The Actual Contract */}
+        <div className="md:col-span-2 bg-[#11141A] border border-gray-800 rounded-2xl p-8 shadow-2xl flex flex-col justify-between">
+          <div>
+            {/* Header */}
+            <div className="flex justify-between items-start border-b border-gray-800 pb-5 mb-6">
+              <div>
+                <h1 className="font-display font-black text-xl tracking-tighter text-white">
+                  SULAIMAN<span className="text-cyan-500">.</span>GRAPHICS
+                </h1>
+                <p className="text-xs text-gray-500 mt-1">Design & Digital Media Agreement</p>
+              </div>
+              <div className="text-right">
+                <span className="text-xs text-gray-500">Date Generated</span>
+                <p className="text-sm font-medium text-gray-300">{today}</p>
+              </div>
+            </div>
+
+            {/* Contract Body */}
+            <div className="space-y-6 text-sm text-gray-400 leading-relaxed max-h-[400px] overflow-y-auto pr-2">
+              <p>
+                This agreement is made between <span className="text-white font-medium">{clientName || "[Client Name]"}</span> (The Client) and <span className="text-white font-medium">Sulaiman Graphics</span> (The Designer).
+              </p>
+
+              <div>
+                <h3 className="text-white font-semibold mb-1">1. Scope of Work</h3>
+                <p>
+                  The Designer agrees to produce visual assets for <span className="text-white font-medium">"{projectName || "[Project Name]"}"</span>. 
+                  The specific deliverables included are: <span className="text-white font-medium">{scope || "[List assets here on the left side]"}</span>. 
+                  Any additional assets requested outside of this list will require a separate quote.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-white font-semibold mb-1">2. Payment & File Delivery</h3>
+                <p>
+                  The total fee for this project is <span className="text-cyan-400 font-bold">${projectPrice || "0.00"}</span>. 
+                  A 50% non-refundable deposit is required before work begins. The remaining 50% balance is due upon project completion. Final high-resolution files (PNG, JPG, Vector, or MP4) will be delivered only after the final invoice is paid.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-white font-semibold mb-1">3. Revisions</h3>
+                <p>
+                  The Designer provides up to 2 rounds of revisions on the chosen concepts. A revision constitutes minor adjustments to color, typography, or layout. Complete redesigns or concept changes after approval will result in extra fees.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-white font-semibold mb-1">4. Ownership & Usage</h3>
+                <p>
+                  Upon final payment, full ownership and commercial rights to the final approved designs are transferred to the Client. The Designer retains the right to display the completed assets in their portfolio for marketing purposes.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Signature and Agreement Area */}
+          <div className="border-t border-gray-800 pt-6 mt-6">
+            {!isAgreed ? (
+              <div className="flex flex-col sm:flex-row gap-4 items-end">
+                <div className="flex-grow w-full">
+                  <label className="text-xs text-gray-500 block mb-1">Type your full name to sign digitally</label>
+                  <input 
+                    type="text" 
+                    value={signature}
+                    onChange={(e) => setSignature(e.target.value)}
+                    placeholder="E-signature"
+                    className="w-full bg-[#1A1F29] border border-gray-800 rounded-lg py-2.5 px-3 text-sm text-gray-200 focus:outline-none focus:border-cyan-500/50 font-serif italic"
+                  />
+                </div>
+                <button 
+                  onClick={() => {
+                    if (signature.trim() !== "") setIsAgreed(true);
+                  }}
+                  disabled={!signature.trim() || !clientName || !projectPrice}
+                  className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-black font-bold py-2.5 px-6 rounded-lg transition-all disabled:opacity-30 whitespace-nowrap text-sm"
+                >
+                  Sign & Agree
+                </button>
+              </div>
+            ) : (
+              <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-4 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <ShieldCheck className="w-5 h-5 text-cyan-500" />
+                  <div>
+                    <p className="text-sm font-semibold text-white">Agreement Signed Digitally</p>
+                    <p className="text-xs text-gray-400">Signed by {signature} on {today}</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => window.print()}
+                  className="text-gray-400 hover:text-white p-2"
+                  title="Print or Save as PDF"
+                >
+                  <Download className="w-5 h-5" />
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+                                                  }
