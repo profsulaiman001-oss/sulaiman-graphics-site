@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Receipt as ReceiptIcon, PenLine, Download, CheckCircle, Clock } from "lucide-react";
+import { Receipt as ReceiptIcon, PenLine, Download, CheckCircle, Clock, Sun, Moon } from "lucide-react";
 
 export default function Receipt() {
   const [clientName, setClientName] = useState("");
@@ -8,6 +8,9 @@ export default function Receipt() {
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("₦");
   const [paymentStatus, setPaymentStatus] = useState("Complete Payment");
+  
+  // 🌓 ADDED: State to manage receipt theme
+  const [isDarkMode, setIsDarkMode] = useState(true);
   
   const today = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
@@ -18,7 +21,7 @@ export default function Receipt() {
   return (
     <div className="bg-[#0B0C10] min-h-screen text-gray-100 flex flex-col items-center justify-center p-4 pt-24 pb-12">
       
-      {/* 🖨️ AGGRESSIVE PRINT CSS: Isolates just the receipt box */}
+      {/* 🖨️ AGGRESSIVE PRINT CSS: Dynamically handles dark and light mode for the PDF */}
       <style>{`
         @media print {
           body * {
@@ -33,16 +36,21 @@ export default function Receipt() {
             top: 0 !important;
             width: 100% !important;
             border: none !important;
-            background: white !important;
-            padding: 0 !important;
+            background: ${isDarkMode ? '#11141A' : '#FFFFFF'} !important;
+            padding: 0.5in !important;
             margin: 0 !important;
             box-shadow: none !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
-          .print-text-black {
-            color: #000000 !important;
+          .print-text-primary {
+            color: ${isDarkMode ? '#FFFFFF' : '#000000'} !important;
           }
-          .print-text-gray {
-            color: #4B5563 !important;
+          .print-text-secondary {
+            color: ${isDarkMode ? '#9CA3AF' : '#4B5563'} !important;
+          }
+          .print-border {
+            border-color: ${isDarkMode ? '#1F2937' : '#E5E7EB'} !important;
           }
           @page {
             margin: 0.5in !important;
@@ -55,6 +63,34 @@ export default function Receipt() {
         
         {/* Left Side: Receipt Setup Inputs */}
         <div className="md:col-span-1 space-y-4 no-print">
+          
+          {/* 🌓 ADDED: Theme Toggle Button */}
+          <div className="bg-[#11141A] border border-gray-800 rounded-2xl p-3 flex justify-between items-center">
+            <span className="text-sm text-gray-400 font-medium">Receipt Theme</span>
+            <div className="flex bg-[#1A1F29] rounded-lg p-1">
+              <button
+                onClick={() => setIsDarkMode(false)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+                  !isDarkMode 
+                    ? "bg-white text-black" 
+                    : "text-gray-500 hover:text-white"
+                }`}
+              >
+                <Sun className="w-3.5 h-3.5" /> Light
+              </button>
+              <button
+                onClick={() => setIsDarkMode(true)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+                  isDarkMode 
+                    ? "bg-cyan-500 text-black" 
+                    : "text-gray-500 hover:text-white"
+                }`}
+              >
+                <Moon className="w-3.5 h-3.5" /> Dark
+              </button>
+            </div>
+          </div>
+
           <div className="bg-[#11141A] border border-gray-800 rounded-2xl p-5 sticky top-24">
             <h3 className="font-bold text-lg mb-4 text-white flex items-center gap-2">
               <PenLine className="w-4 h-4 text-cyan-500" /> Generate Receipt
@@ -140,19 +176,33 @@ export default function Receipt() {
         </div>
 
         {/* Right Side: The Visual Receipt */}
-        <div className="print-receipt md:col-span-2 bg-[#11141A] border border-gray-800 rounded-2xl p-8 shadow-2xl flex flex-col justify-between min-h-[500px]">
+        <div className={`print-receipt md:col-span-2 border rounded-2xl p-8 shadow-2xl flex flex-col justify-between min-h-[500px] transition-colors ${
+          isDarkMode 
+            ? "bg-[#11141A] border-gray-800" 
+            : "bg-white border-gray-200"
+        }`}>
           <div>
             {/* Header */}
-            <div className="flex justify-between items-start border-b border-gray-800 pb-5 mb-6">
+            <div className={`flex justify-between items-start border-b pb-5 mb-6 print-border ${
+              isDarkMode ? "border-gray-800" : "border-gray-100"
+            }`}>
               <div>
-                <h1 className="font-display font-black text-xl tracking-tighter text-white print-text-black">
+                <h1 className={`font-display font-black text-xl tracking-tighter print-text-primary ${
+                  isDarkMode ? "text-white" : "text-black"
+                }`}>
                   SULAIMAN<span className="text-cyan-500">.</span>GRAPHICS
                 </h1>
-                <p className="text-xs text-gray-500 mt-1 print-text-gray">Official Payment Receipt</p>
+                <p className={`text-xs mt-1 print-text-secondary ${
+                  isDarkMode ? "text-gray-500" : "text-gray-500"
+                }`}>Official Payment Receipt</p>
               </div>
               <div className="text-right">
-                <span className="text-xs text-gray-500 print-text-gray">Date</span>
-                <p className="text-sm font-medium text-gray-300 print-text-black">{today}</p>
+                <span className={`text-xs print-text-secondary ${
+                  isDarkMode ? "text-gray-500" : "text-gray-500"
+                }`}>Date</span>
+                <p className={`text-sm font-medium print-text-primary ${
+                  isDarkMode ? "text-gray-300" : "text-gray-800"
+                }`}>{today}</p>
               </div>
             </div>
 
@@ -160,14 +210,22 @@ export default function Receipt() {
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <span className="text-xs text-gray-500 print-text-gray block mb-1">Billed To:</span>
-                  <p className="text-white font-semibold print-text-black text-base">{clientName || "Client Name"}</p>
+                  <span className={`text-xs print-text-secondary block mb-1 ${
+                    isDarkMode ? "text-gray-500" : "text-gray-500"
+                  }`}>Billed To:</span>
+                  <p className={`font-semibold print-text-primary text-base ${
+                    isDarkMode ? "text-white" : "text-black"
+                  }`}>{clientName || "Client Name"}</p>
                   {businessName && (
-                    <p className="text-sm text-gray-400 print-text-gray">{businessName}</p>
+                    <p className={`text-sm print-text-secondary ${
+                      isDarkMode ? "text-gray-400" : "text-gray-600"
+                    }`}>{businessName}</p>
                   )}
                 </div>
                 <div className="text-right">
-                  <span className="text-xs text-gray-500 print-text-gray block mb-1">Status:</span>
+                  <span className={`text-xs print-text-secondary block mb-1 ${
+                    isDarkMode ? "text-gray-500" : "text-gray-500"
+                  }`}>Status:</span>
                   <div className="flex items-center justify-end gap-1.5">
                     {paymentStatus === "Complete Payment" ? (
                       <CheckCircle className="w-4 h-4 text-emerald-500" />
@@ -182,21 +240,33 @@ export default function Receipt() {
               </div>
 
               {/* Table Header */}
-              <div className="border-t border-gray-800 pt-4 mt-6">
-                <div className="grid grid-cols-3 text-xs font-semibold text-gray-500 print-text-gray uppercase tracking-wider">
+              <div className={`border-t pt-4 mt-6 print-border ${
+                isDarkMode ? "border-gray-800" : "border-gray-100"
+              }`}>
+                <div className={`grid grid-cols-3 text-xs font-semibold uppercase tracking-wider print-text-secondary ${
+                  isDarkMode ? "text-gray-500" : "text-gray-500"
+                }`}>
                   <div className="col-span-2">Service Description</div>
                   <div className="text-right">Total</div>
                 </div>
               </div>
 
               {/* Table Row */}
-              <div className="border-t border-b border-gray-800 py-4 my-2">
+              <div className={`border-t border-b py-4 my-2 print-border ${
+                isDarkMode ? "border-gray-800" : "border-gray-100"
+              }`}>
                 <div className="grid grid-cols-3 items-center">
                   <div className="col-span-2">
-                    <p className="text-white font-medium print-text-black">{service || "Service Name"}</p>
-                    <p className="text-xs text-gray-500 print-text-gray mt-0.5">Digital design assets & delivery</p>
+                    <p className={`font-medium print-text-primary ${
+                      isDarkMode ? "text-white" : "text-black"
+                    }`}>{service || "Service Name"}</p>
+                    <p className={`text-xs mt-0.5 print-text-secondary ${
+                      isDarkMode ? "text-gray-500" : "text-gray-500"
+                    }`}>Digital design assets & delivery</p>
                   </div>
-                  <div className="text-right text-white font-bold print-text-black">
+                  <div className={`text-right font-bold print-text-primary ${
+                    isDarkMode ? "text-white" : "text-black"
+                  }`}>
                     {currency}{amount || "0.00"}
                   </div>
                 </div>
@@ -206,16 +276,30 @@ export default function Receipt() {
               <div className="flex justify-end">
                 <div className="w-1/2 space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500 print-text-gray">Subtotal:</span>
-                    <span className="text-white print-text-black font-medium">{currency}{amount || "0.00"}</span>
+                    <span className={`print-text-secondary ${
+                      isDarkMode ? "text-gray-500" : "text-gray-500"
+                    }`}>Subtotal:</span>
+                    <span className={`font-medium print-text-primary ${
+                      isDarkMode ? "text-white" : "text-black"
+                    }`}>{currency}{amount || "0.00"}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500 print-text-gray">Tax:</span>
-                    <span className="text-white print-text-black font-medium">{currency}0.00</span>
+                    <span className={`print-text-secondary ${
+                      isDarkMode ? "text-gray-500" : "text-gray-500"
+                    }`}>Tax:</span>
+                    <span className={`font-medium print-text-primary ${
+                      isDarkMode ? "text-white" : "text-black"
+                    }`}>{currency}0.00</span>
                   </div>
-                  <div className="flex justify-between border-t border-gray-800 pt-2 text-base font-bold">
-                    <span className="text-white print-text-black">Total Paid:</span>
-                    <span className="text-cyan-500 print-text-black">{currency}{amount || "0.00"}</span>
+                  <div className={`flex justify-between border-t pt-2 text-base font-bold print-border ${
+                    isDarkMode ? "border-gray-800" : "border-gray-100"
+                  }`}>
+                    <span className={`print-text-primary ${
+                      isDarkMode ? "text-white" : "text-black"
+                    }`}>Total Paid:</span>
+                    <span className={`${
+                      isDarkMode ? "text-cyan-500" : "text-cyan-600"
+                    } print-text-primary`}>{currency}{amount || "0.00"}</span>
                   </div>
                 </div>
               </div>
@@ -223,12 +307,18 @@ export default function Receipt() {
           </div>
 
           {/* Footer */}
-          <div className="border-t border-gray-800 pt-4 mt-8 text-center">
-            <p className="text-xs text-gray-500 print-text-gray">Thank you for your business!</p>
-            <p className="text-xs text-gray-400 print-text-gray mt-1">Sulaiman Graphics • Digital Media & Design</p>
+          <div className={`border-t pt-4 mt-8 text-center print-border ${
+            isDarkMode ? "border-gray-800" : "border-gray-100"
+          }`}>
+            <p className={`text-xs print-text-secondary ${
+              isDarkMode ? "text-gray-500" : "text-gray-500"
+            }`}>Thank you for your business!</p>
+            <p className={`text-xs mt-1 print-text-secondary ${
+              isDarkMode ? "text-gray-400" : "text-gray-400"
+            }`}>Sulaiman Graphics • Digital Media & Design</p>
           </div>
         </div>
       </div>
     </div>
   );
-}
+      }
