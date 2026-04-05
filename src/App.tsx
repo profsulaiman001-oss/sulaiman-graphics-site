@@ -41,6 +41,9 @@ import ViewQuestionnaires from "@/pages/ViewQuestionnaires";
 // ── 💬 NEW IMPORT: For your brand new dedicated Chat page ──
 import Chat from "@/pages/Chat";
 
+// ── 🤖 NEW IMPORT: For your AI Assistant page ──
+import Assistant from "@/pages/Assistant";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -117,6 +120,9 @@ function Router() {
 
           {/* ── 💬 CHAT MOVED OUT: Now accessible to the public, relies on self-identification ── */}
           <Route path="/chat" component={Chat} />
+
+          {/* ── 🤖 NEW PUBLIC ROUTE: AI Virtual Receptionist ── */}
+          <Route path="/assistant" component={Assistant} />
 
           {/* AUTH ROUTES */}
           <Route path="/login" component={Login} />
