@@ -44,6 +44,9 @@ import Chat from "@/pages/Chat";
 // ── 🤖 NEW IMPORT: For your AI Assistant page ──
 import Assistant from "@/pages/Assistant";
 
+// ── 📄 NEW IMPORT: For your brand new Agreement page ──
+import Agreement from "@/pages/Agreement"; // 👈 Added this for you!
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -123,6 +126,9 @@ function Router() {
 
           {/* ── 🤖 NEW PUBLIC ROUTE: AI Virtual Receptionist ── */}
           <Route path="/assistant" component={Assistant} />
+
+          {/* ── 📄 NEW PUBLIC ROUTE: Contract Agreement Generator ── */}
+          <Route path="/agreement" component={Agreement} /> {/* 👈 Added this for you! */}
 
           {/* AUTH ROUTES */}
           <Route path="/login" component={Login} />
