@@ -17,12 +17,12 @@ export default function Chat() {
   const queryClient = useQueryClient();
 
   // 1. Fetch all active projects for the sidebar
-  const { data: projects } = useQuery({
+  const { data: projects, isLoading: projectsLoading } = useQuery({
     queryKey: ['projects'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('projects')
-        .select('*, profiles(full_name)');
+        .select('*'); // Removed profiles join to keep it bulletproof
       
       if (error) throw error;
       return data;
@@ -42,7 +42,7 @@ export default function Chat() {
   const activeProject = projects?.find(p => p.id === activeProjectId);
 
   // 2. Fetch the actual chat messages for the selected project
-  const { data: chatMessages } = useQuery({
+  const { data: chatMessages, isLoading: messagesLoading } = useQuery({
     queryKey: ['messages', activeProjectId],
     queryFn: async () => {
       if (!activeProjectId) return [];
@@ -70,7 +70,6 @@ export default function Chat() {
         table: 'comments',
         filter: `project_id=eq.${activeProjectId}` 
       }, () => {
-        // Optimistically update the UI!
         queryClient.invalidateQueries({ queryKey: ['messages', activeProjectId] });
       })
       .subscribe();
@@ -106,8 +105,12 @@ export default function Chat() {
     sendMessageMutation.mutate(message);
   };
 
+  if (projectsLoading) {
+    return <div className="min-h-screen bg-[#0B0C10] flex items-center justify-center text-white">Loading chat room...</div>;
+  }
+
   return (
-    <div className="bg-[#0B0C10] min-h-screen text-gray-100 flex flex-col">
+    <div className="bg-[#0B0C10] min-h-screen text-gray-100 flex flex-col pt-20">
       <div className="flex-grow flex h-[calc(100vh-140px)] w-full max-w-[1600px] mx-auto p-4 md:p-6 gap-6">
         
         {/* ==================== LEFT SIDEBAR: CLIENT LIST ==================== */}
@@ -127,7 +130,6 @@ export default function Chat() {
           <div className="flex-grow overflow-y-auto p-3 space-y-2">
             {projects?.map((project: any) => {
               const isActive = project.id === activeProjectId;
-              const clientName = project.profiles?.full_name || "Client";
               
               return (
                 <div 
@@ -141,12 +143,12 @@ export default function Chat() {
                 >
                   <div className="relative">
                     <div className="w-11 h-11 bg-gradient-to-br from-gray-700 to-gray-800 rounded-xl flex items-center justify-center border border-gray-700 font-semibold text-white">
-                      {clientName.split(' ').map((n: string) => n[0]).join('')}
+                      CL
                     </div>
                   </div>
                   <div className="flex-grow min-w-0">
                     <div className="flex justify-between items-center mb-0.5">
-                      <h3 className="font-medium text-sm text-gray-100 truncate">{clientName}</h3>
+                      <h3 className="font-medium text-sm text-gray-100 truncate">{project.client_email}</h3>
                     </div>
                     <p className="text-xs text-gray-500 truncate">{project.title}</p>
                   </div>
@@ -162,10 +164,10 @@ export default function Chat() {
           <div className="p-5 border-b border-gray-800 flex justify-between items-center bg-[#11141A]/80">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center font-bold text-black">
-                {activeProject?.profiles?.full_name?.split(' ').map((n: string) => n[0]).join('') || "C"}
+                C
               </div>
               <div>
-                <h2 className="font-semibold text-gray-100">{activeProject?.profiles?.full_name || "Select a client"}</h2>
+                <h2 className="font-semibold text-gray-100">{activeProject?.client_email || "Select a client"}</h2>
                 <p className="text-xs text-cyan-500 flex items-center gap-1">
                   <span className="w-1.5 h-1.5 bg-cyan-500 rounded-full"></span> Active Now
                 </p>
@@ -195,7 +197,7 @@ export default function Chat() {
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-semibold ${
                     isMe ? 'bg-gradient-to-br from-cyan-500 to-blue-600 text-black font-bold' : 'bg-gray-800 text-gray-400'
                   }`}>
-                    {isMe ? 'SG' : (activeProject?.profiles?.full_name?.split(' ').map((n: string) => n[0]).join('') || 'C')}
+                    {isMe ? 'SG' : 'C'}
                   </div>
                   <div className={isMe ? 'text-right' : ''}>
                     <div className={`p-4 rounded-t-2xl text-sm leading-relaxed ${
@@ -212,6 +214,10 @@ export default function Chat() {
                 </div>
               );
             })}
+            
+            {!messagesLoading && chatMessages?.length === 0 && (
+              <div className="text-center text-gray-600 mt-10">No messages yet. Send a greeting!</div>
+            )}
           </div>
 
           {/* Bottom Message Input Bar */}
