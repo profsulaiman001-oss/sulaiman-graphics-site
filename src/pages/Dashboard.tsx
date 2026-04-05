@@ -8,7 +8,7 @@ import {
 } from "recharts";
 import { 
   Edit3, Trash2, Save, XCircle, Bell, LogOut, CheckCircle, 
-  Clock, Loader2, Plus, HardDrive, Download, Settings, X, Mail, UserCheck, MessageSquare, Send, FileText, ClipboardList
+  Clock, Loader2, Plus, HardDrive, Download, Settings, X, Mail, UserCheck, MessageSquare, Send, FileText, ClipboardList, Receipt as ReceiptIcon
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -788,6 +788,13 @@ export default function Dashboard() {
               className="bg-background border border-border hover:border-blue-500 hover:text-blue-500 text-foreground font-semibold text-sm px-5 py-3 rounded-xl transition flex items-center justify-center gap-2"
             >
               <ClipboardList size={18} /> View Questionnaires
+            </button>
+
+            <button
+              onClick={() => setLocation("/receipt")}
+              className="bg-background border border-border hover:border-cyan-500 hover:text-cyan-500 text-foreground font-semibold text-sm px-5 py-3 rounded-xl transition flex items-center justify-center gap-2"
+            >
+              <ReceiptIcon size={18} /> Generate Receipt
             </button>
           </div>
         )}
