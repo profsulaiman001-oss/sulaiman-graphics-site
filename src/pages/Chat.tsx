@@ -255,69 +255,71 @@ export default function Chat() {
       {/* MAIN CHAT INTERFACE */}
       <div className="flex-grow flex h-[calc(100vh-140px)] w-full max-w-[1600px] mx-auto p-4 md:p-6 gap-6 relative">
         
-        {/* LEFT SIDEBAR */}
-        <div className={`${isAdmin ? 'flex' : 'hidden'} ${mobileSidebarOpen ? 'flex' : 'hidden md:flex'} absolute inset-y-0 left-0 z-30 md:relative w-full sm:w-80 md:w-1/4 flex-col bg-[#11141A] border border-gray-800 rounded-3xl overflow-hidden`}>
-          <div className="p-5 border-b border-gray-800">
-            <h1 className="text-xl font-bold mb-4 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Conversations</h1>
-            
-            <form onSubmit={handleAddClient} className="flex gap-2 mb-3">
-              <input 
-                type="email" 
-                placeholder="Type client email to chat..." 
-                value={newClientEmail}
-                onChange={(e) => setNewClientEmail(e.target.value)}
-                className="flex-grow bg-[#1A1F29] border border-gray-800 rounded-xl py-2 px-3 text-xs text-gray-200 focus:outline-none focus:border-cyan-500/50"
-              />
-              <button type="submit" className="bg-gradient-to-r from-cyan-500 to-blue-500 p-2 rounded-xl text-black">
-                <UserPlus className="w-4 h-4" />
-              </button>
-            </form>
+        {/* LEFT SIDEBAR - HIDDEN FOR CLIENTS */}
+        {isAdmin && (
+          <div className={`${mobileSidebarOpen ? 'flex' : 'hidden md:flex'} absolute inset-y-0 left-0 z-30 md:relative w-full sm:w-80 md:w-1/4 flex-col bg-[#11141A] border border-gray-800 rounded-3xl overflow-hidden`}>
+            <div className="p-5 border-b border-gray-800">
+              <h1 className="text-xl font-bold mb-4 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Conversations</h1>
+              
+              <form onSubmit={handleAddClient} className="flex gap-2 mb-3">
+                <input 
+                  type="email" 
+                  placeholder="Type client email to chat..." 
+                  value={newClientEmail}
+                  onChange={(e) => setNewClientEmail(e.target.value)}
+                  className="flex-grow bg-[#1A1F29] border border-gray-800 rounded-xl py-2 px-3 text-xs text-gray-200 focus:outline-none focus:border-cyan-500/50"
+                />
+                <button type="submit" className="bg-gradient-to-r from-cyan-500 to-blue-500 p-2 rounded-xl text-black">
+                  <UserPlus className="w-4 h-4" />
+                </button>
+              </form>
 
-            <div className="relative">
-              <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
-              <input 
-                type="text" 
-                placeholder="Search conversations..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-[#1A1F29] border border-gray-800 rounded-xl py-2 pl-10 pr-4 text-sm text-gray-200 focus:outline-none focus:border-cyan-500/50"
-              />
+              <div className="relative">
+                <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+                <input 
+                  type="text" 
+                  placeholder="Search conversations..." 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full bg-[#1A1F29] border border-gray-800 rounded-xl py-2 pl-10 pr-4 text-sm text-gray-200 focus:outline-none focus:border-cyan-500/50"
+                />
+              </div>
+            </div>
+
+            <div className="flex-grow overflow-y-auto p-3 space-y-2">
+              {filteredClients?.map((c: any) => {
+                const isActive = c.email === activeClientEmail;
+                
+                return (
+                  <div 
+                    key={c.email}
+                    onClick={() => {
+                      setActiveClientEmail(c.email);
+                      setMobileSidebarOpen(false); 
+                    }}
+                    className={`flex items-center gap-3 p-4 rounded-2xl cursor-pointer ${
+                      isActive 
+                        ? "bg-gradient-to-r from-cyan-600/10 to-transparent border border-cyan-500/20" 
+                        : "hover:bg-[#1A1F29]/50 border border-transparent"
+                    }`}
+                  >
+                    <div className="w-11 h-11 bg-gradient-to-br from-gray-700 to-gray-800 rounded-xl flex items-center justify-center border border-gray-700 text-white font-semibold">
+                      {getInitials(c.email)}
+                    </div>
+                    <div className="flex-grow min-w-0">
+                      <h3 className="font-medium text-sm text-gray-100 truncate">{c.email}</h3>
+                      <p className="text-xs text-gray-500 truncate">Client Thread</p>
+                    </div>
+                  </div>
+                );
+              })}
+              
+              {(!filteredClients || filteredClients.length === 0) && (
+                <div className="text-center text-gray-600 mt-5 text-sm">No clients found. Use the box above to start one!</div>
+              )}
             </div>
           </div>
-
-          <div className="flex-grow overflow-y-auto p-3 space-y-2">
-            {filteredClients?.map((c: any) => {
-              const isActive = c.email === activeClientEmail;
-              
-              return (
-                <div 
-                  key={c.email}
-                  onClick={() => {
-                    setActiveClientEmail(c.email);
-                    setMobileSidebarOpen(false); 
-                  }}
-                  className={`flex items-center gap-3 p-4 rounded-2xl cursor-pointer ${
-                    isActive 
-                      ? "bg-gradient-to-r from-cyan-600/10 to-transparent border border-cyan-500/20" 
-                      : "hover:bg-[#1A1F29]/50 border border-transparent"
-                  }`}
-                >
-                  <div className="w-11 h-11 bg-gradient-to-br from-gray-700 to-gray-800 rounded-xl flex items-center justify-center border border-gray-700 text-white font-semibold">
-                    {getInitials(c.email)}
-                  </div>
-                  <div className="flex-grow min-w-0">
-                    <h3 className="font-medium text-sm text-gray-100 truncate">{c.email}</h3>
-                    <p className="text-xs text-gray-500 truncate">Client Thread</p>
-                  </div>
-                </div>
-              );
-            })}
-            
-            {(!filteredClients || filteredClients.length === 0) && (
-              <div className="text-center text-gray-600 mt-5 text-sm">No clients found. Use the box above to start one!</div>
-            )}
-          </div>
-        </div>
+        )}
 
         {/* CENTER AREA: THE CHAT */}
         <div className="flex-grow flex flex-col bg-[#11141A]/60 backdrop-blur-xl border border-gray-800 rounded-3xl overflow-hidden">
