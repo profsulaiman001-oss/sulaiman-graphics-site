@@ -50,12 +50,13 @@ export function ProjectCard({ project, index = 0 }: { project: Project; index?: 
       >
 
         {/* VIDEO — shown for Motion Graphics when a video path is provided */}
+        {/* MODIFIED: Reads direct URL and disables preloading to save bandwidth */}
         {hasVideo && (
           <video
-            src={assetUrl(project.video!)}
+            src={project.video}
             className="w-full h-full object-cover"
             controls
-            preload="metadata"
+            preload="none"
             poster={project.image ? assetUrl(project.image) : undefined}
           />
         )}
