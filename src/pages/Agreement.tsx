@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ShieldCheck, File text, PenLine, Download } from "lucide-react";
+import { ShieldCheck, FileText, PenLine, Download } from "lucide-react";
 
 export default function Agreement() {
   const [clientName, setClientName] = useState("");
@@ -176,4 +176,4 @@ export default function Agreement() {
       </div>
     </div>
   );
-                                                  }
+                                                                     }
