@@ -115,9 +115,6 @@ function Router() {
           {/* ── ✅ ADDED: Public route for the Questionnaire ── */}
           <Route path="/questionnaire" component={Questionnaire} />
 
-          {/* ── 💬 MOVED: Chat is now a fully public page! ── */}
-          <Route path="/chat" component={Chat} />
-
           {/* AUTH ROUTES */}
           <Route path="/login" component={Login} />
 
@@ -139,6 +136,13 @@ function Router() {
           <Route path="/questionnaires">
             <ProtectedRoute>
               <ViewQuestionnaires />
+            </ProtectedRoute>
+          </Route>
+
+          {/* ── 💬 SECURED: Chat is now safe and knows who is logged in ── */}
+          <Route path="/chat">
+            <ProtectedRoute>
+              <Chat />
             </ProtectedRoute>
           </Route>
 
