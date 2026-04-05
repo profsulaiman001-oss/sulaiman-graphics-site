@@ -30,7 +30,6 @@ export default function Chat() {
   const [newClientEmail, setNewClientEmail] = useState("");
   const [activeClientEmail, setActiveClientEmail] = useState<string | null>(null);
 
-  // Reference to handle hidden file inputs
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -72,24 +71,17 @@ export default function Chat() {
     setShowIdentityPopup(false);
   };
 
-  // 1. Fetch clean list of clients from our NEW table
+  // 1. Fetch clean list of clients from our NEW chat_clients table!
   const { data: clients } = useQuery({
     queryKey: ['chatClients'],
     queryFn: async () => {
-      // 🛠️ POINTED TO THE NEW chat_messages TABLE
       const { data, error } = await supabase
-        .from('chat_messages') 
-        .select('sender_email, receiver_email');
+        .from('chat_clients') 
+        .select('email')
+        .order('created_at', { ascending: false });
       
       if (error) return [];
-
-      const uniqueEmails = new Set<string>();
-      data.forEach(msg => {
-        if (msg.sender_email !== "profsulaiman001@gmail.com") uniqueEmails.add(msg.sender_email);
-        if (msg.receiver_email !== "profsulaiman001@gmail.com") uniqueEmails.add(msg.receiver_email);
-      });
-      
-      return Array.from(uniqueEmails).map(email => ({ email }));
+      return data;
     },
     enabled: !showIdentityPopup && isAdmin, 
   });
@@ -100,10 +92,28 @@ export default function Chat() {
     }
   }, [clients, isAdmin]);
 
-  const handleAddClient = (e: React.FormEvent) => {
+  // Mutation to save a newly typed client to Supabase
+  const addClientMutation = useMutation({
+    mutationFn: async (email: string) => {
+      const { error } = await supabase
+        .from('chat_clients')
+        .insert([{ email }]);
+      
+      // If it fails because the email is already there, ignore the error
+      if (error && error.code !== '23505') throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['chatClients'] });
+    }
+  });
+
+  const handleAddClient = async (e: React.FormEvent) => {
     e.preventDefault();
     const email = newClientEmail.trim().toLowerCase();
     if (!email) return;
+    
+    // Instantly save to Supabase
+    addClientMutation.mutate(email);
     setActiveClientEmail(email);
     setNewClientEmail("");
   };
@@ -118,7 +128,6 @@ export default function Chat() {
       const targetEmail = isAdmin ? activeClientEmail : adminEmail;
       const myEmail = guestEmail;
 
-      // 🛠️ POINTED TO THE NEW chat_messages TABLE
       const { data, error } = await supabase
         .from('chat_messages')
         .select('*')
@@ -131,11 +140,10 @@ export default function Chat() {
     enabled: !!activeClientEmail && !!guestEmail,
   });
 
-  // 3. Real-time listener & Browser Badge Logic
+  // 3. Real-time listener
   useEffect(() => {
     if (!guestEmail) return;
 
-    // 🛠️ POINTED LISTENER TO THE NEW chat_messages TABLE
     const channel = supabase
       .channel(`realtime_chat_${guestEmail}`)
       .on('postgres_changes', { 
@@ -175,7 +183,6 @@ export default function Chat() {
     mutationFn: async (messageText: string) => {
       const adminEmail = "profsulaiman001@gmail.com";
       
-      // 🛠️ POINTED INSERT TO THE NEW chat_messages TABLE
       const { error } = await supabase
         .from('chat_messages')
         .insert([{
@@ -190,7 +197,6 @@ export default function Chat() {
     onSuccess: () => {
       setMessage("");
       queryClient.invalidateQueries({ queryKey: ['messages', activeClientEmail] });
-      queryClient.invalidateQueries({ queryKey: ['chatClients'] });
     }
   });
 
@@ -211,14 +217,12 @@ export default function Chat() {
       const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      // 🛠️ POINTED TO THE NEW chat_attachments BUCKET
       const { error: uploadError } = await supabase.storage
         .from('chat-attachments')
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
-      // 🛠️ GENERATE URL FROM THE NEW chat_attachments BUCKET
       const { data: { publicUrl } } = supabase.storage
         .from('chat-attachments')
         .getPublicUrl(filePath);
@@ -487,4 +491,4 @@ export default function Chat() {
       </div>
     </div>
   );
-  }
+      }
