@@ -45,7 +45,10 @@ import Chat from "@/pages/Chat";
 import Assistant from "@/pages/Assistant";
 
 // ── 📄 NEW IMPORT: For your brand new Agreement page ──
-import Agreement from "@/pages/Agreement"; // 👈 Added this for you!
+import Agreement from "@/pages/Agreement"; 
+
+// ── 🧾 NEW IMPORT: For your brand new Receipt page ──
+import Receipt from "@/pages/Receipt"; // 👈 Added this for you!
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -128,7 +131,10 @@ function Router() {
           <Route path="/assistant" component={Assistant} />
 
           {/* ── 📄 NEW PUBLIC ROUTE: Contract Agreement Generator ── */}
-          <Route path="/agreement" component={Agreement} /> {/* 👈 Added this for you! */}
+          <Route path="/agreement" component={Agreement} /> 
+
+          {/* ── 🧾 NEW PUBLIC ROUTE: Receipt Generator ── */}
+          <Route path="/receipt" component={Receipt} /> {/* 👈 Added this for you! */}
 
           {/* AUTH ROUTES */}
           <Route path="/login" component={Login} />
