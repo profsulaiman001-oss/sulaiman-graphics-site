@@ -59,8 +59,8 @@ const projects: Project[] = [
     gradient: "from-blue-600 to-cyan-500",
     client: "Sarkin Mota Autos",
     tools: ["Pixellab", "Photopea"],
-    image: "/images/sarkin mota.png",
-    images: ["/images/sarkin mota.png", "images/sarkin mota 1.png", "images/sarkin mota 2.png", "images/sarkin mota 3.png", "images/sarkin mota 4.png", "images/sarkin mota 5.png"],
+    image: "/images/sarkin mota.webp",
+    images: ["/images/sarkin mota.webp", "images/sarkin mota 1.webp", "images/sarkin mota 2.webp", "images/sarkin mota 3.webp", "images/sarkin mota 4.png", "images/sarkin mota 5.png"],
   },
 
   // ── FLYER DESIGN ──────────────────────────────────────────
@@ -75,7 +75,7 @@ const projects: Project[] = [
     gradient: "from-sky-500 to-blue-700",
     client: "Bright Future Intl College",
     tools: ["Pixellab", "Photopea"],
-    image: "/images/20250724_142714.jpg",
+    image: "/images/beach blast flyer.webp",
   },
   {
     id: "flyer-2",
@@ -88,8 +88,8 @@ const projects: Project[] = [
     gradient: "from-blue-500 to-indigo-600",
     client: "Bilam Real Estate",
     tools: ["Pixellab", "Photopea"],
-    image: "/images/bilam flyer.png",
-    images: ["/images/bilam flyer.png"],
+    image: "/images/bilam flyer.webp",
+    images: ["/images/bilam flyer.webp"],
   },
   {
     id: "flyer-3",
@@ -102,8 +102,8 @@ const projects: Project[] = [
     gradient: "from-blue-500 to-indigo-600",
     client: "Abdurrahman Umar",
     tools: ["Pixellab", "Photopea"],
-    image: "/images/abdul flyer.jpg",
-    images: ["/images/abdul flyer.jpg"],
+    image: "/images/abdul flyer.webp",
+    images: ["/images/abdul flyer.webp"],
   },
   {
     id: "flyer-4",
@@ -116,8 +116,8 @@ const projects: Project[] = [
     gradient: "from-blue-500 to-indigo-600",
     client: "Abdurrahman Tijjani Malanta",
     tools: ["Pixellab", "Photopea"],
-    image: "/images/engineering flyer.jpg",
-    images: ["/images/engineering flyer.jpg"],
+    image: "/images/engineering flyer.webp",
+    images: ["/images/engineering flyer.webp"],
   },
   {
     id: "flyer-5",
@@ -130,8 +130,8 @@ const projects: Project[] = [
     gradient: "from-yellow-500 to-orange-600",
     client: "Hafeez Tijjani Ali",
     tools: ["Pixellab", "Photopea"],
-    image: "/images/mgh flyer.png",
-    images: ["/images/mgh flyer.png"],
+    image: "/images/mgh flyer.webp",
+    images: ["/images/mgh flyer.webp"],
   },
 
   // ── MOTION GRAPHICS ───────────────────────────────────────
@@ -163,8 +163,8 @@ const projects: Project[] = [
     gradient: "from-green-500 to-green-400",
     client: "Nexora Exchange",
     tools: ["Pixellab", "Photopea"],
-    image: "/images/nexora flyer.jpg",
-    images: ["/images/nexora flyer.jpg", "/images/nexora flyer 1.jpg", "/images/nexora flyer 2.jpg", "images/nexora flyer 3.jpg"],
+    image: "/images/nexora flyer.webp",
+    images: ["/images/nexora flyer.webp", "/images/nexora flyer 1.webp", "/images/nexora flyer 2.webp", "images/nexora flyer 3.webp"],
   },
   {
     id: "social-2",
@@ -177,8 +177,8 @@ const projects: Project[] = [
     gradient: "from-red-500 to-orange-400",
     client: "Zesty Zone",
     tools: ["Pixellab", "Photopea"],
-    image: "/images/zesty flyer.png",
-    images: ["/images/zesty flyer.png", "/images/zesty flyer 1.jpg", "/images/zesty flyer 2.jpg", "/images/zesty flyer 3.png", "images/zesty flyer 4.jpg"],
+    image: "/images/zesty flyer.webp",
+    images: ["/images/zesty flyer.webp", "/images/zesty flyer 1.webp", "/images/zesty flyer 2.webp", "/images/zesty flyer 3.webp", "images/zesty flyer 4.webp"],
   },
   {
     id: "social-3",
@@ -191,8 +191,8 @@ const projects: Project[] = [
     gradient: "from-blue-500 to-sky-400",
     client: "Alkhairat Collections",
     tools: ["Pixellab", "Photopea"],
-    image: "/images/alkhairat flyer.png",
-    images: ["/images/alkhairat flyer.png", "/images/alkhairat flyer 1.jpg", "/images/alkhairat flyer 2.jpg", "images/alkhairat flyer 3.jpg", "images/alkhairat flyer 4.jpg"],
+    image: "/images/alkhairat flyer.webp",
+    images: ["/images/alkhairat flyer.webp", "/images/alkhairat flyer 1.webp", "/images/alkhairat flyer 2.webp", "images/alkhairat flyer 3.webp", "images/alkhairat flyer 4.webp"],
   },
 
   // ── PRODUCT DESIGN ────────────────────────────────────────
@@ -207,15 +207,15 @@ const projects: Project[] = [
     gradient: "from-blue-600 to-indigo-700",
     client: "MSA Brand",
     tools: ["Pixellab", "Photopea"],
-    image: "/images/pepper.png",
-    images: ["/images/pepper.png", "/images/pepper 1.png", "/images/pepper 2.png", "images/pepper 3.png", "images/pepper 4.png", "images/pepper 5.png"],
+    image: "/images/pepper.webp",
+    images: ["/images/pepper.webp", "/images/pepper 1.webp", "/images/pepper 2.webp", "images/pepper 3.webp", "images/pepper 4.webp", "images/pepper 5.webp"],
   },
 
   // ── WEBINAR DESIGN ────────────────────────────────────────
   
   {
     id: "webinar-1",
-    title: "Business Growth Summit",
+    title: "Business Breakthrough Summit",
     category: "Webinar Design",
     description:
       "Complete visual identity for an online business summit — banners, speaker cards, and slide decks.",
@@ -224,8 +224,8 @@ const projects: Project[] = [
     gradient: "from-blue-500 to-cyan-700",
     client: "Summit Organiser",
     tools: ["Canva", "Pixellab", "Photopea"],
-    image: "/images/webinar.jpg",
-    images: ["/images/webinar.jpg", "/images/webinar flyer.jpg"],
+    image: "/images/webinar flyer.webp",
+    images: ["/images/webinar flyer.webp", "/images/webinar flyer 1.webp", "/images/webinar flyer 2.webp", "/images/webinar flyer 3.webp", "/images/webinar flyer 4.webp"],
   },
 ];
 
