@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { 
@@ -12,7 +12,8 @@ import {
   User,
   Mail,
   ArrowRight,
-  UserPlus 
+  UserPlus,
+  Loader2 
 } from "lucide-react";
 
 export default function Chat() {
@@ -28,6 +29,10 @@ export default function Chat() {
 
   const [newClientEmail, setNewClientEmail] = useState("");
   const [activeClientEmail, setActiveClientEmail] = useState<string | null>(null);
+
+  // Reference to handle hidden file inputs
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     const savedEmail = sessionStorage.getItem("chat_email");
@@ -135,22 +140,17 @@ export default function Chat() {
         schema: 'public', 
         table: 'chat_messages'
       }, (payload) => {
-        // Invalidate queries to fetch new data
         queryClient.invalidateQueries({ queryKey: ['messages', activeClientEmail] });
         queryClient.invalidateQueries({ queryKey: ['chatClients'] });
 
-        // Badge Alert: If the receiver is the current user logged in, ping them!
         const messageData = payload.new as any;
         if (messageData && messageData.receiver_email === guestEmail) {
-          // Play standard ping notification sound
           const audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
-          audio.play().catch(() => {/* Blocked by browser autoplay policies usually */});
+          audio.play().catch(() => {});
 
-          // Change tab title to alert the user
           const originalTitle = document.title;
           document.title = "🔴 New Message!";
           
-          // Revert tab title back to normal when they move their mouse or focus the screen
           const resetTitle = () => {
             document.title = originalTitle;
             window.removeEventListener('mousemove', resetTitle);
@@ -195,6 +195,43 @@ export default function Chat() {
     sendMessageMutation.mutate(message);
   };
 
+  // 5. Function to upload an Image
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeClientEmail) return;
+
+    try {
+      setUploading(true);
+      
+      // Create a clean, unique file name
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      // Upload file to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('chat_attachments')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Generate the public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('chat_attachments')
+        .getPublicUrl(filePath);
+
+      // Send that public URL as a chat message
+      sendMessageMutation.mutate(publicUrl);
+
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("Failed to upload image. Please try again.");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   const getInitials = (email: string) => {
     if (!email) return "CL";
     return email.substring(0, 2).toUpperCase();
@@ -204,9 +241,30 @@ export default function Chat() {
     c.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Helper to check if a text string is an image link
+  const isImageMessage = (text: string) => {
+    return text.startsWith("http") && (
+      text.endsWith(".png") || 
+      text.endsWith(".jpg") || 
+      text.endsWith(".jpeg") || 
+      text.endsWith(".gif") || 
+      text.endsWith(".webp") ||
+      text.includes("chat_attachments") // Fallback for Supabase paths
+    );
+  };
+
   return (
     <div className="bg-[#0B0C10] min-h-screen text-gray-100 flex flex-col pt-20 relative">
       
+      {/* Hidden File Input for Paperclip */}
+      <input 
+        type="file" 
+        accept="image/*" 
+        ref={fileInputRef} 
+        onChange={handleFileUpload} 
+        className="hidden" 
+      />
+
       {/* MODAL POPUP */}
       {showIdentityPopup && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#0B0C10]/90 backdrop-blur-md">
@@ -355,6 +413,7 @@ export default function Chat() {
             {chatMessages?.map((msg: any) => {
               const isMe = msg.sender_email === guestEmail;
               const formattedTime = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              const isImage = isImageMessage(msg.message);
 
               return (
                 <div 
@@ -367,12 +426,21 @@ export default function Chat() {
                     {isMe ? (isAdmin ? 'SG' : 'ME') : (isAdmin ? 'C' : 'SG')}
                   </div>
                   <div className={isMe ? 'text-right' : ''}>
-                    <div className={`p-4 rounded-t-2xl text-sm leading-relaxed ${
+                    <div className={`p-2 rounded-t-2xl text-sm leading-relaxed ${
                       isMe 
                         ? 'bg-gradient-to-br from-cyan-600 to-blue-700 text-white rounded-bl-2xl shadow-lg' 
                         : 'bg-[#1A1F29] border border-gray-800 text-gray-200 rounded-br-2xl'
-                    }`}>
-                      {msg.message}
+                    } ${isImage ? 'p-1' : 'p-4'}`}>
+                      {isImage ? (
+                        <img 
+                          src={msg.message} 
+                          alt="Shared inside chat" 
+                          className="max-w-full sm:max-w-sm rounded-xl object-cover max-h-60"
+                          loading="lazy"
+                        />
+                      ) : (
+                        msg.message
+                      )}
                     </div>
                     <span className={`text-[11px] text-gray-600 mt-1 flex items-center gap-1 ${isMe ? 'justify-end mr-1' : 'ml-1'}`}>
                       {formattedTime} {isMe && <CheckCircle2 className="w-3 h-3 text-cyan-500" />}
@@ -389,8 +457,18 @@ export default function Chat() {
           {/* Input bar */}
           <div className="p-4 border-t border-gray-800 bg-[#11141A]/80">
             <div className="flex items-center gap-2 bg-[#1A1F29] border border-gray-800 rounded-xl px-3 py-2 focus-within:border-cyan-500/50 transition-colors">
-              <button className="text-gray-500 hover:text-cyan-500 p-1">
-                <Paperclip className="w-5 h-5" />
+              
+              {/* Paperclip Button Hooked up */}
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="text-gray-500 hover:text-cyan-500 p-1 disabled:opacity-50"
+              >
+                {uploading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Paperclip className="w-5 h-5" />
+                )}
               </button>
               
               <input 
@@ -404,7 +482,7 @@ export default function Chat() {
               
               <button 
                 onClick={handleSend}
-                disabled={sendMessageMutation.isPending}
+                disabled={sendMessageMutation.isPending || uploading}
                 className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-black font-bold h-9 w-9 flex-shrink-0 flex items-center justify-center rounded-lg transition-all disabled:opacity-50"
               >
                 <Send className="w-4 h-4" />
