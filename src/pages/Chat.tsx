@@ -124,7 +124,7 @@ export default function Chat() {
     enabled: !!activeClientEmail && !!guestEmail,
   });
 
-  // 3. Real-time listener
+  // 3. Real-time listener & 🔔 Browser Badge Logic
   useEffect(() => {
     if (!guestEmail) return;
 
@@ -134,9 +134,31 @@ export default function Chat() {
         event: 'INSERT', 
         schema: 'public', 
         table: 'chat_messages'
-      }, () => {
+      }, (payload) => {
+        // Invalidate queries to fetch new data
         queryClient.invalidateQueries({ queryKey: ['messages', activeClientEmail] });
         queryClient.invalidateQueries({ queryKey: ['chatClients'] });
+
+        // Badge Alert: If the receiver is the current user logged in, ping them!
+        const messageData = payload.new as any;
+        if (messageData && messageData.receiver_email === guestEmail) {
+          // Play standard ping notification sound
+          const audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
+          audio.play().catch(() => {/* Blocked by browser autoplay policies usually */});
+
+          // Change tab title to alert the user
+          const originalTitle = document.title;
+          document.title = "🔴 New Message!";
+          
+          // Revert tab title back to normal when they move their mouse or focus the screen
+          const resetTitle = () => {
+            document.title = originalTitle;
+            window.removeEventListener('mousemove', resetTitle);
+            window.removeEventListener('focus', resetTitle);
+          };
+          window.addEventListener('mousemove', resetTitle);
+          window.addEventListener('focus', resetTitle);
+        }
       })
       .subscribe();
 
@@ -391,4 +413,4 @@ export default function Chat() {
       </div>
     </div>
   );
-                }
+}
