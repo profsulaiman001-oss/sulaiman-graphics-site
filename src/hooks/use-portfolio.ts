@@ -147,7 +147,7 @@ const projects: Project[] = [
     client: "MSA Brand",
     tools: ["Capcut", "Alight Motion"],
     image: "/images/pepper.png",
-    video: "/videos/msa.mp4",
+    video: "/https://lqdeybfkgcihcsticzes.supabase.co/storage/v1/object/public/portfolio-assets/msa.mp4",
   },
   
 
