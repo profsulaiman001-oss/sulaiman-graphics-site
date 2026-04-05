@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { ShieldCheck, FileText, PenLine, Download, Mail } from "lucide-react";
+import { ShieldCheck, PenLine, Download } from "lucide-react";
 
 export default function Agreement() {
   const [clientName, setClientName] = useState("");
   const [projectName, setProjectName] = useState("");
   const [projectPrice, setProjectPrice] = useState("");
   const [scope, setScope] = useState("");
-  const [currency, setCurrency] = useState("₦"); // 👈 Default to Naira!
+  const [currency, setCurrency] = useState("₦"); 
   
   const [signature, setSignature] = useState("");
   const [isAgreed, setIsAgreed] = useState(false);
@@ -17,50 +17,53 @@ export default function Agreement() {
     day: 'numeric'
   });
 
-  const sendEmailCopy = () => {
-    const subject = `Signed Contract: ${projectName} - ${clientName}`;
-    const body = `Hi Sulaiman,\n\nAn agreement has been signed!\n\nClient: ${clientName}\nProject: ${projectName}\nPrice: ${currency}${projectPrice}\nScope: ${scope}\n\nSigned by ${signature} on ${today}.`;
-    
-    // 📩 Automatically fires a draft to your email address!
-    window.location.href = `mailto:profsulaiman001@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  };
-
   return (
     <div className="bg-[#0B0C10] min-h-screen text-gray-100 flex flex-col items-center justify-center p-4 pt-24 pb-12">
       
-      {/* 🖨️ SPECIAL PRINT CSS: Forces perfect layout on Letter/A4 paper, forces black text */}
+      {/* 🖨️ AGGRESSIVE PRINT CSS: Destroys headers/footers & extra pages */}
       <style>{`
         @media print {
-          body, html {
-            background: white !important;
-            color: black !important;
+          /* Hide EVERYTHING on the website except the contract box */
+          body * {
+            visibility: hidden !important;
           }
-          .no-print {
-            display: none !important;
+          .print-contract, .print-contract * {
+            visibility: visible !important;
           }
+          
+          /* Force the contract box to sit perfectly at the top left of page 1 */
           .print-contract {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
             width: 100% !important;
-            max-width: 100% !important;
             border: none !important;
             background: white !important;
-            color: black !important;
             padding: 0 !important;
             margin: 0 !important;
             box-shadow: none !important;
           }
+
+          /* Remove gray backgrounds and force pitch black text for ink */
           .print-text-black {
-            color: black !important;
+            color: #000000 !important;
           }
           .print-text-gray {
-            color: #374151 !important;
+            color: #4B5563 !important;
+          }
+
+          /* Stop blank pages from bleeding through */
+          @page {
+            margin: 0.5in !important;
+            size: auto;
           }
         }
       `}</style>
 
       <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-6">
         
-        {/* Left Side: Contract Setup Inputs (Hidden when printing!) */}
-        <div className="md:col-span-1 space-y-4 no-print">
+        {/* Left Side: Contract Setup Inputs */}
+        <div className="md:col-span-1 space-y-4">
           <div className="bg-[#11141A] border border-gray-800 rounded-2xl p-5 sticky top-24">
             <h3 className="font-bold text-lg mb-4 text-white flex items-center gap-2">
               <PenLine className="w-4 h-4 text-cyan-500" /> Contract Setup
@@ -89,7 +92,6 @@ export default function Agreement() {
                 />
               </div>
               
-              {/* 💸 Currency & Price Row */}
               <div>
                 <label className="text-xs text-gray-400">Project Price</label>
                 <div className="flex gap-2">
@@ -185,7 +187,7 @@ export default function Agreement() {
           {/* Signature and Agreement Area */}
           <div className="border-t border-gray-800 pt-6 mt-6">
             {!isAgreed ? (
-              <div className="flex flex-col sm:flex-row gap-4 items-end no-print">
+              <div className="flex flex-col sm:flex-row gap-4 items-end">
                 <div className="flex-grow w-full">
                   <label className="text-xs text-gray-500 block mb-1">Type your full name to sign digitally</label>
                   <input 
@@ -216,17 +218,7 @@ export default function Agreement() {
                   </div>
                 </div>
                 
-                <div className="flex gap-2 no-print">
-                  {/* Send Email Copy Button */}
-                  <button 
-                    onClick={sendEmailCopy}
-                    className="text-gray-400 hover:text-white p-2 border border-gray-700 rounded-lg flex items-center gap-2 text-xs"
-                    title="Send copy to designer"
-                  >
-                    <Mail className="w-4 h-4" /> Send Copy
-                  </button>
-                  
-                  {/* Print Button */}
+                <div className="flex gap-2">
                   <button 
                     onClick={() => window.print()}
                     className="text-gray-400 hover:text-white p-2 border border-gray-700 rounded-lg"
