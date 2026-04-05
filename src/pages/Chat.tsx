@@ -76,6 +76,7 @@ export default function Chat() {
   const { data: clients } = useQuery({
     queryKey: ['chatClients'],
     queryFn: async () => {
+      // 🛠️ POINTED TO THE NEW chat_messages TABLE
       const { data, error } = await supabase
         .from('chat_messages') 
         .select('sender_email, receiver_email');
@@ -117,6 +118,7 @@ export default function Chat() {
       const targetEmail = isAdmin ? activeClientEmail : adminEmail;
       const myEmail = guestEmail;
 
+      // 🛠️ POINTED TO THE NEW chat_messages TABLE
       const { data, error } = await supabase
         .from('chat_messages')
         .select('*')
@@ -129,10 +131,11 @@ export default function Chat() {
     enabled: !!activeClientEmail && !!guestEmail,
   });
 
-  // 3. Real-time listener & 🔔 Browser Badge Logic
+  // 3. Real-time listener & Browser Badge Logic
   useEffect(() => {
     if (!guestEmail) return;
 
+    // 🛠️ POINTED LISTENER TO THE NEW chat_messages TABLE
     const channel = supabase
       .channel(`realtime_chat_${guestEmail}`)
       .on('postgres_changes', { 
@@ -172,6 +175,7 @@ export default function Chat() {
     mutationFn: async (messageText: string) => {
       const adminEmail = "profsulaiman001@gmail.com";
       
+      // 🛠️ POINTED INSERT TO THE NEW chat_messages TABLE
       const { error } = await supabase
         .from('chat_messages')
         .insert([{
@@ -203,24 +207,22 @@ export default function Chat() {
     try {
       setUploading(true);
       
-      // Create a clean, unique file name
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      // Upload file to Supabase Storage
+      // 🛠️ POINTED TO THE NEW chat_attachments BUCKET
       const { error: uploadError } = await supabase.storage
-        .from('chat_attachments')
+        .from('chat-attachments')
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
-      // Generate the public URL
+      // 🛠️ GENERATE URL FROM THE NEW chat_attachments BUCKET
       const { data: { publicUrl } } = supabase.storage
-        .from('chat_attachments')
+        .from('chat-attachments')
         .getPublicUrl(filePath);
 
-      // Send that public URL as a chat message
       sendMessageMutation.mutate(publicUrl);
 
     } catch (error) {
@@ -241,7 +243,6 @@ export default function Chat() {
     c.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Helper to check if a text string is an image link
   const isImageMessage = (text: string) => {
     return text.startsWith("http") && (
       text.endsWith(".png") || 
@@ -249,14 +250,13 @@ export default function Chat() {
       text.endsWith(".jpeg") || 
       text.endsWith(".gif") || 
       text.endsWith(".webp") ||
-      text.includes("chat_attachments") // Fallback for Supabase paths
+      text.includes("chat_attachments") 
     );
   };
 
   return (
     <div className="bg-[#0B0C10] min-h-screen text-gray-100 flex flex-col pt-20 relative">
       
-      {/* Hidden File Input for Paperclip */}
       <input 
         type="file" 
         accept="image/*" 
@@ -265,7 +265,6 @@ export default function Chat() {
         className="hidden" 
       />
 
-      {/* MODAL POPUP */}
       {showIdentityPopup && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#0B0C10]/90 backdrop-blur-md">
           <div className="bg-[#11141A] border border-gray-800 rounded-3xl p-8 w-full max-w-md mx-4 shadow-2xl">
@@ -310,10 +309,8 @@ export default function Chat() {
         </div>
       )}
 
-      {/* MAIN CHAT INTERFACE */}
       <div className="flex-grow flex h-[calc(100vh-140px)] w-full max-w-[1600px] mx-auto p-4 md:p-6 gap-6 relative">
         
-        {/* LEFT SIDEBAR - HIDDEN FOR CLIENTS */}
         {isAdmin && (
           <div className={`${mobileSidebarOpen ? 'flex' : 'hidden md:flex'} absolute inset-y-0 left-0 z-30 md:relative w-full sm:w-80 md:w-1/4 flex-col bg-[#11141A] border border-gray-800 rounded-3xl overflow-hidden`}>
             <div className="p-5 border-b border-gray-800">
@@ -379,7 +376,6 @@ export default function Chat() {
           </div>
         )}
 
-        {/* CENTER AREA: THE CHAT */}
         <div className="flex-grow flex flex-col bg-[#11141A]/60 backdrop-blur-xl border border-gray-800 rounded-3xl overflow-hidden">
           <div className="p-5 border-b border-gray-800 flex justify-between items-center bg-[#11141A]/80">
             <div className="flex items-center gap-3">
@@ -454,11 +450,9 @@ export default function Chat() {
             )}
           </div>
 
-          {/* Input bar */}
           <div className="p-4 border-t border-gray-800 bg-[#11141A]/80">
             <div className="flex items-center gap-2 bg-[#1A1F29] border border-gray-800 rounded-xl px-3 py-2 focus-within:border-cyan-500/50 transition-colors">
               
-              {/* Paperclip Button Hooked up */}
               <button 
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
@@ -493,4 +487,4 @@ export default function Chat() {
       </div>
     </div>
   );
-}
+  }
