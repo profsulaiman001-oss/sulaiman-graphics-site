@@ -286,14 +286,14 @@ const testimonials: Testimonial[] = [
     quote:
       "Working with Sulaiman was a breeze. He understood our vision immediately and delivered motion graphics that blew our audience away.",
     author: "Marcus Thorne",
-    role: "Marketing Dir., Velocity",
+    role: "Founder., MSA Company",
   },
   {
     id: "t3",
     quote:
       "The social media designs for our brand are stunning. We've seen a noticeable jump in engagement since working with Sulaiman Graphics.",
-    author: "Elena Rostova",
-    role: "Founder, Sharda Collections",
+    author: "Alawiyya Ali",
+    role: "CEO, Alkhairat Collections",
   },
 ];
 
