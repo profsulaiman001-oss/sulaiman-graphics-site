@@ -211,8 +211,8 @@ export default function Questionnaire() {
                         <option value="">Select a type...</option>
                         <option value="Logo Design">Logo & Brand Identity</option>
                         <option value="Social Media Graphics">Social Media Graphics</option>
-                        <option value="Print Design">Print Design (Flyer, Banner, etc.)</option>
-                        <option value="Web Design">Website Design</option>
+                        <option value="Flyer Design">Flyer Design</option>
+                        <option value="Motion Design">Motion Design</option>
                         <option value="Other">Other</option>
                       </select>
                     </div>
