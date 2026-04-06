@@ -60,7 +60,7 @@ const projects: Project[] = [
     client: "Sarkin Mota Autos",
     tools: ["Pixellab", "Photopea"],
     image: "/images/sarkin mota.webp",
-    images: ["/images/sarkin mota.webp", "images/sarkin mota 1.webp", "images/sarkin mota 2.webp", "images/sarkin mota 3.webp", "images/sarkin mota 4.png", "images/sarkin mota 5.png"],
+    images: ["/images/sarkin mota.webp", "images/sarkin mota 1.webp", "images/sarkin mota 2.webp", "images/sarkin mota 3.webp", "images/sarkin mota 4.webp", "images/sarkin mota 5.webp"],
   },
 
   // ── FLYER DESIGN ──────────────────────────────────────────
