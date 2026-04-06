@@ -50,6 +50,18 @@ import Agreement from "@/pages/Agreement";
 // ── 🧾 NEW IMPORT: For your brand new Receipt page ──
 import Receipt from "@/pages/Receipt"; // 👈 Added this for you!
 
+// ── ⚙️ NEW INLINE PAGE: Quick Settings Placeholder ──
+function Settings() {
+  return (
+    <div className="pt-32 min-h-screen flex items-center justify-center text-white bg-background">
+      <div className="text-center">
+        <h1 className="text-4xl font-display font-bold mb-4">Settings</h1>
+        <p className="text-muted-foreground">Settings page interface coming soon!</p>
+      </div>
+    </div>
+  );
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -134,7 +146,10 @@ function Router() {
           <Route path="/agreement" component={Agreement} /> 
 
           {/* ── 🧾 NEW PUBLIC ROUTE: Receipt Generator ── */}
-          <Route path="/receipt" component={Receipt} /> {/* 👈 Added this for you! */}
+          <Route path="/receipt" component={Receipt} />
+
+          {/* ── ⚙️ NEW PUBLIC ROUTE: Settings ── */}
+          <Route path="/settings" component={Settings} /> {/* 👈 Added this for you! */}
 
           {/* AUTH ROUTES */}
           <Route path="/login" component={Login} />
