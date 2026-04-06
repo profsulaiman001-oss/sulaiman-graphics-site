@@ -17,13 +17,13 @@ function GalleryImage({
   alt,
   gradient,
   index,
-  isFlyer, // Added prop to check if it's a flyer
+  isTallFormat, // Renamed prop to stay consistent
 }: {
   src: string;
   alt: string;
   gradient: string;
   index: number;
-  isFlyer: boolean;
+  isTallFormat: boolean;
 }) {
   const [failed, setFailed] = useState(false);
 
@@ -34,10 +34,10 @@ function GalleryImage({
       viewport={{ once: true }}
       transition={{ duration: 0.5, delay: (index % 4) * 0.1 }}
       /* Dynamic Aspect Ratio Check:
-        If it's a flyer, we use aspect-[4/5]. Otherwise, we keep your original aspect-square.
+        If it's a flyer or webinar, we use aspect-[4/5]. Otherwise, we keep your original aspect-square.
       */
       className={`w-full ${
-        isFlyer ? "aspect-[4/5]" : "aspect-square"
+        isTallFormat ? "aspect-[4/5]" : "aspect-square"
       } rounded-2xl overflow-hidden relative group bg-card border border-border`}
     >
       {!failed ? (
@@ -65,25 +65,25 @@ function HeroBanner({
   gradient,
   category,
   title,
-  isFlyer, // Added prop here too
+  isTallFormat, // Renamed prop here too
 }: {
   src?: string;
   gradient: string;
   category: string;
   title: string;
-  isFlyer: boolean;
+  isTallFormat: boolean;
 }) {
   const [failed, setFailed] = useState(false);
   const showImage = !!src && !failed;
 
   return (
     /* Dynamic Hero Banner Aspect Ratio:
-      If it's a flyer, making it aspect-[4/5] on mobile and aspect-[3/2] on desktop ensures the graphic is seen.
+      If it's a flyer/webinar, making it aspect-[4/5] on mobile and aspect-[3/2] on desktop ensures the graphic is seen.
       If it's not a flyer, we keep your banner cinematic aspect-[21/9].
     */
     <AnimatedSection 
       className={`w-full ${
-        isFlyer ? "aspect-[4/5] md:aspect-[3/2]" : "aspect-[21/9]"
+        isTallFormat ? "aspect-[4/5] md:aspect-[3/2]" : "aspect-[21/9]"
       } rounded-[2rem] overflow-hidden relative mb-16`}
     >
       {showImage ? (
@@ -159,8 +159,8 @@ export default function ProjectDetail() {
       ? allProjects[(currentIndex + 1) % allProjects.length]
       : null;
 
-  /* Check if this project falls under Flyer Design */
-  const isFlyer = project.category === "Flyer Design";
+  /* Check if this project falls under Flyer Design or Webinar Design */
+  const isTallFormat = project.category === "Flyer Design" || project.category === "Webinar Design";
 
   /* Hero image: first in images[] or the card thumbnail */
   const heroSrc = project.images?.[0] ?? project.image;
@@ -188,7 +188,7 @@ export default function ProjectDetail() {
           gradient={project.gradient}
           category={project.category}
           title={project.title}
-          isFlyer={isFlyer} // Passing it here
+          isTallFormat={isTallFormat} // Passing it here
         />
 
         {/* ── Main content grid ── */}
@@ -214,9 +214,9 @@ export default function ProjectDetail() {
                 </h2>
                 <div className="rounded-2xl overflow-hidden border border-border bg-black">
                   <video
-                    src={assetUrl(project.video!)}
+                    src={project.video.startsWith('http') ? project.video : assetUrl(project.video)}
                     controls
-                    preload="metadata"
+                    preload="none"
                     poster={project.image ? assetUrl(project.image) : undefined}
                     className="w-full max-h-[520px] object-contain"
                   >
@@ -240,7 +240,7 @@ export default function ProjectDetail() {
                       alt={`${project.title} — image ${i + 1}`}
                       gradient={project.gradient}
                       index={i}
-                      isFlyer={isFlyer} // Passing it here
+                      isTallFormat={isTallFormat} // Passing it here
                     />
                   ))}
                 </div>
