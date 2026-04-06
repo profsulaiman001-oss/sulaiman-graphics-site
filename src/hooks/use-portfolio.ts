@@ -146,7 +146,7 @@ const projects: Project[] = [
     gradient: "from-blue-700 to-cyan-600",
     client: "MSA Brand",
     tools: ["Capcut", "Alight Motion"],
-    image: "/images/pepper.png",
+    image: "/images/pepper.webp",
     video: "/https://lqdeybfkgcihcsticzes.supabase.co/storage/v1/object/public/portfolio-assets/msa.mp4",
   },
   
