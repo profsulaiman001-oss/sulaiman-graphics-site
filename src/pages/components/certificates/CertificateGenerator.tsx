@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { jsPDF } from "jspdf";
-import { X, FileText, Hash, User, Briefcase, Download } from "lucide-react";
+import { X, FileText, Hash, User, Briefcase, Download } from "lucide-center";
 
 export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
   const [formData, setFormData] = useState({
@@ -33,9 +33,7 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
     doc.setFontSize(10);
     doc.text("SULAIMAN GRAPHICS STUDIO", pageWidth / 2, 20, { align: "center", charSpace: 2 });
     
-    doc.setDrawColor(darkColor[0], darkColor[1], darkColor[2]);
-    doc.setLineWidth(0.5);
-    doc.line(pageWidth / 2 - 10, 23, pageWidth / 2 + 10, 23);
+    // LINE REMOVED HERE (The doc.line code that was at Y: 23 is gone)
 
     // 3. Main Title
     doc.setTextColor(darkColor[0], darkColor[1], darkColor[2]);
