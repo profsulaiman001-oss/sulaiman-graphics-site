@@ -473,6 +473,7 @@ export default function Dashboard() {
   const statusColors: any = {
     Pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
     "In Progress": "bg-blue-500/10 text-primary border-blue-500/20",
+    Drafting: "bg-purple-500/10 text-purple-500 border-purple-500/20",
     Completed: "bg-green-500/10 text-green-500 border-green-500/20"
   };
 
