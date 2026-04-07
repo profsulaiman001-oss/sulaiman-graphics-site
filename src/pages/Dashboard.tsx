@@ -8,10 +8,9 @@ import {
 } from "recharts";
 import { 
   Edit3, Trash2, Save, XCircle, Bell, LogOut, CheckCircle, 
-  Clock, Loader2, Plus, HardDrive, Download, Settings, X, Mail, UserCheck, MessageSquare, Send, FileText, ClipboardList, Receipt as ReceiptIcon
+  Clock, Loader2, Plus, HardDrive, Download, Settings, X, Mail, UserCheck, MessageSquare, Send, FileText, ClipboardList, Receipt as ReceiptIcon, Award
 } from "lucide-react";
 import { CertificateGenerator } from "./components/certificates/CertificateGenerator";
-import { Award } from "lucide-react"; // I'm using the 'Award' icon for the certificate
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
@@ -799,6 +798,13 @@ export default function Dashboard() {
             >
               <ReceiptIcon size={18} /> Generate Receipt
             </button>
+
+            <button
+              onClick={() => setIsCertOpen(true)}
+              className="bg-background border border-border hover:border-amber-500 hover:text-amber-500 text-foreground font-semibold text-sm px-5 py-3 rounded-xl transition flex items-center justify-center gap-2"
+            >
+              <Award size={18} /> Ownership Certificate
+            </button>
           </div>
         )}
 
@@ -1099,7 +1105,6 @@ export default function Dashboard() {
                         
                         {isAdmin && (
                           <>
-                            {/* MODIFICATION: The harddrive icon now stays visible here regardless of file_url, allowing seamless multi-uploads */}
                             <label className="w-7 h-7 flex items-center justify-center rounded-lg border border-primary/40 text-primary bg-background hover:bg-primary/10 hover:border-primary transition cursor-pointer">
                               <input
                                 type="file"
@@ -1138,6 +1143,7 @@ export default function Dashboard() {
           © {new Date().getFullYear()} Sulaiman Graphics. All rights reserved.
         </div>
       </footer>
+      {isCertOpen && <CertificateGenerator onClose={() => setIsCertOpen(false)} />}
     </div>
   );
-  }
+}
