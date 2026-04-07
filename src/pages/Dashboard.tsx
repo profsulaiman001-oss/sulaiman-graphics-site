@@ -10,7 +10,7 @@ import {
   Edit3, Trash2, Save, XCircle, Bell, LogOut, CheckCircle, 
   Clock, Loader2, Plus, HardDrive, Download, Settings, X, Mail, UserCheck, MessageSquare, Send, FileText, ClipboardList, Receipt as ReceiptIcon
 } from "lucide-react";
-import { CertificatePortal } from "./components/certificates/CertificatePortal";
+
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [user, setUser] = useState<any>(null);
@@ -473,7 +473,6 @@ export default function Dashboard() {
   const statusColors: any = {
     Pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
     "In Progress": "bg-blue-500/10 text-primary border-blue-500/20",
-    Drafting: "bg-purple-500/10 text-purple-500 border-purple-500/20",
     Completed: "bg-green-500/10 text-green-500 border-green-500/20"
   };
 
@@ -1023,9 +1022,6 @@ export default function Dashboard() {
                   
                   <div className="flex flex-col gap-2">
                     
-                    {/* Certificate System Integrated Without Moving Original Lines */}
-                    <CertificatePortal project={project} isAdmin={isAdmin} />
-
                     {project.file_url ? (
                       <div className="flex gap-1.5 w-full">
                         <button 
@@ -1080,7 +1076,6 @@ export default function Dashboard() {
                           >
                             <option value="Pending">Pending</option>
                             <option value="In Progress">Active</option>
-                            <option value="Drafting">Drafting License</option>
                             <option value="Completed">Done</option>
                           </select>
                         )}
@@ -1142,4 +1137,4 @@ export default function Dashboard() {
       </footer>
     </div>
   );
-}
+  }
