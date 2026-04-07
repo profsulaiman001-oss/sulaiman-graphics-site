@@ -1023,6 +1023,9 @@ export default function Dashboard() {
                   
                   <div className="flex flex-col gap-2">
                     
+                    {/* Certificate System Integrated Without Moving Original Lines */}
+                    <CertificatePortal project={project} isAdmin={isAdmin} />
+
                     {project.file_url ? (
                       <div className="flex gap-1.5 w-full">
                         <button 
@@ -1077,6 +1080,7 @@ export default function Dashboard() {
                           >
                             <option value="Pending">Pending</option>
                             <option value="In Progress">Active</option>
+                            <option value="Drafting">Drafting License</option>
                             <option value="Completed">Done</option>
                           </select>
                         )}
