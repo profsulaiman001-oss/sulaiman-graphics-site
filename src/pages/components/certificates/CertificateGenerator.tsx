@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { jsPDF } from "jspdf";
-import { supabase } from "../supabaseClient"; // Ensure your path is correct
+import { supabase } from "../../../lib/supabase"; // Path corrected for src/lib/supabase.ts
 import { X, FileText, Hash, User, Briefcase, Download, Loader2 } from "lucide-react";
 
 export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
@@ -13,11 +13,16 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
   const [isGenerating, setIsGenerating] = useState(false);
 
   const generateNativePDF = async () => {
-    if (!formData.clientName || !formData.projectName) return;
+    // Validation: Don't run if fields are empty
+    if (!formData.clientName || !formData.projectName) {
+      alert("Please fill in all fields before generating.");
+      return;
+    }
+    
     setIsGenerating(true);
     
     try {
-      // --- 1. SAVE TO NEW SUPABASE TABLE ---
+      // 1. Save to Supabase
       const { error } = await supabase
         .from('certificates')
         .insert([
@@ -25,13 +30,13 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
             license_id: formData.certNo, 
             client_name: formData.clientName, 
             project_name: formData.projectName,
-            issue_date: new Date().toISOString().split('T')[0]
+            issue_date: new Date().toISOString().split('T')[0] 
           }
         ]);
 
       if (error) throw error;
 
-      // --- 2. GENERATE PDF ---
+      // 2. Generate PDF
       const doc = new jsPDF("l", "mm", "a4");
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
@@ -44,7 +49,7 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
       doc.setFillColor(darkColor[0], darkColor[1], darkColor[2]);
       doc.rect(0, pageHeight - 5, pageWidth, 5, "F"); 
 
-      // Header
+      // Header (Clean version - no line)
       doc.setTextColor(blueColor[0], blueColor[1], blueColor[2]);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(10);
@@ -56,17 +61,16 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
       doc.setFontSize(50);
       doc.text("Certificate of Ownership", pageWidth / 2, 55, { align: "center" });
 
-      // Sub-text
+      // Info text
       doc.setFont("helvetica", "normal");
       doc.setFontSize(12);
       doc.setTextColor(100, 100, 100);
       doc.text("FORMAL INTELLECTUAL PROPERTY TRANSFER", pageWidth / 2, 65, { align: "center", charSpace: 1 });
 
-      // Assignment
       doc.setFontSize(10);
       doc.text("THIS DOCUMENT CONFIRMS THAT THE RIGHTS ARE LEGALLY ASSIGNED TO", pageWidth / 2, 90, { align: "center" });
 
-      // Name
+      // Client Name
       doc.setTextColor(darkColor[0], darkColor[1], darkColor[2]);
       doc.setFontSize(35);
       doc.setFont("helvetica", "bold");
@@ -76,7 +80,7 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
       doc.setLineWidth(1);
       doc.line(pageWidth / 2 - 60, 115, pageWidth / 2 + 60, 115);
 
-      // Project
+      // Project Details
       doc.setFontSize(14);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(100, 100, 100);
@@ -103,7 +107,6 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
       doc.setFontSize(11);
       doc.text(formData.certNo, pageWidth / 2, footerY + 7, { align: "center" });
 
-      doc.setFontSize(9);
       doc.setTextColor(150, 150, 150);
       doc.text("AUTHENTICATED BY", pageWidth - 40, footerY, { align: "right" });
       doc.setTextColor(darkColor[0], darkColor[1], darkColor[2]);
@@ -111,11 +114,12 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
       doc.setFont("helvetica", "bolditalic");
       doc.text("Sulaiman Graphics", pageWidth - 40, footerY + 7, { align: "right" });
 
+      // Save PDF
       doc.save(`Certificate_${formData.clientName.replace(/\s+/g, '_')}.pdf`);
       
     } catch (err) {
-      console.error("Database Save Error:", err);
-      alert("Failed to save license to database. Please check your connection.");
+      console.error("Masterpiece Save Error:", err);
+      alert("Failed to secure license record. Please try again.");
     } finally {
       setIsGenerating(false);
     }
@@ -133,9 +137,7 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
 
         <div className="p-8 space-y-6">
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-zinc-500 uppercase flex items-center gap-2">
-              <User size={12}/> Client Name
-            </label>
+            <label className="text-[10px] font-black text-zinc-500 uppercase">Client Name</label>
             <input 
               type="text" 
               className="w-full bg-zinc-800 border border-zinc-700 p-4 rounded-2xl text-white outline-none focus:border-blue-500 transition"
@@ -144,9 +146,7 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-zinc-500 uppercase flex items-center gap-2">
-              <Briefcase size={12}/> Project Title
-            </label>
+            <label className="text-[10px] font-black text-zinc-500 uppercase">Project Title</label>
             <input 
               type="text" 
               className="w-full bg-zinc-800 border border-zinc-700 p-4 rounded-2xl text-white outline-none focus:border-blue-500 transition"
@@ -155,14 +155,10 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-blue-500 uppercase flex items-center gap-2">
-              <Hash size={12}/> License Code
-            </label>
+            <label className="text-[10px] font-black text-blue-500 uppercase">License ID</label>
             <input 
-              type="text" 
-              value={formData.certNo}
-              readOnly
-              className="w-full bg-zinc-800 border border-blue-900/40 p-4 rounded-2xl text-blue-400 outline-none font-mono"
+              type="text" value={formData.certNo} readOnly
+              className="w-full bg-zinc-800 border border-blue-900/40 p-4 rounded-2xl text-blue-400 outline-none font-mono cursor-not-allowed"
             />
           </div>
 
@@ -174,7 +170,7 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
             {isGenerating ? (
               <>
                 <Loader2 className="animate-spin" size={18} />
-                SECURE SAVING...
+                SECURING LICENSE...
               </>
             ) : (
               <>
