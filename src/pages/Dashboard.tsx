@@ -10,6 +10,8 @@ import {
   Edit3, Trash2, Save, XCircle, Bell, LogOut, CheckCircle, 
   Clock, Loader2, Plus, HardDrive, Download, Settings, X, Mail, UserCheck, MessageSquare, Send, FileText, ClipboardList, Receipt as ReceiptIcon
 } from "lucide-react";
+import { CertificateGenerator } from "./components/certificates/CertificateGenerator";
+import { Award } from "lucide-react"; // I'm using the 'Award' icon for the certificate
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
@@ -34,6 +36,7 @@ export default function Dashboard() {
   const [fullName, setFullName] = useState("");
   const [showNamePrompt, setShowNamePrompt] = useState(false);
   const [submittingName, setSubmittingName] = useState(false);
+  const [isCertOpen, setIsCertOpen] = useState(false);
   
   // Comments states
   const [openCommentsId, setOpenCommentsId] = useState<string | null>(null);
