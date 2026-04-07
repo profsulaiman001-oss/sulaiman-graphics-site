@@ -10,7 +10,7 @@ import {
   Edit3, Trash2, Save, XCircle, Bell, LogOut, CheckCircle, 
   Clock, Loader2, Plus, HardDrive, Download, Settings, X, Mail, UserCheck, MessageSquare, Send, FileText, ClipboardList, Receipt as ReceiptIcon
 } from "lucide-react";
-
+import { CertificatePortal } from "./components/certificates/CertificatePortal";
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [user, setUser] = useState<any>(null);
