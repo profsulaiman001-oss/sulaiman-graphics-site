@@ -64,7 +64,7 @@ export default function Dashboard() {
   const checkUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      setLocation("/login");
+      setLocation("/auth");
       return;
     }
     setUser(user);
