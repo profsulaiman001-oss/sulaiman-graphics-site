@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { ShieldCheck, Search, AlertCircle, ArrowLeft, Loader2, Award } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { ShieldCheck, Search, AlertCircle, ArrowLeft, Loader2 } from 'lucide-react';
+import { Link } from 'wouter'; // Swapped from react-router-dom to fix build error
 
 const VerifyLicense = () => {
   const [licenseId, setLicenseId] = useState('');
@@ -45,9 +45,12 @@ const VerifyLicense = () => {
       </div>
 
       <div className="relative z-10 max-w-2xl mx-auto px-6 py-20">
-        <Link to="/" className="inline-flex items-center gap-2 text-zinc-500 hover:text-white transition-colors mb-12 group">
-          <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-          <span className="text-sm font-medium tracking-widest uppercase">Back to Studio</span>
+        {/* Updated Link to use wouter href */}
+        <Link href="/">
+          <a className="inline-flex items-center gap-2 text-zinc-500 hover:text-white transition-colors mb-12 group">
+            <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+            <span className="text-sm font-medium tracking-widest uppercase">Back to Studio</span>
+          </a>
         </Link>
 
         <div className="space-y-4 mb-12">
