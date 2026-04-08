@@ -106,8 +106,14 @@ export function Navbar() {
 
             <SettingsDropdown />
 
-            <Link href="/contact">
-              <Button size="sm">Let's Talk</Button>
+            {/* ── UPDATED: Renamed to Contact and removed the button wrapper ── */}
+            <Link href="/contact" className="relative py-2">
+              <span className={cn(
+                "text-sm font-medium transition-colors hover:text-primary",
+                location === "/contact" ? "text-primary" : "text-muted-foreground"
+              )}>
+                Contact
+              </span>
             </Link>
           </nav>
 
@@ -142,6 +148,11 @@ export function Navbar() {
                   <link.icon size={16} /> {link.name}
                 </Link>
               ))}
+
+              {/* Mobile Contact Link */}
+              <Link href="/contact" className="px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:bg-white/5 hover:text-foreground">
+                Contact
+              </Link>
             </div>
           </motion.div>
         )}
