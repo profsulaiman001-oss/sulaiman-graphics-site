@@ -389,7 +389,7 @@ export default function Dashboard() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    setLocation("/login");
+    setLocation("/auth");
   };
 
   const handleFileUpload = async (projectId: string, file: File) => {
