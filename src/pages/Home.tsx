@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { ArrowRight, Star, Users, CheckCircle, Palette, Film, Layers, Plus, Minus } from "lucide-react";
+import { ArrowRight, Star, Users, CheckCircle, Palette, Film, Layers, Plus, Minus, LayoutGrid } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/Button";
 import { AnimatedSection } from "@/components/AnimatedSection";
@@ -27,8 +27,8 @@ export default function Home() {
       answer: "Once the project is completed and final payment is made, you will receive all necessary high-resolution files. This typically includes source files (AI or PSD), print-ready PDFs, and web-ready PNG/JPG formats."
     },
     {
-      question: "Do you require a deposit before starting?",
-      answer: "Yes, I require a 50% upfront deposit to secure your spot in my schedule. The remaining 50% is paid upon project completion before the final source files are delivered."
+      question: "How do we start a project?",
+      answer: "Simply visit the Client Hub and fill out the Project Inquiry. Once we review your needs, we move to the legal agreement and deposit phase to secure your spot. It's designed to make the process professional and secure."
     }
   ];
 
@@ -76,9 +76,9 @@ export default function Home() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link href="/portfolio">
+              <Link href="/hub">
                 <Button size="lg" className="w-full sm:w-auto">
-                  View My Work <ArrowRight className="ml-2 w-5 h-5" />
+                  Client Hub <LayoutGrid className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
               <Link href="/contact">
