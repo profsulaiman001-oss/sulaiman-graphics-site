@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ChevronDown, ShieldCheck, FileText, Bot, MessageSquare, ClipboardList } from "lucide-react";
+import { Menu, X, ChevronDown, ShieldCheck, FileText, Bot, MessageSquare, ClipboardList, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "./Button";
 import { SettingsDropdown } from "@/components/SettingsDropdown";
@@ -15,12 +15,14 @@ const mainLinks = [
   { name: "Blog", path: "/blog" },
 ];
 
-// Grouped tools for the "Client Hub" dropdown
+// Grouped tools for the "Client Hub" dropdown - RESTORED AND EXPANDED
 const hubLinks = [
+  { name: "Verify License", path: "/verify", icon: ShieldCheck, desc: "Check asset authenticity" },
   { name: "Project Inquiry", path: "/questionnaire", icon: ClipboardList, desc: "Start a new project" },
   { name: "Legal Agreement", path: "/agreement", icon: FileText, desc: "Sign your contract" },
   { name: "AI Assistant", path: "/assistant", icon: Bot, desc: "24/7 Studio support" },
   { name: "Studio Chat", path: "/chat", icon: MessageSquare, desc: "Direct messaging" },
+  { name: "Studio Login", path: "/auth", icon: Lock, desc: "Admin & Dashboard access" },
 ];
 
 export function Navbar() {
