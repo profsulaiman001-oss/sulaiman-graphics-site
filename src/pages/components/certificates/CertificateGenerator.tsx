@@ -36,83 +36,233 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
 
       if (error) throw error;
 
-      // 2. Generate PDF
+      // 2. Generate PDF - High-fidelity certificate matching goal design
       const doc = new jsPDF("l", "mm", "a4");
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
-      const blueColor = [37, 99, 235]; 
-      const darkColor = [24, 24, 27];
+      
+      // Color palette
+      const navyBlue: [number, number, number] = [20, 40, 60];
+      const tealAccent: [number, number, number] = [30, 60, 80];
+      const goldPrimary: [number, number, number] = [180, 140, 60];
+      const goldDark: [number, number, number] = [140, 100, 40];
+      const lightGray: [number, number, number] = [235, 235, 235];
+      const mediumGray: [number, number, number] = [220, 220, 220];
+      const darkText: [number, number, number] = [30, 45, 65];
 
-      // Borders
-      doc.setFillColor(blueColor[0], blueColor[1], blueColor[2]);
-      doc.rect(0, 0, pageWidth, 5, "F"); 
-      doc.setFillColor(darkColor[0], darkColor[1], darkColor[2]);
-      doc.rect(0, pageHeight - 5, pageWidth, 5, "F"); 
+      // === BACKGROUND ===
+      // Base light gray background
+      doc.setFillColor(...lightGray);
+      doc.rect(0, 0, pageWidth, pageHeight, "F");
 
-      // Header (Clean version - no line)
-      doc.setTextColor(blueColor[0], blueColor[1], blueColor[2]);
+      // Diagonal stripe pattern (subtle)
+      doc.setFillColor(...mediumGray);
+      for (let i = -pageHeight; i < pageWidth + pageHeight; i += 40) {
+        doc.setFillColor(255, 255, 255);
+        const points = [
+          { x: i, y: 0 },
+          { x: i + 20, y: 0 },
+          { x: i + 20 + pageHeight, y: pageHeight },
+          { x: i + pageHeight, y: pageHeight }
+        ];
+        // Draw diagonal stripe using lines
+        doc.setDrawColor(255, 255, 255);
+        doc.setLineWidth(18);
+        doc.line(i + 10, 0, i + 10 + pageHeight, pageHeight);
+      }
+
+      // === TOP-LEFT DECORATIVE RIBBON WAVE ===
+      // Main navy wave - top left corner flowing right
+      doc.setFillColor(...navyBlue);
+      
+      // Top left ribbon - curved wave shape
+      doc.moveTo(0, 0);
+      doc.lineTo(0, 70);
+      doc.curveTo(30, 65, 60, 55, 90, 60);
+      doc.curveTo(120, 65, 150, 50, 180, 55);
+      doc.curveTo(200, 58, 210, 45, 220, 40);
+      doc.lineTo(220, 0);
+      doc.lineTo(0, 0);
+      doc.fill();
+
+      // Secondary teal accent wave beneath
+      doc.setFillColor(...tealAccent);
+      doc.moveTo(0, 50);
+      doc.lineTo(0, 90);
+      doc.curveTo(40, 85, 80, 75, 120, 80);
+      doc.curveTo(150, 84, 170, 70, 190, 65);
+      doc.curveTo(200, 62, 205, 58, 200, 55);
+      doc.curveTo(170, 60, 140, 72, 100, 68);
+      doc.curveTo(60, 64, 30, 75, 0, 70);
+      doc.fill();
+
+      // === BOTTOM-RIGHT DECORATIVE RIBBON WAVE ===
+      doc.setFillColor(...navyBlue);
+      doc.moveTo(pageWidth, pageHeight);
+      doc.lineTo(pageWidth, pageHeight - 70);
+      doc.curveTo(pageWidth - 30, pageHeight - 65, pageWidth - 60, pageHeight - 55, pageWidth - 90, pageHeight - 60);
+      doc.curveTo(pageWidth - 120, pageHeight - 65, pageWidth - 150, pageHeight - 50, pageWidth - 180, pageHeight - 55);
+      doc.curveTo(pageWidth - 200, pageHeight - 58, pageWidth - 210, pageHeight - 45, pageWidth - 220, pageHeight - 40);
+      doc.lineTo(pageWidth - 220, pageHeight);
+      doc.lineTo(pageWidth, pageHeight);
+      doc.fill();
+
+      // Secondary teal accent wave - bottom right
+      doc.setFillColor(...tealAccent);
+      doc.moveTo(pageWidth, pageHeight - 50);
+      doc.lineTo(pageWidth, pageHeight - 90);
+      doc.curveTo(pageWidth - 40, pageHeight - 85, pageWidth - 80, pageHeight - 75, pageWidth - 120, pageHeight - 80);
+      doc.curveTo(pageWidth - 150, pageHeight - 84, pageWidth - 170, pageHeight - 70, pageWidth - 190, pageHeight - 65);
+      doc.curveTo(pageWidth - 200, pageHeight - 62, pageWidth - 205, pageHeight - 58, pageWidth - 200, pageHeight - 55);
+      doc.curveTo(pageWidth - 170, pageHeight - 60, pageWidth - 140, pageHeight - 72, pageWidth - 100, pageHeight - 68);
+      doc.curveTo(pageWidth - 60, pageHeight - 64, pageWidth - 30, pageHeight - 75, pageWidth, pageHeight - 70);
+      doc.fill();
+
+      // Diagonal ribbon cutting through middle-right area
+      doc.setFillColor(...navyBlue);
+      doc.moveTo(pageWidth - 50, 60);
+      doc.curveTo(pageWidth - 80, 80, pageWidth - 100, 120, pageWidth - 60, pageHeight - 60);
+      doc.curveTo(pageWidth - 40, pageHeight - 80, pageWidth - 20, pageHeight - 100, pageWidth - 30, 80);
+      doc.curveTo(pageWidth - 35, 70, pageWidth - 45, 65, pageWidth - 50, 60);
+      doc.fill();
+
+      // === GOLDEN AWARD BADGE ===
+      const badgeX = pageWidth - 70;
+      const badgeY = 75;
+      const badgeRadius = 22;
+
+      // Outer scalloped edge (star-like pattern)
+      doc.setFillColor(...goldPrimary);
+      const points = 16;
+      const outerR = badgeRadius + 8;
+      const innerR = badgeRadius + 3;
+      
+      doc.moveTo(badgeX + outerR, badgeY);
+      for (let i = 0; i <= points * 2; i++) {
+        const angle = (i * Math.PI) / points;
+        const r = i % 2 === 0 ? outerR : innerR;
+        const x = badgeX + r * Math.cos(angle);
+        const y = badgeY + r * Math.sin(angle);
+        doc.lineTo(x, y);
+      }
+      doc.fill();
+
+      // Inner gold circle with gradient effect
+      doc.setFillColor(...goldDark);
+      doc.circle(badgeX, badgeY, badgeRadius, "F");
+      
+      doc.setFillColor(...goldPrimary);
+      doc.circle(badgeX, badgeY, badgeRadius - 2, "F");
+
+      // Inner dark circle for text
+      doc.setFillColor(...navyBlue);
+      doc.circle(badgeX, badgeY, badgeRadius - 5, "F");
+
+      // Badge text
+      doc.setTextColor(255, 255, 255);
       doc.setFont("helvetica", "bold");
+      doc.setFontSize(6);
+      doc.text("SULAIMAN", badgeX, badgeY - 8, { align: "center" });
+      doc.text("GRAPHICS", badgeX, badgeY - 3, { align: "center" });
+      
+      doc.setTextColor(...goldPrimary);
       doc.setFontSize(10);
-      doc.text("SULAIMAN GRAPHICS STUDIO", pageWidth / 2, 20, { align: "center", charSpace: 2 });
-      
-      // Title
-      doc.setTextColor(darkColor[0], darkColor[1], darkColor[2]);
-      doc.setFont("times", "italic");
-      doc.setFontSize(50);
-      doc.text("Certificate of Ownership", pageWidth / 2, 55, { align: "center" });
-
-      // Info text
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(12);
-      doc.setTextColor(100, 100, 100);
-      doc.text("FORMAL INTELLECTUAL PROPERTY TRANSFER", pageWidth / 2, 65, { align: "center", charSpace: 1 });
-
-      doc.setFontSize(10);
-      doc.text("THIS DOCUMENT CONFIRMS THAT THE RIGHTS ARE LEGALLY ASSIGNED TO", pageWidth / 2, 90, { align: "center" });
-
-      // Client Name
-      doc.setTextColor(darkColor[0], darkColor[1], darkColor[2]);
-      doc.setFontSize(35);
       doc.setFont("helvetica", "bold");
-      doc.text(formData.clientName.toUpperCase(), pageWidth / 2, 110, { align: "center" });
+      doc.text(new Date().getFullYear().toString(), badgeX, badgeY + 5, { align: "center" });
       
-      doc.setDrawColor(darkColor[0], darkColor[1], darkColor[2]);
-      doc.setLineWidth(1);
-      doc.line(pageWidth / 2 - 60, 115, pageWidth / 2 + 60, 115);
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(7);
+      doc.text("CERTIFIED", badgeX, badgeY + 12, { align: "center" });
 
-      // Project Details
-      doc.setFontSize(14);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(100, 100, 100);
-      doc.text("For the professional design project entitled:", pageWidth / 2, 135, { align: "center" });
-      
-      doc.setTextColor(blueColor[0], blueColor[1], blueColor[2]);
-      doc.setFontSize(22);
+      // === MAIN CERTIFICATE TEXT ===
+      // Title - "CERTIFICATE"
+      doc.setTextColor(...darkText);
       doc.setFont("helvetica", "bold");
-      doc.text(`"${formData.projectName}"`, pageWidth / 2, 150, { align: "center" });
+      doc.setFontSize(42);
+      doc.text("CERTIFICATE", 25, 45);
 
-      // Footer
-      const footerY = 180;
-      doc.setFontSize(9);
-      doc.setTextColor(150, 150, 150);
-      doc.text("ISSUE DATE", 40, footerY);
-      doc.setTextColor(darkColor[0], darkColor[1], darkColor[2]);
-      doc.setFontSize(12);
-      doc.text(new Date().toLocaleDateString(), 40, footerY + 7);
+      // Subtitle - "OF OWNERSHIP"
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(16);
+      doc.setTextColor(...tealAccent);
+      doc.text("OF OWNERSHIP", 25, 55);
 
-      doc.setFontSize(9);
-      doc.setTextColor(blueColor[0], blueColor[1], blueColor[2]);
-      doc.text("VERIFIED LICENSE ID", pageWidth / 2, footerY, { align: "center" });
-      doc.setTextColor(darkColor[0], darkColor[1], darkColor[2]);
+      // Presentation text
+      doc.setTextColor(100, 100, 100);
+      doc.setFont("helvetica", "normal");
       doc.setFontSize(11);
-      doc.text(formData.certNo, pageWidth / 2, footerY + 7, { align: "center" });
+      doc.text("THIS CERTIFICATE IS PRESENTED TO", 25, 80);
 
-      doc.setTextColor(150, 150, 150);
-      doc.text("AUTHENTICATED BY", pageWidth - 40, footerY, { align: "right" });
-      doc.setTextColor(darkColor[0], darkColor[1], darkColor[2]);
-      doc.setFontSize(14);
-      doc.setFont("helvetica", "bolditalic");
-      doc.text("Sulaiman Graphics", pageWidth - 40, footerY + 7, { align: "right" });
+      // Client Name - elegant styling
+      doc.setTextColor(...darkText);
+      doc.setFont("times", "bolditalic");
+      doc.setFontSize(32);
+      doc.text(formData.clientName, 25, 100);
+
+      // Decorative line under name
+      const nameWidth = doc.getTextWidth(formData.clientName);
+      doc.setDrawColor(...navyBlue);
+      doc.setLineWidth(0.8);
+      doc.line(25, 105, 25 + Math.max(nameWidth, 100), 105);
+
+      // Project description
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(80, 80, 80);
+      const projectText = `For the successful completion and delivery of the professional design project "${formData.projectName}".`;
+      const splitText = doc.splitTextToSize(projectText, 160);
+      doc.text(splitText, 25, 118);
+      
+      doc.setFontSize(9);
+      doc.setTextColor(120, 120, 120);
+      doc.text("All intellectual property rights have been officially transferred to the certificate holder.", 25, 135);
+
+      // === FOOTER SECTION ===
+      const footerY = pageHeight - 35;
+
+      // Signature field
+      doc.setDrawColor(150, 150, 150);
+      doc.setLineWidth(0.5);
+      doc.line(25, footerY + 5, 80, footerY + 5);
+      doc.setTextColor(100, 100, 100);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.text("SIGNATURE", 25, footerY + 12);
+
+      // Date field
+      doc.line(100, footerY + 5, 155, footerY + 5);
+      doc.text("DATE", 100, footerY + 12);
+      doc.setTextColor(...darkText);
+      doc.setFontSize(10);
+      doc.text(new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }), 100, footerY + 3);
+
+      // === SECURITY SERIAL NUMBER - License ID ===
+      // Professional security serial styling at bottom center
+      const serialY = pageHeight - 12;
+      
+      // Security background strip
+      doc.setFillColor(245, 245, 245);
+      doc.roundedRect(pageWidth / 2 - 50, serialY - 6, 100, 14, 2, 2, "F");
+      
+      // Security border
+      doc.setDrawColor(...navyBlue);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(pageWidth / 2 - 50, serialY - 6, 100, 14, 2, 2, "S");
+      
+      // Security icon dots
+      doc.setFillColor(...goldPrimary);
+      doc.circle(pageWidth / 2 - 42, serialY + 1, 1.5, "F");
+      doc.circle(pageWidth / 2 + 42, serialY + 1, 1.5, "F");
+      
+      // License ID text
+      doc.setFont("courier", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(...navyBlue);
+      doc.text("SERIAL NO:", pageWidth / 2 - 35, serialY + 2);
+      
+      doc.setTextColor(...darkText);
+      doc.setFontSize(10);
+      doc.text(formData.certNo, pageWidth / 2 + 5, serialY + 2);
 
       // Save PDF
       doc.save(`Certificate_${formData.clientName.replace(/\s+/g, '_')}.pdf`);
