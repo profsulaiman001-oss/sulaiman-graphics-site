@@ -1,32 +1,33 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ChevronDown, ShieldCheck, FileText, Bot, MessageSquare, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "./Button";
-/* ── Added the import for your new Settings Dropdown ── */
 import { SettingsDropdown } from "@/components/SettingsDropdown";
 
-// 🔥 UPDATED: Added Agreement & Assistant, reduced footprint!
-const links = [
+// Clean, high-end public links
+const mainLinks = [
   { name: "Home", path: "/" },
   { name: "About", path: "/#about", hash: true },
   { name: "Services", path: "/services" },
   { name: "Portfolio", path: "/portfolio" },
   { name: "Blog", path: "/blog" },
-  { name: "Agreement", path: "/agreement" }, // 👈 📄 Added your contract generator!
-  { name: "Assistant", path: "/assistant" }, 
-  { name: "Get Started", path: "/questionnaire" },
-  { name: "Chat", path: "/chat" },           
-  { name: "Contact", path: "/contact" },
-  { name: "Login", path: "/login" },
-  { name: "Settings", path: "/settings" },
+];
+
+// Grouped tools for the "Client Hub" dropdown
+const hubLinks = [
+  { name: "Project Inquiry", path: "/questionnaire", icon: ClipboardList, desc: "Start a new project" },
+  { name: "Legal Agreement", path: "/agreement", icon: FileText, desc: "Sign your contract" },
+  { name: "AI Assistant", path: "/assistant", icon: Bot, desc: "24/7 Studio support" },
+  { name: "Studio Chat", path: "/chat", icon: MessageSquare, desc: "Direct messaging" },
 ];
 
 export function Navbar() {
   const [location] = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [hubOpen, setHubOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -34,9 +35,9 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Close mobile menu on route change
   useEffect(() => {
     setMobileMenuOpen(false);
+    setHubOpen(false);
   }, [location]);
 
   return (
@@ -56,65 +57,52 @@ export function Navbar() {
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-6 lg:gap-8">
-            {links.map((link) => {
-              const isActive =
-                !link.hash &&
-                (location === link.path ||
-                  (link.path !== "/" && location.startsWith(link.path)));
+            {mainLinks.map((link) => (
+              <Link key={link.path} href={link.path} className="relative py-2">
+                <span className={cn(
+                  "text-sm font-medium transition-colors hover:text-primary",
+                  location === link.path ? "text-primary" : "text-muted-foreground"
+                )}>
+                  {link.name}
+                </span>
+              </Link>
+            ))}
 
-              const isAboutActive = link.hash && location === "/";
-
-              if (link.hash) {
-                return (
-                  <a key={link.path} href={link.path} className="relative py-2">
-                    <span
-                      className={cn(
-                        "text-sm font-medium transition-colors hover:text-primary",
-                        isAboutActive
-                          ? "text-muted-foreground"
-                          : "text-muted-foreground"
-                      )}
-                    >
-                      {link.name}
-                    </span>
-                  </a>
-                );
-              }
-
-              return (
-                <Link
-                  key={link.path}
-                  href={link.path}
-                  className="relative py-2"
-                >
-                  <span
-                    className={cn(
-                      "text-sm font-medium transition-colors hover:text-primary",
-                      isActive ? "text-primary" : "text-muted-foreground"
-                    )}
+            {/* Client Hub Dropdown */}
+            <div className="relative group pt-2 pb-2">
+              <button 
+                onMouseEnter={() => setHubOpen(true)}
+                className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+              >
+                Client Hub <ChevronDown size={14} className={cn("transition-transform", hubOpen && "rotate-180")} />
+              </button>
+              
+              <AnimatePresence>
+                {hubOpen && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    onMouseLeave={() => setHubOpen(false)}
+                    className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 bg-card border border-border rounded-2xl shadow-2xl p-2 overflow-hidden"
                   >
-                    {link.name}
-                  </span>
-
-                  {isActive && (
-                    <motion.div
-                      layoutId="nav-indicator"
-                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
-                      transition={{
-                        type: "spring",
-                        stiffness: 300,
-                        damping: 30,
-                      }}
-                    />
-                  )}
-                </Link>
-              );
-            })}
-
-            {/* ── Settings Dropdown Inserted Here (Icon fallback) ── */}
-            <div className="ml-2">
-              <SettingsDropdown />
+                    {hubLinks.map((item) => (
+                      <Link key={item.path} href={item.path}>
+                        <div className="flex items-start gap-3 p-3 rounded-xl hover:bg-primary/5 transition-colors cursor-pointer group/item">
+                          <item.icon className="text-muted-foreground group-hover/item:text-primary mt-1" size={18} />
+                          <div>
+                            <p className="text-sm font-bold text-foreground">{item.name}</p>
+                            <p className="text-[10px] text-muted-foreground">{item.desc}</p>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
+
+            <SettingsDropdown />
 
             <Link href="/contact">
               <Button size="sm">Let's Talk</Button>
@@ -123,10 +111,8 @@ export function Navbar() {
 
           {/* Mobile Menu Toggle */}
           <div className="flex items-center gap-3 md:hidden">
-            <button
-              className="relative z-10 text-foreground p-2"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            >
+            <SettingsDropdown />
+            <button className="text-foreground p-2" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
               {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
@@ -140,51 +126,25 @@ export function Navbar() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.2 }}
-            className="absolute top-full left-0 right-0 bg-card border-b border-border shadow-2xl p-4 md:hidden"
+            className="absolute top-full left-0 right-0 bg-card border-b border-border shadow-2xl p-4 md:hidden overflow-y-auto max-h-[80vh]"
           >
-            {/* 🛠️ Fixed: Kept spacing at space-y-1 to keep it tight */}
             <div className="flex flex-col space-y-1">
-              {links.map((link) => {
-                const isActive =
-                  !link.hash &&
-                  (location === link.path ||
-                    (link.path !== "/" && location.startsWith(link.path)));
-
-                if (link.hash) {
-                  return (
-                    <a
-                      key={link.path}
-                      href={link.path}
-                      onClick={() => setMobileMenuOpen(false)}
-                      // 🛠️ Fixed: Reduced py-2 to py-1.5 and text-base to text-sm
-                      className="px-4 py-1.5 rounded-xl text-sm font-medium transition-colors text-muted-foreground hover:bg-white/5 hover:text-foreground"
-                    >
-                      {link.name}
-                    </a>
-                  );
-                }
-
-                return (
-                  <Link
-                    key={link.path}
-                    href={link.path}
-                    // 🛠️ Fixed: Reduced py-2 to py-1.5 and text-base to text-sm
-                    className={cn(
-                      "px-4 py-1.5 rounded-xl text-sm font-medium transition-colors",
-                      isActive
-                        ? "bg-primary/10 text-primary"
-                        : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
-                    )}
-                  >
-                    {link.name}
-                  </Link>
-                );
-              })}
+              {mainLinks.map((link) => (
+                <Link key={link.path} href={link.path} className="px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:bg-white/5 hover:text-foreground">
+                  {link.name}
+                </Link>
+              ))}
+              
+              <div className="pt-4 pb-2 px-4 text-[10px] font-bold text-primary uppercase tracking-widest">Studio Tools</div>
+              {hubLinks.map((link) => (
+                <Link key={link.path} href={link.path} className="px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:bg-white/5 hover:text-foreground flex items-center gap-3">
+                  <link.icon size={16} /> {link.name}
+                </Link>
+              ))}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
     </header>
   );
-            }
+}
