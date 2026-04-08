@@ -6,23 +6,23 @@ import { cn } from "@/lib/utils";
 import { Button } from "./Button";
 import { SettingsDropdown } from "@/components/SettingsDropdown";
 
-// Clean, high-end public links
+// Clean, high-end public links - LOGIN MOVED HERE
 const mainLinks = [
   { name: "Home", path: "/" },
   { name: "About", path: "/#about", hash: true },
   { name: "Services", path: "/services" },
   { name: "Portfolio", path: "/portfolio" },
   { name: "Blog", path: "/blog" },
+  { name: "Login", path: "/auth", icon: Lock }, // Now visible next to Blog
 ];
 
-// Grouped tools for the "Client Hub" dropdown - RESTORED AND EXPANDED
+// Grouped tools for the "Client Hub" dropdown - LOGIN REMOVED FROM HERE
 const hubLinks = [
   { name: "Verify License", path: "/verify", icon: ShieldCheck, desc: "Check asset authenticity" },
   { name: "Project Inquiry", path: "/questionnaire", icon: ClipboardList, desc: "Start a new project" },
   { name: "Legal Agreement", path: "/agreement", icon: FileText, desc: "Sign your contract" },
   { name: "AI Assistant", path: "/assistant", icon: Bot, desc: "24/7 Studio support" },
   { name: "Studio Chat", path: "/chat", icon: MessageSquare, desc: "Direct messaging" },
-  { name: "Studio Login", path: "/auth", icon: Lock, desc: "Admin & Dashboard access" },
 ];
 
 export function Navbar() {
@@ -62,9 +62,10 @@ export function Navbar() {
             {mainLinks.map((link) => (
               <Link key={link.path} href={link.path} className="relative py-2">
                 <span className={cn(
-                  "text-sm font-medium transition-colors hover:text-primary",
+                  "text-sm font-medium transition-colors hover:text-primary flex items-center gap-2",
                   location === link.path ? "text-primary" : "text-muted-foreground"
                 )}>
+                  {link.icon && <link.icon size={14} />}
                   {link.name}
                 </span>
               </Link>
@@ -132,7 +133,8 @@ export function Navbar() {
           >
             <div className="flex flex-col space-y-1">
               {mainLinks.map((link) => (
-                <Link key={link.path} href={link.path} className="px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:bg-white/5 hover:text-foreground">
+                <Link key={link.path} href={link.path} className="px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:bg-white/5 hover:text-foreground flex items-center gap-2">
+                  {link.icon && <link.icon size={16} />}
                   {link.name}
                 </Link>
               ))}
