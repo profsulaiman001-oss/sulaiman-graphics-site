@@ -35,9 +35,9 @@ export default function Login() {
 
       alert("Account created successfully! Welcome to your portal.");
       
-      // Smart Redirect: Go where you intended, or fall back to dashboard
+      // FIXED: Redirect to dashboard if currently on /auth
       const intendedDestination = window.location.pathname;
-      setLocation(intendedDestination === "/login" ? "/dashboard" : intendedDestination);
+      setLocation(intendedDestination === "/auth" ? "/dashboard" : intendedDestination);
       setLoading(false);
       return;
     }
@@ -51,9 +51,9 @@ export default function Login() {
 
     // 4. If login was successful, proceed intelligently
     if (data.session) {
-      // 🔥 SMART REDIRECT: Checks if you clicked a specific page first!
+      // 🔥 FIXED: Check for /auth instead of /login to match your new App.tsx routes
       const intendedDestination = window.location.pathname;
-      setLocation(intendedDestination === "/login" ? "/dashboard" : intendedDestination);
+      setLocation(intendedDestination === "/auth" ? "/dashboard" : intendedDestination);
     } else {
       alert("Login successful but no session found.");
     }
@@ -63,11 +63,9 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground relative overflow-hidden">
-      {/* Background aesthetic blobs using your primary glow variable */}
       <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-primary/10 rounded-full filter blur-3xl -z-10 animate-pulse"></div>
       <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-primary/5 rounded-full filter blur-3xl -z-10 animate-pulse delay-1000"></div>
 
-      {/* Header Branding */}
       <motion.div 
         className="mb-8 text-center"
         initial={{ opacity: 0, y: -20 }}
@@ -90,9 +88,7 @@ export default function Login() {
           Client Login / Setup
         </h2>
 
-        {/* Form handling auto-signup too! */}
         <form onSubmit={handleLogin} className="space-y-5">
-          {/* Email Field */}
           <div>
             <label className="text-xs text-muted-foreground font-semibold uppercase mb-1.5 block tracking-wider">Email Address</label>
             <div className="relative">
@@ -110,7 +106,6 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Password Field */}
           <div>
             <label className="text-xs text-muted-foreground font-semibold uppercase mb-1.5 block tracking-wider">Password</label>
             <div className="relative">
@@ -128,7 +123,6 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Action Button mapped to bg-primary and glowing dropshadow removed for clean card design */}
           <button
             type="submit"
             disabled={loading}
