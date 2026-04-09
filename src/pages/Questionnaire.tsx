@@ -2,8 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowRight, Send, CheckCircle, Loader2, ClipboardList, Sparkles } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { ArrowLeft, ArrowRight, Send, CheckCircle, Loader2, ClipboardList } from "lucide-react";
 
 export default function Questionnaire() {
   const [, setLocation] = useLocation();
@@ -34,11 +33,16 @@ export default function Questionnaire() {
   const nextStep = () => setStep(prev => prev + 1);
   const prevStep = () => setStep(prev => prev - 1);
 
+  // PREVENT ENTER KEY AUTO-SUBMIT
   const handleKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
     if (e.key === "Enter") {
+      // Completely prevent Enter from submitting on any step
       e.preventDefault();
+      
+      // Still allow Enter to move to the next step on Steps 1 and 2 if valid
       const isStep1Valid = step === 1 && formData.client_name && formData.client_email;
       const isStep2Valid = step === 2 && formData.project_type && formData.project_goal;
+      
       if (step === 1 && isStep1Valid) nextStep();
       if (step === 2 && isStep2Valid) nextStep();
     }
@@ -47,12 +51,16 @@ export default function Questionnaire() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
     try {
-      const { error } = await supabase.from("project_questionnaires").insert([formData]);
+      const { error } = await supabase
+        .from("project_questionnaires") // Keeping this as your database table
+        .insert([formData]);
+
       if (error) throw error;
       setSubmitted(true);
     } catch (error: any) {
-      alert("Failed to submit: " + error.message);
+      alert("Failed to submit questionnaire: " + error.message);
     } finally {
       setLoading(false);
     }
@@ -60,177 +68,312 @@ export default function Questionnaire() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-[#050a15] text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-blue-600/20 blur-[100px] rounded-full" />
+      <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4">
         <motion.div 
-          className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-10 max-w-md w-full text-center shadow-2xl relative z-10"
-          initial={{ opacity: 0, scale: 0.9 }}
+          className="bg-card border border-border rounded-2xl p-8 max-w-md w-full text-center shadow-xl"
+          initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
         >
-          <div className="w-20 h-20 bg-blue-600/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-blue-500/30">
-            <CheckCircle size={40} className="text-blue-400" />
+          <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-green-500/20">
+            <CheckCircle size={32} className="text-green-500" />
           </div>
-          <h2 className="text-3xl font-black italic uppercase tracking-tighter mb-4">Project Brief Received</h2>
-          <p className="text-gray-400 mb-8 font-medium">I've received your details. Expect a professional response in your inbox shortly.</p>
+          <h2 className="text-2xl font-display font-black mb-2">Awesome! Received.</h2>
+          <p className="text-base text-muted-foreground mb-6">Thank you for taking the time to fill this out. I'll review your details and get back to you shortly!</p>
           <button 
             type="button"
             onClick={() => setLocation("/")}
-            className="w-full bg-white text-blue-900 font-black py-4 rounded-2xl hover:bg-blue-50 transition-all uppercase tracking-widest text-xs"
+            className="w-full bg-primary text-white font-semibold py-3 rounded-xl hover:opacity-90 transition text-base"
           >
-            Back to Studio
+            Back to Home
           </button>
         </motion.div>
       </div>
     );
   }
 
-  const InputStyle = "w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder:text-gray-600 focus:border-blue-500/50 focus:bg-white/[0.08] focus:ring-4 focus:ring-blue-500/10 outline-none transition-all duration-300";
-  const LabelStyle = "text-[10px] text-blue-400 font-black uppercase tracking-[0.2em] mb-3 block ml-1";
-
   return (
-    <div className="min-h-screen bg-[#050a15] text-white flex flex-col relative overflow-hidden font-sans">
-      {/* Background Glows */}
-      <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-900/10 blur-[120px] rounded-full" />
-      <div className="absolute bottom-[-10%] left-[-10%] w-[30%] h-[30%] bg-indigo-900/10 blur-[100px] rounded-full" />
-
-      <header className="border-b border-white/5 bg-[#050a15]/80 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
-          <button onClick={() => setLocation("/client-hub")} className="group flex items-center gap-2 text-gray-400 hover:text-white transition-colors font-bold uppercase tracking-tighter text-sm">
-            <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> Exit Hub
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
+      {/* Header */}
+      <header className="border-b border-border bg-background/90 backdrop-blur-md sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <button 
+            type="button"
+            onClick={() => setLocation("/")}
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-base font-medium"
+          >
+            <ArrowLeft size={18} /> Exit
           </button>
-          <div className="flex items-center gap-2">
-            <Sparkles size={16} className="text-blue-500" />
-            <span className="font-black text-lg tracking-tighter uppercase italic">Project <span className="text-blue-600">Brief</span></span>
-          </div>
+          <h1 className="font-display font-black text-xl tracking-tighter text-foreground">
+              SULAIMAN <span className="text-primary">GRAPHICS</span>
+          </h1>
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col items-center justify-center py-12 px-6 relative z-10">
-        <div className="w-full max-w-2xl">
-          {/* Progress Section */}
-          <div className="mb-12">
-            <div className="flex justify-between items-end mb-4">
-              <div>
-                <span className="text-blue-500 font-black text-3xl italic tracking-tighter">0{step}</span>
-                <span className="text-gray-600 font-bold text-sm ml-2 uppercase tracking-widest">/ Step</span>
-              </div>
-              <span className="text-gray-400 text-[10px] font-black uppercase tracking-widest bg-white/5 px-3 py-1 rounded-full border border-white/10 italic">
-                {Math.round((step / 4) * 100)}% Synchronized
-              </span>
+      <main className="container mx-auto px-4 py-12 flex-1 flex flex-col items-center justify-center">
+        <div className="w-full max-xl: max-w-xl">
+          
+          {/* Progress Bar */}
+          <div className="mb-8">
+            <div className="flex justify-between text-sm text-muted-foreground mb-2">
+              <span>Step {step} of 4</span>
+              <span>{Math.round((step / 4) * 100)}% Complete</span>
             </div>
-            <div className="w-full h-[2px] bg-white/5 rounded-full overflow-hidden">
-              <motion.div className="h-full bg-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.8)]" initial={{ width: 0 }} animate={{ width: `${(step / 4) * 100}%` }} />
+            <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-primary transition-all duration-300" 
+                style={{ width: `${(step / 4) * 100}%` }}
+              />
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="bg-white/[0.03] backdrop-blur-3xl border border-white/10 rounded-[3rem] p-8 md:p-12 shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-8 opacity-5">
-               <ClipboardList size={120} />
-            </div>
-
+          <form 
+            onSubmit={handleSubmit} 
+            onKeyDown={handleKeyDown} 
+            className="bg-card border border-border rounded-2xl p-6 md:p-8 shadow-xl"
+          >
             <AnimatePresence mode="wait">
+              
+              {/* STEP 1: Basic Info */}
               {step === 1 && (
-                <motion.div key="step1" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-8">
-                  <div>
-                    <h2 className="text-3xl font-black uppercase italic tracking-tighter mb-2">The Basics</h2>
-                    <p className="text-gray-400 font-medium">Identity and contact authentication.</p>
+                <motion.div
+                  key="step1"
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                >
+                  <div className="mb-6">
+                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-3">
+                      <ClipboardList size={24} className="text-primary" />
+                    </div>
+                    <h2 className="text-2xl font-bold mb-1">Let's get to know you</h2>
+                    <p className="text-base text-muted-foreground">Please provide your basic contact details.</p>
                   </div>
-                  <div className="space-y-6">
+
+                  <div className="space-y-5">
                     <div>
-                      <label className={LabelStyle}>Full Name *</label>
-                      <input type="text" required value={formData.client_name} onChange={(e) => updateField("client_name", e.target.value)} className={InputStyle} placeholder="Sulaiman ..." />
+                      <label className="text-sm text-muted-foreground font-bold uppercase mb-2 block">Your Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.client_name}
+                        onChange={(e) => updateField("client_name", e.target.value)}
+                        className="w-full bg-background border border-border rounded-xl px-4 py-3.5 text-base focus:border-primary outline-none transition"
+                        placeholder="John Doe"
+                      />
                     </div>
                     <div>
-                      <label className={LabelStyle}>Email Address *</label>
-                      <input type="email" required value={formData.client_email} onChange={(e) => updateField("client_email", e.target.value)} className={InputStyle} placeholder="hello@studio.com" />
+                      <label className="text-sm text-muted-foreground font-bold uppercase mb-2 block">Your Email *</label>
+                      <input
+                        type="email"
+                        required
+                        value={formData.client_email}
+                        onChange={(e) => updateField("client_email", e.target.value)}
+                        className="w-full bg-background border border-border rounded-xl px-4 py-3.5 text-base focus:border-primary outline-none transition"
+                        placeholder="john@example.com"
+                      />
                     </div>
                     <div>
-                      <label className={LabelStyle}>Brand/Company</label>
-                      <input type="text" value={formData.business_name} onChange={(e) => updateField("business_name", e.target.value)} className={InputStyle} placeholder="Optional" />
+                      <label className="text-sm text-muted-foreground font-bold uppercase mb-2 block">Business/Company Name</label>
+                      <input
+                        type="text"
+                        value={formData.business_name}
+                        onChange={(e) => updateField("business_name", e.target.value)}
+                        className="w-full bg-background border border-border rounded-xl px-4 py-3.5 text-base focus:border-primary outline-none transition"
+                        placeholder="Acme Inc. (Optional)"
+                      />
                     </div>
                   </div>
                 </motion.div>
               )}
 
+              {/* STEP 2: Project Info */}
               {step === 2 && (
-                <motion.div key="step2" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-8">
-                  <div>
-                    <h2 className="text-3xl font-black uppercase italic tracking-tighter mb-2">Project Scope</h2>
-                    <p className="text-gray-400 font-medium">Define the creative requirements.</p>
+                <motion.div
+                  key="step2"
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                >
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-bold mb-1">Project Details</h2>
+                    <p className="text-base text-muted-foreground">Tell me about what we are building or designing.</p>
                   </div>
-                  <div className="space-y-6">
+
+                  <div className="space-y-5">
                     <div>
-                      <label className={LabelStyle}>Service Type *</label>
-                      <select required value={formData.project_type} onChange={(e) => updateField("project_type", e.target.value)} className={cn(InputStyle, "appearance-none cursor-pointer")}>
-                        <option value="" className="bg-[#0a0f1d]">Select Category...</option>
-                        <option value="Logo Design" className="bg-[#0a0f1d]">Identity & Branding</option>
-                        <option value="Social Media" className="bg-[#0a0f1d]">Digital Assets</option>
-                        <option value="Motion" className="bg-[#0a0f1d]">Motion Graphics</option>
+                      <label className="text-sm text-muted-foreground font-bold uppercase mb-2 block">Project Type *</label>
+                      <select
+                        required
+                        value={formData.project_type}
+                        onChange={(e) => updateField("project_type", e.target.value)}
+                        className="w-full bg-background border border-border rounded-xl px-4 py-3.5 text-base focus:border-primary outline-none transition"
+                      >
+                        <option value="">Select a type...</option>
+                        <option value="Logo Design">Logo & Brand Identity</option>
+                        <option value="Social Media Graphics">Social Media Graphics</option>
+                        <option value="Flyer Design">Flyer Design</option>
+                        <option value="Motion Design">Motion Design</option>
+                        <option value="Other">Other</option>
                       </select>
                     </div>
                     <div>
-                      <label className={LabelStyle}>Mission Statement *</label>
-                      <textarea required value={formData.project_goal} onChange={(e) => updateField("project_goal", e.target.value)} className={cn(InputStyle, "min-h-[120px] resize-none")} placeholder="Describe the ultimate goal..." />
+                      <label className="text-sm text-muted-foreground font-bold uppercase mb-2 block">What is the main goal of this project? *</label>
+                      <textarea
+                        required
+                        value={formData.project_goal}
+                        onChange={(e) => updateField("project_goal", e.target.value)}
+                        className="w-full bg-background border border-border rounded-xl px-4 py-3.5 text-base focus:border-primary outline-none transition resize-none"
+                        rows={3}
+                        placeholder="Ex: I need a modern logo to attract younger customers to my new cafe."
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm text-muted-foreground font-bold uppercase mb-2 block">Who is your target audience?</label>
+                      <input
+                        type="text"
+                        value={formData.target_audience}
+                        onChange={(e) => updateField("target_audience", e.target.value)}
+                        className="w-full bg-background border border-border rounded-xl px-4 py-3.5 text-base focus:border-primary outline-none transition"
+                        placeholder="Ex: Small business owners aged 25-40"
+                      />
                     </div>
                   </div>
                 </motion.div>
               )}
 
-              {/* Steps 3 and 4 follow the same pattern... */}
+              {/* STEP 3: Style & Direction */}
               {step === 3 && (
-                <motion.div key="step3" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-8">
-                  <div>
-                    <h2 className="text-3xl font-black uppercase italic tracking-tighter mb-2">Visual DNA</h2>
-                    <p className="text-gray-400 font-medium">Defining the aesthetic direction.</p>
+                <motion.div
+                  key="step3"
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                >
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-bold mb-1">Visual Style</h2>
+                    <p className="text-base text-muted-foreground">Help me understand your aesthetic tastes.</p>
                   </div>
-                  <div className="space-y-6">
+
+                  <div className="space-y-5">
                     <div>
-                      <label className={LabelStyle}>Preferred Palette</label>
-                      <input type="text" value={formData.brand_colors} onChange={(e) => updateField("brand_colors", e.target.value)} className={InputStyle} placeholder="Ex: Deep Blue & Silver" />
+                      <label className="text-sm text-muted-foreground font-bold uppercase mb-2 block">Preferred Colors</label>
+                      <input
+                        type="text"
+                        value={formData.brand_colors}
+                        onChange={(e) => updateField("brand_colors", e.target.value)}
+                        className="w-full bg-background border border-border rounded-xl px-4 py-3.5 text-base focus:border-primary outline-none transition"
+                        placeholder="Ex: Minimalist black and gold, or ocean blue."
+                      />
                     </div>
                     <div>
-                      <label className={LabelStyle}>Design Keywords</label>
-                      <input type="text" value={formData.design_style} onChange={(e) => updateField("design_style", e.target.value)} className={InputStyle} placeholder="Ex: Brutalist, Minimal, Luxury" />
+                      <label className="text-sm text-muted-foreground font-bold uppercase mb-2 block">Design Style Keywords</label>
+                      <input
+                        type="text"
+                        value={formData.design_style}
+                        onChange={(e) => updateField("design_style", e.target.value)}
+                        className="w-full bg-background border border-border rounded-xl px-4 py-3.5 text-base focus:border-primary outline-none transition"
+                        placeholder="Ex: Bold, Corporate, Playful, Luxury"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm text-muted-foreground font-bold uppercase mb-2 block">Inspiration Links</label>
+                      <textarea
+                        value={formData.reference_links}
+                        onChange={(e) => updateField("reference_links", e.target.value)}
+                        className="w-full bg-background border border-border rounded-xl px-4 py-3.5 text-base focus:border-primary outline-none transition resize-none"
+                        rows={2}
+                        placeholder="Drop links to Pinterest, Behance or websites you love."
+                      />
                     </div>
                   </div>
                 </motion.div>
               )}
 
+              {/* STEP 4: Budget & Logistics */}
               {step === 4 && (
-                <motion.div key="step4" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-8">
-                  <div>
-                    <h2 className="text-3xl font-black uppercase italic tracking-tighter mb-2">Logistics</h2>
-                    <p className="text-gray-400 font-medium">Final delivery parameters.</p>
+                <motion.div
+                  key="step4"
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                >
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-bold mb-1">Logistics & Submission</h2>
+                    <p className="text-base text-muted-foreground">Almost done! Just a few final details.</p>
                   </div>
-                  <div className="space-y-6">
+
+                  <div className="space-y-5">
                     <div>
-                      <label className={LabelStyle}>Investment Range</label>
-                      <input type="text" value={formData.budget_range} onChange={(e) => updateField("budget_range", e.target.value)} className={InputStyle} placeholder="Ex: $1k - $5k" />
+                      <label className="text-sm text-muted-foreground font-bold uppercase mb-2 block">Budget Range</label>
+                      <input
+                        type="text"
+                        value={formData.budget_range}
+                        onChange={(e) => updateField("budget_range", e.target.value)}
+                        className="w-full bg-background border border-border rounded-xl px-4 py-3.5 text-base focus:border-primary outline-none transition"
+                        placeholder="Ex: $500 - $1,000"
+                      />
                     </div>
                     <div>
-                      <label className={LabelStyle}>Deadline</label>
-                      <input type="text" value={formData.deadline} onChange={(e) => updateField("deadline", e.target.value)} className={InputStyle} placeholder="DD/MM/YYYY" />
+                      <label className="text-sm text-muted-foreground font-bold uppercase mb-2 block">Desired Deadline</label>
+                      <input
+                        type="text"
+                        value={formData.deadline}
+                        onChange={(e) => updateField("deadline", e.target.value)}
+                        className="w-full bg-background border border-border rounded-xl px-4 py-3.5 text-base focus:border-primary outline-none transition"
+                        placeholder="Ex: End of this month"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm text-muted-foreground font-bold uppercase mb-2 block">Anything else I should know?</label>
+                      <textarea
+                        value={formData.additional_notes}
+                        onChange={(e) => updateField("additional_notes", e.target.value)}
+                        className="w-full bg-background border border-border rounded-xl px-4 py-3.5 text-base focus:border-primary outline-none transition resize-none"
+                        rows={3}
+                        placeholder="Any extra details or questions..."
+                      />
                     </div>
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            <div className="mt-12 flex items-center justify-between gap-4">
+            {/* Navigation Buttons */}
+            <div className="mt-8 pt-4 border-t border-border flex justify-between gap-4">
               {step > 1 ? (
-                <button type="button" onClick={prevStep} className="group px-8 py-4 bg-white/5 border border-white/10 rounded-2xl text-sm font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-2">
-                  <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> Back
+                <button
+                  type="button"
+                  onClick={prevStep}
+                  className="px-6 py-3 bg-background border border-border rounded-xl text-base font-medium hover:bg-muted transition flex items-center gap-2"
+                >
+                  <ArrowLeft size={18} /> Back
                 </button>
-              ) : <div />}
+              ) : (
+                <div></div>
+              )}
 
               {step < 4 ? (
-                <button type="button" onClick={nextStep} disabled={(step === 1 && (!formData.client_name || !formData.client_email)) || (step === 2 && (!formData.project_type || !formData.project_goal))} className="px-10 py-4 bg-blue-600 text-white rounded-2xl text-sm font-black uppercase tracking-[0.2em] hover:bg-blue-500 disabled:opacity-30 disabled:grayscale transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)] flex items-center gap-2">
+                <button
+                  key="next-button" // 🌟 Distinct key prevents overlap click submission
+                  type="button"
+                  onClick={nextStep}
+                  disabled={
+                    (step === 1 && (!formData.client_name || !formData.client_email)) ||
+                    (step === 2 && (!formData.project_type || !formData.project_goal))
+                  }
+                  className="px-6 py-3 bg-primary text-white rounded-xl text-base font-semibold hover:opacity-90 transition flex items-center gap-2 disabled:opacity-50"
+                >
                   Next <ArrowRight size={18} />
                 </button>
               ) : (
-                <button type="submit" disabled={loading} className="px-10 py-4 bg-white text-blue-900 rounded-2xl text-sm font-black uppercase tracking-[0.2em] hover:bg-blue-50 transition-all flex items-center gap-2 disabled:opacity-50">
+                <button
+                  key="submit-button" // 🌟 Distinct key ensures this acts fresh on step 4
+                  type="submit"
+                  disabled={loading}
+                  className="px-6 py-3 bg-green-600 text-white rounded-xl text-base font-semibold hover:opacity-90 transition flex items-center gap-2 disabled:opacity-50"
+                >
                   {loading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-                  {loading ? "Transmitting..." : "Initiate Project"}
+                  {loading ? "Submitting..." : "Submit Project"}
                 </button>
               )}
             </div>
@@ -239,4 +382,4 @@ export default function Questionnaire() {
       </main>
     </div>
   );
-}
+                         }
