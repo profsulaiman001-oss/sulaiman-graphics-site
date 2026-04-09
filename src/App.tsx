@@ -59,7 +59,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) setLocation("/auth"); // Matches your updated /auth path
+      if (!session) setLocation("/login"); // Matches your updated /login path
       setLoading(false);
     };
 
