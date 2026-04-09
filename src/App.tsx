@@ -106,9 +106,13 @@ function Router() {
           {/* ── 🛡️ NEW PUBLIC ROUTE: Professional License Verification ── */}
           <Route path="/verify" component={Verify} />
 
-          {/* AUTH ROUTES */}
-          <Route path="/login" component={Login} />
-          <Route path="/auth" component={Login} />
+          {/* AUTH ROUTES - Must be before catch-all */}
+          <Route path="/login">
+            <Login />
+          </Route>
+          <Route path="/auth">
+            <Login />
+          </Route>
 
           {/* PROTECTED ROUTES */}
           <Route path="/dashboard">
