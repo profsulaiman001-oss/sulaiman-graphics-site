@@ -107,7 +107,7 @@ function Router() {
           <Route path="/verify" component={Verify} />
 
           {/* AUTH ROUTES - Matches your /auth path requirement */}
-          <Route path="/auth" component={Login} />
+          <Route path="/login" component={Login} />
 
           {/* PROTECTED ROUTES */}
           <Route path="/dashboard">
