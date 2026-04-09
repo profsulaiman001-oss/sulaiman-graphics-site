@@ -35,7 +35,7 @@ export default async function handler(req, res) {
             <p>You have been invited to access your project dashboard on Sulaiman Graphics.</p>
             <br/>
             <div style="text-align:center; margin:20px 0;">
-              <a href="https://www.sulaimangraphics.com.ng/login"
+              <a href="https://www.sulaimangraphics.com.ng/auth"
                  style="display:inline-block; padding:12px 20px; background:#0d6efd; color:#fff; text-decoration:none; border-radius:5px;">
                  Access Dashboard
               </a>
