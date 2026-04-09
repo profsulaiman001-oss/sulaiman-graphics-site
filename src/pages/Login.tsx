@@ -35,9 +35,13 @@ export default function Login() {
 
       alert("Account created successfully! Welcome to your portal.");
       
-      // FIXED: Redirect to dashboard if currently on /auth
+      // ✅ FIXED: Changed check from /auth to /login
       const intendedDestination = window.location.pathname;
-      setLocation(intendedDestination === "/auth" ? "/dashboard" : intendedDestination);
+      if (intendedDestination === "/login") {
+        window.location.href = "/dashboard"; // Hard redirect to break the loading loop
+      } else {
+        setLocation(intendedDestination);
+      }
       setLoading(false);
       return;
     }
@@ -51,9 +55,13 @@ export default function Login() {
 
     // 4. If login was successful, proceed intelligently
     if (data.session) {
-      // 🔥 FIXED: Check for /auth instead of /login to match your new App.tsx routes
+      // ✅ FIXED: Changed check from /auth to /login
       const intendedDestination = window.location.pathname;
-      setLocation(intendedDestination === "/auth" ? "/dashboard" : intendedDestination);
+      if (intendedDestination === "/login") {
+        window.location.href = "/dashboard"; // Hard redirect forces the app to see the session
+      } else {
+        setLocation(intendedDestination);
+      }
     } else {
       alert("Login successful but no session found.");
     }
@@ -150,4 +158,4 @@ export default function Login() {
       </footer>
     </div>
   );
-}
+          }
