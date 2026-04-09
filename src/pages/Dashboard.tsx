@@ -64,7 +64,7 @@ export default function Dashboard() {
   const checkUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      setLocation("/auth");
+      setLocation("/login");
       return;
     }
     setUser(user);
@@ -389,7 +389,7 @@ export default function Dashboard() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    setLocation("/auth");
+    setLocation("/login");
   };
 
   const handleFileUpload = async (projectId: string, file: File) => {
