@@ -38,8 +38,6 @@ import Assistant from "@/pages/Assistant";
 import Agreement from "@/pages/Agreement"; 
 import Receipt from "@/pages/Receipt"; 
 import Settings from "@/pages/Settings";
-
-// ── ✅ NEW IMPORT: For your brand new Verification system ──
 import Verify from "@/pages/Verify"; 
 
 const queryClient = new QueryClient({
@@ -51,7 +49,7 @@ const queryClient = new QueryClient({
   },
 });
 
-/* PROTECTED ROUTE COMPONENT - Keeping your exact auth state logic */
+/* PROTECTED ROUTE COMPONENT */
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [, setLocation] = useLocation();
   const [loading, setLoading] = useState(true);
@@ -59,13 +57,17 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) setLocation("/login"); // Matches your updated /login path
+      if (!session) {
+        setLocation("/login");
+      }
       setLoading(false);
     };
 
     checkSession();
 
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+      // ✅ This ensures that if the session is lost or during logout, 
+      // it always goes to /login, never /auth.
       if (!session) setLocation("/login"); 
     });
 
@@ -82,17 +84,14 @@ function Router() {
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
-
       <div className="flex-grow">
         <Switch>
-          {/* PUBLIC ROUTES */}
           <Route path="/" component={Home} />
           <Route path="/portfolio" component={Portfolio} />
           <Route path="/portfolio/:id" component={ProjectDetail} />
           <Route path="/about" component={About} />
           <Route path="/services" component={Services} />
           <Route path="/contact" component={Contact} />
-          
           <Route path="/set-password" component={SetPassword} />
           <Route path="/blog" component={Blog} />
           <Route path="/blog/:id" component={BlogPost} />
@@ -102,11 +101,9 @@ function Router() {
           <Route path="/agreement" component={Agreement} /> 
           <Route path="/receipt" component={Receipt} />
           <Route path="/settings" component={Settings} />
-
-          {/* ── 🛡️ NEW PUBLIC ROUTE: Professional License Verification ── */}
           <Route path="/verify" component={Verify} />
 
-          {/* AUTH ROUTES - Matches your /auth path requirement */}
+          {/* ✅ AUTH ROUTE: Set to /login */}
           <Route path="/login" component={Login} />
 
           {/* PROTECTED ROUTES */}
@@ -115,13 +112,11 @@ function Router() {
               <Dashboard />
             </ProtectedRoute>
           </Route>
-
           <Route path="/create-post">
             <ProtectedRoute>
               <CreatePost />
             </ProtectedRoute>
           </Route>
-
           <Route path="/questionnaires">
             <ProtectedRoute>
               <ViewQuestionnaires />
@@ -131,7 +126,6 @@ function Router() {
           <Route component={NotFound} />
         </Switch>
       </div>
-
       <Footer />
     </div>
   );
