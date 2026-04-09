@@ -66,7 +66,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     checkSession();
 
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!session) setLocation("/auth"); 
+      if (!session) setLocation("/login"); 
     });
 
     return () => {
