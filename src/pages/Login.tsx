@@ -14,13 +14,13 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
 
-    // 1. Try to log them in first
+    // 1. Try to log them in
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    // 2. If it fails because the user doesn't exist, SIGN THEM UP!
+    // 2. Handle Auto-Signup if user doesn't exist
     if (error && (error.message.includes("Invalid login credentials") || error.message.includes("User not found"))) {
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
@@ -34,45 +34,33 @@ export default function Login() {
       }
 
       alert("Account created successfully! Welcome to your portal.");
-      
-      // ✅ FIXED: Changed check from /auth to /login
-      const intendedDestination = window.location.pathname;
-      if (intendedDestination === "/login") {
-        window.location.href = "/dashboard"; // Hard redirect to break the loading loop
-      } else {
-        setLocation(intendedDestination);
-      }
-      setLoading(false);
+      window.location.href = "/dashboard"; // ✅ Force refresh to Dashboard
       return;
     }
 
-    // 3. If there was a different error (like a network issue), show it
+    // 3. Handle other errors
     if (error) {
       alert("Login failed: " + error.message);
       setLoading(false);
       return;
     }
 
-    // 4. If login was successful, proceed intelligently
+    // 4. Final Success Check
     if (data.session) {
-      // ✅ FIXED: Changed check from /auth to /login
-      const intendedDestination = window.location.pathname;
-      if (intendedDestination === "/login") {
-        window.location.href = "/dashboard"; // Hard redirect forces the app to see the session
-      } else {
-        setLocation(intendedDestination);
-      }
+      // ✅ We use window.location.href to break any loops and force the 
+      // browser to register the new login session immediately.
+      window.location.href = "/dashboard";
     } else {
       alert("Login successful but no session found.");
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground relative overflow-hidden">
-      <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-primary/10 rounded-full filter blur-3xl -z-10 animate-pulse"></div>
-      <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-primary/5 rounded-full filter blur-3xl -z-10 animate-pulse delay-1000"></div>
+      {/* Aesthetic Decorations */}
+      <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-blue-900/10 rounded-full filter blur-3xl -z-10 animate-pulse"></div>
+      <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-blue-900/5 rounded-full filter blur-3xl -z-10 animate-pulse delay-1000"></div>
 
       <motion.div 
         className="mb-8 text-center"
@@ -158,4 +146,4 @@ export default function Login() {
       </footer>
     </div>
   );
-          }
+        }
