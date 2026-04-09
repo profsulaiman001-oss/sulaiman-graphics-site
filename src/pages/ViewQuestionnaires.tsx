@@ -18,7 +18,7 @@ export default function ViewQuestionnaires() {
   const checkAdmin = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user || user.email !== "profsulaiman001@gmail.com") {
-      setLocation("/auth");
+      setLocation("/login");
       return;
     }
     fetchQuestionnaires();

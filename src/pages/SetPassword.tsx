@@ -31,7 +31,7 @@ export default function SetPassword() {
       
       // Send them to the dashboard or login after a brief pause
       setTimeout(() => {
-        setLocation("/auth");
+        setLocation("/login");
       }, 2000);
 
     } catch (err: any) {
