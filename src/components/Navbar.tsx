@@ -13,7 +13,7 @@ const mainLinks = [
   { name: "Services", path: "/services" },
   { name: "Portfolio", path: "/portfolio" },
   { name: "Blog", path: "/blog" },
-  { name: "Login", path: "/auth" }, // Kept exactly as it was
+  { name: "Login", path: "/login" },
 ];
 
 // Items strictly for the Client's Hub dropdown
