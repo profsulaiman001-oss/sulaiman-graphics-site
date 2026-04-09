@@ -39,6 +39,8 @@ import Agreement from "@/pages/Agreement";
 import Receipt from "@/pages/Receipt"; 
 import Settings from "@/pages/Settings";
 import Verify from "@/pages/Verify"; 
+/* ── Added the Hub Page Import ── */
+import ClientHub from "@/pages/ClientHub"; 
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -49,7 +51,7 @@ const queryClient = new QueryClient({
   },
 });
 
-/* PROTECTED ROUTE COMPONENT */
+/* PROTECTED ROUTE COMPONENT - NOT TOUCHED */
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [, setLocation] = useLocation();
   const [loading, setLoading] = useState(true);
@@ -66,8 +68,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     checkSession();
 
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
-      // ✅ This ensures that if the session is lost or during logout, 
-      // it always goes to /login, never /auth.
       if (!session) setLocation("/login"); 
     });
 
@@ -95,18 +95,22 @@ function Router() {
           <Route path="/set-password" component={SetPassword} />
           <Route path="/blog" component={Blog} />
           <Route path="/blog/:id" component={BlogPost} />
+          
+          {/* ── CLIENT HUB TOOLS (Synchronized with Navbar) ── */}
+          <Route path="/client-hub" component={ClientHub} />
           <Route path="/questionnaire" component={Questionnaire} />
           <Route path="/chat" component={Chat} />
           <Route path="/assistant" component={Assistant} />
           <Route path="/agreement" component={Agreement} /> 
+          <Route path="/verify" component={Verify} />
+          
           <Route path="/receipt" component={Receipt} />
           <Route path="/settings" component={Settings} />
-          <Route path="/verify" component={Verify} />
 
-          {/* ✅ AUTH ROUTE: Set to /login */}
+          {/* ✅ AUTH ROUTE: REMAINING AS /login */}
           <Route path="/login" component={Login} />
 
-          {/* PROTECTED ROUTES */}
+          {/* PROTECTED ROUTES - NOT TOUCHED */}
           <Route path="/dashboard">
             <ProtectedRoute>
               <Dashboard />
@@ -142,4 +146,4 @@ export default function App() {
       </TooltipProvider>
     </QueryClientProvider>
   );
-}
+            }
