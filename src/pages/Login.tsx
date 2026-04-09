@@ -14,13 +14,12 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
 
-    // 1. Try to log them in
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    // 2. Handle Auto-Signup if user doesn't exist
+    // Auto-Signup logic
     if (error && (error.message.includes("Invalid login credentials") || error.message.includes("User not found"))) {
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
@@ -28,37 +27,33 @@ export default function Login() {
       });
 
       if (signUpError) {
-        alert("Failed to create account: " + signUpError.message);
+        alert("Account Error: " + signUpError.message);
         setLoading(false);
         return;
       }
 
-      alert("Account created successfully! Welcome to your portal.");
-      window.location.href = "/dashboard"; // ✅ Force refresh to Dashboard
+      alert("Welcome! Account created successfully.");
+      window.location.href = "/dashboard"; // ✅ HARD REDIRECT
       return;
     }
 
-    // 3. Handle other errors
     if (error) {
       alert("Login failed: " + error.message);
       setLoading(false);
       return;
     }
 
-    // 4. Final Success Check
     if (data.session) {
-      // ✅ We use window.location.href to break any loops and force the 
-      // browser to register the new login session immediately.
+      // ✅ HARD REDIRECT: This ensures the browser reloads the app 
+      // and the ProtectedRoute correctly sees the new session.
       window.location.href = "/dashboard";
-    } else {
-      alert("Login successful but no session found.");
-      setLoading(false);
     }
+
+    setLoading(false);
   };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground relative overflow-hidden">
-      {/* Aesthetic Decorations */}
       <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-blue-900/10 rounded-full filter blur-3xl -z-10 animate-pulse"></div>
       <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-blue-900/5 rounded-full filter blur-3xl -z-10 animate-pulse delay-1000"></div>
 
@@ -68,7 +63,7 @@ export default function Login() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <h1 className="font-display font-black text-2xl tracking-tighter text-foreground mb-1">
+        <h1 className="font-display font-black text-2xl tracking-tighter text-foreground mb-1 text-blue-900">
           SULAIMAN <span className="text-primary">GRAPHICS</span>
         </h1>
         <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium">Design Portal</p>
@@ -86,7 +81,7 @@ export default function Login() {
 
         <form onSubmit={handleLogin} className="space-y-5">
           <div>
-            <label className="text-xs text-muted-foreground font-semibold uppercase mb-1.5 block tracking-wider">Email Address</label>
+            <label className="text-xs text-muted-foreground font-semibold uppercase mb-1.5 block tracking-wider text-blue-800">Email Address</label>
             <div className="relative">
               <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-muted-foreground">
                 <Mail size={16} />
@@ -94,7 +89,7 @@ export default function Login() {
               <input
                 type="email"
                 placeholder="name@example.com"
-                className="w-full pl-11 pr-4 py-3 bg-background border border-border rounded-xl text-sm text-foreground placeholder-muted-foreground focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition"
+                className="w-full pl-11 pr-4 py-3 bg-background border border-border rounded-xl text-sm text-foreground placeholder-muted-foreground focus:border-blue-900 focus:ring-1 focus:ring-blue-900 outline-none transition"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -103,7 +98,7 @@ export default function Login() {
           </div>
 
           <div>
-            <label className="text-xs text-muted-foreground font-semibold uppercase mb-1.5 block tracking-wider">Password</label>
+            <label className="text-xs text-muted-foreground font-semibold uppercase mb-1.5 block tracking-wider text-blue-800">Password</label>
             <div className="relative">
               <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-muted-foreground">
                 <Lock size={16} />
@@ -111,7 +106,7 @@ export default function Login() {
               <input
                 type="password"
                 placeholder="••••••••"
-                className="w-full pl-11 pr-4 py-3 bg-background border border-border rounded-xl text-sm text-foreground placeholder-muted-foreground focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none transition"
+                className="w-full pl-11 pr-4 py-3 bg-background border border-border rounded-xl text-sm text-foreground placeholder-muted-foreground focus:border-blue-900 focus:ring-1 focus:ring-blue-900 outline-none transition"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -122,7 +117,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-primary hover:opacity-90 disabled:bg-primary/50 disabled:text-white/50 text-white font-semibold text-sm py-3.5 rounded-xl transition flex items-center justify-center gap-2 mt-2"
+            className="w-full bg-blue-900 hover:bg-blue-800 disabled:bg-blue-900/50 text-white font-semibold text-sm py-3.5 rounded-xl transition flex items-center justify-center gap-2 mt-2 shadow-lg"
           >
             {loading ? (
               <Loader2 size={16} className="animate-spin" />
@@ -136,7 +131,7 @@ export default function Login() {
 
         <div className="text-center mt-6">
           <p className="text-xs text-muted-foreground font-medium">
-            Having issues? <span className="text-primary cursor-pointer hover:underline">Contact Support</span>
+            Having issues? <span className="text-blue-900 cursor-pointer hover:underline">Contact Support</span>
           </p>
         </div>
       </motion.div>
