@@ -59,14 +59,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) setLocation("/auth"); // Matches your updated /auth path
+      if (!session) setLocation("/login");
       setLoading(false);
     };
 
     checkSession();
 
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!session) setLocation("/auth"); 
+      if (!session) setLocation("/login"); 
     });
 
     return () => {
@@ -106,7 +106,8 @@ function Router() {
           {/* ── 🛡️ NEW PUBLIC ROUTE: Professional License Verification ── */}
           <Route path="/verify" component={Verify} />
 
-          {/* AUTH ROUTES - Matches your /auth path requirement */}
+          {/* AUTH ROUTES */}
+          <Route path="/login" component={Login} />
           <Route path="/auth" component={Login} />
 
           {/* PROTECTED ROUTES */}
