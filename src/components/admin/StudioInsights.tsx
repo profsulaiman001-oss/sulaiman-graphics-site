@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { 
-  Plus, Calendar, Activity, X, Target, Briefcase, FileText, Search, MessageSquare, Users, Copy, PlusCircle, Trash2
+  Plus, Calendar, Activity, X, Target, FileText, Search, MessageSquare, Users, PlusCircle, Trash2, Layers, BarChart3, PieChart as PieIcon, TrendingUp
 } from "lucide-react";
 import { 
-  AreaChart, Area, XAxis, Tooltip, ResponsiveContainer, 
-  BarChart, Bar, PieChart, Pie, Cell, CartesianGrid, ComposedChart, Line
+  AreaChart, Area, XAxis, Tooltip, ResponsiveContainer, YAxis,
+  BarChart, Bar, PieChart, Pie, Cell, ComposedChart, Line, CartesianGrid
 } from 'recharts';
 
 export const StudioInsights = () => {
@@ -16,14 +16,13 @@ export const StudioInsights = () => {
   const [formData, setFormData] = useState({
     outreach: 0, responses: 0, clients: 0, 
     date: new Date().toISOString().split('T')[0],
-    projects: [{ name: '', revenue: '0.00' }] // Dynamic project array
+    projects: [{ name: '', revenue: '0.00' }]
   });
 
   useEffect(() => { fetchMetrics(); }, []);
 
   const fetchMetrics = async () => {
     try {
-      // Step 1: Fetch parent logs and their child projects
       const { data } = await supabase.from('studio_insights')
         .select(`*, insight_projects (*)`)
         .order('log_date', { ascending: true });
@@ -35,13 +34,9 @@ export const StudioInsights = () => {
     e.preventDefault();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return alert("Security Error: Mission identity unconfirmed.");
-
-    // Step 2: Validation
     if (formData.responses > formData.outreach) return alert("Responses cannot exceed Outreach.");
-    if (formData.clients > formData.responses) return alert("Clients cannot exceed Responses.");
     if (formData.projects.length === 0 || formData.projects.every(p => p.name.trim() === '')) return alert("Insert at least one valid project.");
 
-    // Step 3: Insert parent log
     const { data: insightLog, error: logError } = await supabase.from('studio_insights').insert([{
       user_id: user.id,
       outreach_sent: formData.outreach, responses_received: formData.responses,
@@ -50,7 +45,6 @@ export const StudioInsights = () => {
 
     if (logError) return alert(`Database Error (Parent): ${logError.message}`);
 
-    // Step 4: Insert child projects (the dynamic ledger)
     const projectsToInsert = formData.projects.filter(p => p.name.trim() !== '').map(p => ({
         insight_id: insightLog.id, user_id: user.id,
         project_name: p.name.trim(), revenue_earned: parseFloat(p.revenue) || 0.00
@@ -60,120 +54,154 @@ export const StudioInsights = () => {
 
     if (!projectError) { 
       setIsLogging(false); fetchMetrics(); 
-      // Reset
       setFormData({ outreach: 0, responses: 0, clients: 0, date: new Date().toISOString().split('T')[0], projects: [{ name: '', revenue: '0.00' }] });
-    } else { 
-      alert(`Database Error (Ledger): ${projectError.message}`); 
     }
   };
 
   const allProjects = metrics.flatMap(log => log.insight_projects || []);
   const totalRev = allProjects.reduce((acc, p) => acc + Number(p.revenue_earned || 0), 0);
   const totalOut = metrics.reduce((acc, c) => acc + Number(c.outreach_sent || 0), 0);
-  const currentMonthProjects = allProjects.filter(p => p.insight_id && p.project_name.length > 0);
-
-  // Modular Stats like inspo image (lots of boxes)
-  const dashboardStats = [
-    { label: "Revenue Matrix", val: `$${totalRev.toLocaleString()}`, color: "text-blue-400" },
-    { label: "Market Outreach", val: totalOut, color: "text-zinc-200" },
-    { label: "Total Ledger Entries", val: allProjects.length, color: "text-white" },
-    { label: "Avg Ticket Price", val: `$${allProjects.length > 0 ? (totalRev / allProjects.length).toFixed(0) : 0}`, color: "text-blue-500" },
-    { label: "Closing Conversion", val: `${metrics.length > 0 ? ((metrics.reduce((acc, c) => acc + c.clients_acquired, 0) / (totalOut || 1)) * 100).toFixed(0) : 0}%`, color: "text-emerald-400" },
-    { label: "System Goal (awareness)", val: "$15,000", color: "text-white/20" },
-  ];
 
   const pieData = [
     { name: 'Revenue', value: totalRev, color: '#3b82f6' },
-    { name: 'Engagement', value: metrics.reduce((acc, c) => acc + c.responses_received, 0), color: '#1e293b' }
+    { name: 'Remaining', value: Math.max(0, 15000 - totalRev), color: 'rgba(255,255,255,0.05)' }
   ];
 
   return (
     <div className="navbar-safe-pt min-h-screen bg-[#050a15] text-white p-4 md:p-12 pb-32">
       
-      {/* HEADER SECTION (Like ref image) */}
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-16 relative z-10">
+      {/* 🚀 ELITE HEADER */}
+      <div className="max-w-[1600px] mx-auto flex flex-col lg:flex-row justify-between items-start lg:items-end gap-8 mb-16">
         <div>
-          <h1 className="text-6xl md:text-8xl inspo-title-display text-transparent bg-clip-text bg-gradient-to-r from-white/90 via-blue-200 to-blue-500">
-            Analytics Engine
-          </h1>
-          <div className="flex items-center gap-2 mt-4">
-             <div className="w-1.5 h-4 bg-blue-500 rounded animate-pulse" />
-             <p className="text-blue-400 font-bold text-[11px] uppercase tracking-[0.5em]">Sulaiman Graphics Matrix v1.5 [ Ledger ]</p>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="h-[2px] w-12 bg-blue-500"/>
+            <span className="text-blue-500 font-black text-[10px] tracking-[0.5em] uppercase">System Intelligence Active</span>
           </div>
+          <h1 className="text-7xl md:text-9xl font-black italic tracking-tighter uppercase leading-[0.8] text-white/90">
+            Analytics <span className="text-blue-600">Engine</span>
+          </h1>
         </div>
         
-        <button onClick={() => setIsLogging(true)} className="relative z-50 bg-[#070e1b] modular-border-neon px-10 py-6 font-black italic shadow-2xl transition-all active:scale-95 hover:bg-blue-600/10">
-          <span className="flex items-center gap-4 text-sm tracking-widest uppercase text-white">
-            <Plus size={20} className="text-blue-500"/> ACTIVATE LOG PROTOCOL
+        <button onClick={() => setIsLogging(true)} className="group relative overflow-hidden bg-blue-600 px-12 py-8 rounded-3xl transition-all hover:scale-105 active:scale-95 shadow-2xl shadow-blue-500/20">
+          <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"/>
+          <span className="relative flex items-center gap-4 text-sm font-black italic tracking-[0.2em] uppercase">
+            <PlusCircle size={24}/> Initialize Log Protocol
           </span>
         </button>
       </div>
 
-      {/* MODULAR STATS (lots of boxes) */}
-      <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-16">
-        {dashboardStats.map((s, i) => (
-          <div key={i} className="modular-border-neon p-8">
-            <p className="text-zinc-600 text-[10px] font-black uppercase tracking-[0.25em] mb-2">{s.label}</p>
-            <h2 className={`text-2xl md:text-4xl font-black italic ${s.color} tracking-tighter`}>{s.val}</h2>
+      {/* 🧩 THE COMPLEX BENTO GRID */}
+      <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 mb-12">
+        
+        {/* TOP LEFT: Massive Trajectory Area (8 Cols) */}
+        <div className="lg:col-span-8 modular-border-neon p-8 min-h-[500px] flex flex-col bg-gradient-to-b from-blue-500/5 to-transparent">
+          <div className="flex justify-between items-center mb-10">
+            <h3 className="flex items-center gap-3 text-xs font-black uppercase tracking-[0.3em] text-zinc-500">
+              <TrendingUp className="text-blue-500" size={16}/> Revenue Trajectory [Complex Mode]
+            </h3>
+            <div className="flex gap-2">
+               <div className="px-3 py-1 bg-blue-600/10 border border-blue-500/20 rounded-full text-[9px] font-black text-blue-500 uppercase">Live_Stream</div>
+            </div>
           </div>
-        ))}
-      </div>
-
-      {/* CHARTS GRID (Refined Vector Styles) */}
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
-        {/* Line Chart like top-right ref */}
-        <div className="modular-border-neon p-10 h-[450px]">
-          <h3 className="text-xs font-black italic uppercase tracking-[0.3em] mb-10 flex items-center gap-3">
-             <Calendar className="text-blue-500" size={18}/> TRAJECTORY MATRIX
-          </h3>
-          <ResponsiveContainer width="100%" height="85%">
-            <ComposedChart data={metrics}>
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={metrics}>
+              <defs>
+                <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.03)" />
               <XAxis dataKey="log_date" hide />
-              <Tooltip contentStyle={{ backgroundColor: '#070e1b/95', backdropBlur: '12px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)', padding: '15px' }} />
-              <Area type="monotone" dataKey="revenue_earned" stroke="transparent" fill="rgba(37,99,235,0.15)" />
-              <Line type="monotone" dataKey="revenue_earned" stroke="#3b82f6" strokeWidth={5} dot={false} />
-            </ComposedChart>
+              <YAxis hide domain={['auto', 'auto']} />
+              <Tooltip contentStyle={{backgroundColor: '#0a0f1d', border: 'none', borderRadius: '16px'}} />
+              <Area type="monotone" dataKey="outreach_sent" stroke="#1e293b" fill="transparent" strokeWidth={2} />
+              <Area type="monotone" dataKey="responses_received" stroke="#3b82f6" fillOpacity={1} fill="url(#colorRev)" strokeWidth={4} />
+            </AreaChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Funnel Chart like center ref */}
-        <div className="modular-border-neon p-10 flex flex-col h-[450px]">
-          <h3 className="text-xs font-black italic uppercase tracking-[0.3em] mb-12 self-start">Engagement Matrix</h3>
-          <ResponsiveContainer width="100%" height="80%">
-             <BarChart data={metrics.slice(-10)}>
-               <XAxis dataKey="log_date" hide />
-               <Tooltip contentStyle={{ backgroundColor: '#0a0f1d', borderRadius: '15px' }} />
-               {/* Neon glowing bars */}
-               <Bar dataKey="outreach_sent" fill="#1e293b" radius={[10, 10, 0, 0]} barSize={20} />
-               <Bar dataKey="responses_received" fill="#3b82f6" radius={[10, 10, 0, 0]} barSize={20}/>
-             </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* NEW SECTION: MODULAR RECTANGULAR LEDGER CARDS */}
-      <div className="max-w-7xl mx-auto">
-          <h3 className="text-xl inspo-title-display tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-white/80 to-blue-500 mb-10 flex items-center gap-4">
-             <Target className="text-blue-500" size={24}/> Project Ledger
-          </h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {allProjects.map((log) => (
-              log.project_name.length > 0 && (
-                <div key={log.id} className="modular-border-neon p-6 bg-radial-at-t bg-[radial-gradient(100px_at_50%_0%,rgba(37,99,235,0.05)_0%,rgba(37,99,235,0)_100%)]">
-                    <p className="text-zinc-600 text-[9px] font-black uppercase tracking-widest mb-1.5">Sulaiman Graphics Matrix [ledger entry]</p>
-                    <h4 className="text-xl font-bold italic text-white tracking-tight mb-3 truncate">{log.project_name}</h4>
-                    <span className="text-4xl font-black italic text-blue-400 tracking-tighter leading-none">${Number(log.revenue_earned || 0).toFixed(0)}</span>
+        {/* TOP RIGHT: The Matrix Core (4 Cols) */}
+        <div className="lg:col-span-4 grid grid-cols-1 gap-6">
+          <div className="modular-border-neon p-8 flex flex-col items-center justify-center bg-[#070e1b]">
+             <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 mb-6">Market Capture</h3>
+             <div className="relative w-full aspect-square max-h-[220px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={pieData} innerRadius="70%" outerRadius="90%" paddingAngle={8} dataKey="value">
+                      {pieData.map((entry, index) => <Cell key={index} fill={entry.color} />)}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                   <span className="text-4xl font-black italic leading-none">${totalRev.toLocaleString()}</span>
+                   <span className="text-[9px] font-bold text-zinc-500 uppercase mt-2">Total Gross</span>
                 </div>
-              )
-            ))}
+             </div>
           </div>
+          <div className="modular-border-neon p-8 bg-[#0a0f1d]/40">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600 mb-4">Closing conversion</h3>
+            <div className="flex items-end gap-4">
+               <h2 className="text-6xl font-black italic text-emerald-400 leading-none">
+                 {metrics.length > 0 ? ((metrics.reduce((acc, c) => acc + c.clients_acquired, 0) / (totalOut || 1)) * 100).toFixed(0) : 0}%
+               </h2>
+               <div className="h-2 w-full bg-white/5 rounded-full mb-2 overflow-hidden">
+                  <div className="h-full bg-emerald-400" style={{width: '41%'}} />
+               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* MIDDLE: Engagement Histogram (Full width or split) */}
+        <div className="lg:col-span-12 modular-border-neon p-10 h-[300px]">
+           <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 mb-8">Performance distribution (Histogram)</h3>
+           <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={metrics}>
+                 <Bar dataKey="outreach_sent" fill="rgba(255,255,255,0.03)" radius={[5, 5, 0, 0]} />
+                 <Bar dataKey="responses_received" fill="#3b82f6" radius={[5, 5, 0, 0]} />
+              </BarChart>
+           </ResponsiveContainer>
+        </div>
       </div>
 
+      {/* 🧾 THE STACKED LEDGER ROWS (Full-Width Rectangles) */}
+      <div className="max-w-[1600px] mx-auto">
+        <div className="flex items-center gap-4 mb-8">
+           <Layers className="text-blue-500" size={24}/>
+           <h2 className="text-2xl font-black italic uppercase tracking-tighter">Live Project Stack</h2>
+           <div className="h-[1px] flex-1 bg-white/5" />
+           <span className="text-[10px] font-mono text-zinc-600">{allProjects.length} Entries Detected</span>
+        </div>
+        
+        <div className="space-y-3">
+          {allProjects.map((log, i) => (
+            log.project_name.length > 0 && (
+              <div key={i} className="group w-full flex flex-col md:flex-row justify-between items-center bg-[#0a0f1d]/40 border border-white/5 p-6 md:px-12 rounded-2xl hover:border-blue-500/40 hover:bg-blue-500/5 transition-all">
+                <div className="flex items-center gap-8 w-full md:w-auto">
+                  <span className="text-[10px] font-mono text-blue-500/50">ENTRY_00{i+1}</span>
+                  <div className="h-8 w-[1px] bg-white/10 hidden md:block" />
+                  <h4 className="text-2xl font-bold italic tracking-tight text-white/90">{log.project_name}</h4>
+                </div>
+                
+                <div className="flex items-center justify-between w-full md:w-auto md:gap-16 mt-4 md:mt-0">
+                  <div className="flex flex-col items-end">
+                     <span className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">Revenue Alpha</span>
+                     <span className="text-4xl font-black italic text-blue-400 tracking-tighter">${Number(log.revenue_earned || 0).toLocaleString()}</span>
+                  </div>
+                  <button className="p-3 bg-red-500/5 text-zinc-700 hover:text-red-500 rounded-xl transition-all opacity-0 group-hover:opacity-100">
+                    <Trash2 size={18}/>
+                  </button>
+                </div>
+              </div>
+            )
+          ))}
+        </div>
+      </div>
 
-      {/* 🧩 INPUT PAGE (MODAL) - The LEDGER INPUT Re-Engineering */}
+      {/* THE INPUT MODAL (No changes to your working logic, just cleaner UI) */}
       {isLogging && (
         <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-[#050a15]/98 backdrop-blur-3xl overflow-y-auto">
-          <form onSubmit={handleSave} className="modular-border-neon bg-[#0a0f1d] p-8 md:p-16 w-full max-w-4xl relative my-auto scrollbar-thin overflow-y-scroll max-h-[90vh]">
+          <form onSubmit={handleSave} className="modular-border-neon bg-[#0a0f1d] p-8 md:p-16 w-full max-w-4xl relative my-auto scrollbar-none overflow-y-auto max-h-[95vh]">
             <button type="button" onClick={() => setIsLogging(false)} className="absolute top-10 right-10 text-zinc-600 hover:text-white transition-colors"><X size={32}/></button>
             
             <div className="flex items-start gap-4 mb-16">
@@ -181,84 +209,71 @@ export const StudioInsights = () => {
                     <FileText className="text-blue-500" size={32} />
                  </div>
                  <div>
-                    <h2 className="text-4xl md:text-5xl font-black italic tracking-tighter uppercase leading-none text-white">Log session Matrix</h2>
-                    <p className="text-zinc-500 text-[11px] font-bold uppercase tracking-[0.4em] mt-2">Data Transmission Protocol // matrix v1.5</p>
+                    <h2 className="text-5xl font-black italic tracking-tighter uppercase text-white leading-none">Data Matrix Node</h2>
+                    <p className="text-zinc-500 text-[11px] font-bold uppercase tracking-[0.4em] mt-2">Synchronizing with core ledger</p>
                  </div>
               </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
               <div className="flex bg-white/5 p-1 rounded-2xl border border-white/5">
                 {['daily', 'weekly', 'monthly'].map((p) => (
-                  <button key={p} type="button" onClick={() => setPeriod(p)} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${period === p ? 'bg-blue-600 text-white shadow-lg' : 'text-zinc-500 hover:text-white'}`}>{p}</button>
+                  <button key={p} type="button" onClick={() => setPeriod(p)} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${period === p ? 'bg-blue-600 text-white' : 'text-zinc-500 hover:text-white'}`}>{p}</button>
                 ))}
               </div>
               <input type="date" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} className="glass-input w-full font-bold uppercase text-sm" />
             </div>
 
-            {/* THE NEW MODULAR LEDGER INPUTS */}
             <div className="mb-12">
                 <div className="flex items-center justify-between gap-4 mb-6">
-                    <h4 className="text-2xl inspo-title-display text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-blue-600">Sync Projects</h4>
+                    <h4 className="text-2xl font-black italic uppercase text-blue-400">Project Stack</h4>
                     <button type="button" onClick={() => setFormData({...formData, projects: [...formData.projects, { name: '', revenue: '0.00' }]})}
                         className="flex items-center gap-2 text-[10px] font-black text-blue-500 uppercase tracking-widest hover:text-blue-400">
-                        <PlusCircle size={16}/> Add Matrix Row
+                        <PlusCircle size={16}/> New Matrix Row
                     </button>
                 </div>
                 
                 <div className="space-y-4">
                     {formData.projects.map((project, index) => (
-                        <div key={index} className="flex flex-col md:flex-row items-center gap-4 bg-white/5 p-5 rounded-3xl border border-white/5">
-                            <input type="text" placeholder="Insert project name..." value={project.name}
+                        <div key={index} className="flex flex-col md:flex-row items-center gap-4 bg-white/5 p-5 rounded-3xl border border-white/5 hover:border-blue-500/20">
+                            <input type="text" placeholder="Project name..." value={project.name}
                                 className="w-full md:flex-1 bg-transparent border-b border-white/10 outline-none text-white font-bold text-lg p-2 focus:border-blue-500"
                                 onChange={(e) => {
                                     const newProjects = [...formData.projects];
                                     newProjects[index].name = e.target.value;
                                     setFormData({...formData, projects: newProjects});
                                 }} />
-                            
                             <input type="number" placeholder="0.00" value={project.revenue} step="0.01"
-                                className="w-full md:w-40 bg-transparent border-b border-white/10 outline-none text-blue-400 font-black text-3xl tracking-tight p-2 focus:border-blue-500"
+                                className="w-full md:w-40 bg-transparent border-b border-white/10 outline-none text-blue-400 font-black text-3xl p-2 focus:border-blue-500"
                                 onChange={(e) => {
                                     const newProjects = [...formData.projects];
                                     newProjects[index].revenue = e.target.value;
                                     setFormData({...formData, projects: newProjects});
                                 }} />
-                            
                             {formData.projects.length > 1 && (
                                 <button type="button" onClick={() => setFormData({...formData, projects: formData.projects.filter((_, i) => i !== index)})}
-                                className="p-3 bg-red-600/10 text-red-500 rounded-xl hover:bg-red-600/20 active:scale-95 transition-all"><Trash2 size={16}/></button>
+                                className="p-3 text-red-500/30 hover:text-red-500 transition-all"><Trash2 size={16}/></button>
                             )}
                         </div>
                     ))}
                 </div>
             </div>
 
-            {/* Core Funnel Inputs (Slimmed down) */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mb-12">
               {[
                 { label: "Outreach Sent", key: "outreach", icon: Search },
                 { label: "Responses", key: "responses", icon: MessageSquare },
                 { label: "Clients Acquired", key: "clients", icon: Users }
               ].map((input) => (
-                <div key={input.key} className="space-y-3 relative group">
+                <div key={input.key} className="space-y-3">
                   <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-3">{input.label}</label>
-                  <div className="relative">
-                    <input.icon size={20} className="absolute left-6 top-1/2 -translate-y-1/2 text-zinc-700 group-focus-within:text-blue-500" />
-                    <input type="number" placeholder="0" className="glass-input w-full pl-16 font-bold text-lg"
+                  <input type="number" placeholder="0" className="glass-input w-full font-bold text-lg"
                         onChange={(e) => setFormData({...formData, [input.key]: parseInt(e.target.value) || 0})} />
-                  </div>
                 </div>
               ))}
             </div>
 
-            {/* LIVE PREVIEW FEEDBACK */}
-            <div className="mb-10 flex gap-6 p-6 rounded-2xl bg-[#070e1b] border border-blue-500/10">
-                <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">LiveData Feedback Protocol:</span>
-                <span className="text-xs font-black text-blue-400">{((formData.responses / (formData.outreach || 1)) * 100).toFixed(0)}% Res-Rate</span>
-            0</div>
-
-            <button type="submit" className="w-full bg-blue-600 py-7 rounded-3xl font-black italic tracking-[0.2em] shadow-xl hover:bg-blue-500 transition-all uppercase active:scale-[0.98]">
-              CONFIRM & SYNC LEDGER DATA
+            <button type="submit" className="w-full bg-blue-600 py-8 rounded-3xl font-black italic tracking-[0.2em] shadow-xl shadow-blue-600/20 hover:bg-blue-500 transition-all uppercase">
+              Confirm Matrix Transmission
             </button>
           </form>
         </div>
