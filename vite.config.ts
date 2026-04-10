@@ -7,7 +7,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export default defineConfig({
-  // Removed the tailwindcss() plugin from here because v3 uses PostCSS
   plugins: [react()],
   resolve: {
     alias: {
