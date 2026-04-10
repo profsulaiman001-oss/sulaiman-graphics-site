@@ -3,7 +3,6 @@ import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "./Button";
 import { SettingsDropdown } from "@/components/SettingsDropdown";
 
 const links = [
@@ -12,7 +11,7 @@ const links = [
   { name: "Services", path: "/services" },
   { name: "Portfolio", path: "/portfolio" },
   { name: "Blog", path: "/blog" },
-  { name: "Client Hub", path: "/client-hub", special: true }, // ✨ Marked as special
+  { name: "Client Hub", path: "/client-hub", special: false }, // ✨ Box removed
   { name: "Contact", path: "/contact" },
   { name: "Login", path: "/login" },
 ];
@@ -28,6 +27,7 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Closes menu and ensures it doesn't block interactions on new pages
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [location]);
@@ -57,15 +57,11 @@ export function Navbar() {
               return (
                 <Link key={link.path} href={link.path}>
                   <a className={cn(
-                    "relative text-sm font-bold uppercase tracking-widest transition-all duration-300 py-2",
-                    isActive ? "text-blue-500" : "text-gray-400 hover:text-white",
-                    link.special && "text-blue-400 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.1)]"
+                    "relative text-xs font-bold uppercase tracking-[0.2em] transition-all duration-300 py-2",
+                    isActive ? "text-blue-500" : "text-gray-400 hover:text-white"
                   )}>
-                    <span className="flex items-center gap-2">
-                      {link.special && <Sparkles size={12} className="animate-pulse" />}
-                      {link.name}
-                    </span>
-                    {isActive && !link.special && (
+                    {link.name}
+                    {isActive && (
                       <motion.div 
                         layoutId="activeNav"
                         className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.5)]"
@@ -78,12 +74,6 @@ export function Navbar() {
 
             <div className="w-px h-6 bg-white/10 mx-2" />
             <SettingsDropdown />
-            
-            <Link href="/contact">
-              <Button size="sm" className="rounded-full px-6 bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-tighter transition-transform active:scale-95">
-                Let's Talk
-              </Button>
-            </Link>
           </nav>
 
           {/* Mobile Toggle */}
@@ -99,53 +89,51 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Nav Overlay - THE PREMIUM TOUCH */}
+      {/* Mobile Nav Overlay */}
       <AnimatePresence>
         {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: -20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -20 }}
-            className="absolute top-full left-4 right-4 mt-2 bg-[#0a0f1d]/95 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-6 md:hidden overflow-hidden"
-          >
-            {/* Background design elements for mobile menu */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 blur-3xl rounded-full" />
+          <>
+            {/* Backdrop to catch clicks and close menu */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setMobileMenuOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm md:hidden"
+            />
             
-            <div className="flex flex-col space-y-2 relative z-10">
-              {links.map((link) => {
-                const isActive = !link.hash && (location === link.path);
-                
-                return (
-                  <Link
-                    key={link.path}
-                    href={link.path}
-                    className={cn(
-                      "flex items-center justify-between px-6 py-4 rounded-2xl text-sm font-black uppercase tracking-[0.2em] transition-all duration-300",
-                      isActive 
-                        ? "bg-blue-600 text-white shadow-lg shadow-blue-900/40" 
-                        : link.special
-                          ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: -20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -20 }}
+              className="absolute top-full left-4 right-4 mt-2 bg-[#0a0f1d]/98 backdrop-blur-2xl border border-white/10 rounded-[2rem] shadow-2xl p-4 md:hidden overflow-hidden"
+            >
+              <div className="flex flex-col space-y-1 relative z-10">
+                {links.map((link) => {
+                  const isActive = !link.hash && (location === link.path);
+                  
+                  return (
+                    <Link
+                      key={link.path}
+                      href={link.path}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={cn(
+                        "flex items-center justify-between px-5 py-3.5 rounded-xl text-[11px] font-black uppercase tracking-[0.25em] transition-all duration-300",
+                        isActive 
+                          ? "bg-blue-600 text-white shadow-lg shadow-blue-900/40" 
                           : "text-gray-400 hover:bg-white/5 hover:text-white"
-                    )}
-                  >
-                    <span>{link.name}</span>
-                    {isActive && <motion.div layoutId="mobileDot" className="w-2 h-2 bg-white rounded-full" />}
-                    {link.special && !isActive && <Sparkles size={16} className="text-blue-500" />}
-                  </Link>
-                );
-              })}
-            </div>
-            
-            <div className="mt-6 pt-6 border-t border-white/5">
-              <Link href="/contact">
-                <Button className="w-full py-6 rounded-2xl bg-white text-blue-900 font-black uppercase tracking-widest text-xs">
-                  Start a Project
-                </Button>
-              </Link>
-            </div>
-          </motion.div>
+                      )}
+                    >
+                      <span>{link.name}</span>
+                      {isActive && <motion.div layoutId="mobileDot" className="w-1.5 h-1.5 bg-white rounded-full" />}
+                    </Link>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </header>
   );
-              }
+                  }
