@@ -39,16 +39,16 @@
 
 /* Light Theme Variables */
 [data-theme="light"] {
-  --background: 240 5.9% 90%;    /* Soft zinc off-white */
-  --foreground: 240 10% 3.9%;   /* Deep black-gray text */
+  --background: 240 5.9% 90%;    
+  --foreground: 240 10% 3.9%;   
   
-  --card: 0 0% 100%;            /* Pure white cards */
+  --card: 0 0% 100%;            
   --card-foreground: 240 10% 3.9%;
   
   --popover: 0 0% 100%;
   --popover-foreground: 240 10% 3.9%;
   
-  --primary: 221.2 83.2% 53.3%; /* Professional clean blue */
+  --primary: 221.2 83.2% 53.3%; 
   --primary-foreground: 210 40% 98%;
   
   --secondary: 240 4.8% 95.9%;  
@@ -82,24 +82,50 @@
   }
 }
 
+@layer components {
+  /* 💎 Premium Vector Border Logic (Like your inspiration image) */
+  .premium-border-blue {
+    @apply relative rounded-[3rem] border border-blue-500/20 bg-[#0a0f1d]/40 backdrop-blur-xl overflow-hidden;
+    box-shadow: 
+      0 0 0 1px rgba(37, 99, 235, 0.05),
+      0 20px 50px -10px rgba(0, 0, 0, 0.8),
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .premium-border-blue::before {
+    content: "";
+    @apply absolute inset-[2px] rounded-[2.85rem] border border-white/5 pointer-events-none;
+  }
+
+  /* 🚀 Navigation Spacing Fix */
+  .navbar-safe-pt {
+    @apply pt-24 md:pt-32;
+  }
+
+  /* 🧪 Glassmorphism Inputs */
+  .glass-input {
+    @apply bg-white/5 border border-white/10 rounded-2xl p-4 outline-none transition-all focus:border-blue-500/50 focus:bg-white/10;
+  }
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 10px;
+  width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: hsl(var(--background));
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--border));
-  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground));
+  background: rgba(59, 130, 246, 0.5);
 }
 
 /* Utilities for gradient text */
 .text-gradient {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-cyan-400 to-sky-300;
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-blue-600 to-sky-400;
 }
 
 /* Abstract blob animations */
@@ -120,4 +146,4 @@
 
 .animation-delay-4000 {
   animation-delay: 4s;
-}
+    }
