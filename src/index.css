@@ -6,63 +6,19 @@
 
 :root {
   /* Forced Dark Theme for Premium Agency Aesthetic */
-  --background: 0 0% 4%;      /* #0a0a0a */
-  --foreground: 0 0% 98%;     /* #fafafa */
+  --background: 222 47% 4%;      /* Deep space navy */
+  --foreground: 0 0% 98%;      
   
-  --card: 0 0% 7%;            /* Slightly lighter than bg */
+  --card: 222 47% 6%;           
   --card-foreground: 0 0% 98%;
   
-  --popover: 0 0% 7%;
-  --popover-foreground: 0 0% 98%;
-  
   --primary: 217 91% 60%;     /* Vivid Blue */
-  --primary-foreground: 0 0% 100%;
-  
   --secondary: 196 94% 48%;   /* Bright Cyan */
-  --secondary-foreground: 0 0% 4%;
+  --accent: 280 80% 60%;      /* Neon Purple for charts */
   
-  --muted: 0 0% 12%;
-  --muted-foreground: 0 0% 65%;
-  
-  --accent: 245 85% 65%;      /* Indigo-violet accent */
-  --accent-foreground: 0 0% 100%;
-  
-  --destructive: 0 84% 60%;
-  --destructive-foreground: 0 0% 98%;
-
-  --border: 0 0% 15%;
-  --input: 0 0% 15%;
-  --ring: 217 91% 60%;
-
-  --radius: 0.75rem;
-}
-
-/* Light Theme Variables */
-[data-theme="light"] {
-  --background: 240 5.9% 90%;    
-  --foreground: 240 10% 3.9%;   
-  
-  --card: 0 0% 100%;            
-  --card-foreground: 240 10% 3.9%;
-  
-  --popover: 0 0% 100%;
-  --popover-foreground: 240 10% 3.9%;
-  
-  --primary: 221.2 83.2% 53.3%; 
-  --primary-foreground: 210 40% 98%;
-  
-  --secondary: 240 4.8% 95.9%;  
-  --secondary-foreground: 240 5.9% 10%;
-  
-  --muted: 240 4.8% 95.9%;
-  --muted-foreground: 240 3.8% 46.1%;
-  
-  --accent: 240 4.8% 95.9%;
-  --accent-foreground: 240 5.9% 10%;
-  
-  --border: 240 5.9% 80%;       
-  --input: 240 5.9% 90%;
-  --ring: 221.2 83.2% 53.3%;
+  --border: 217 30% 12%;
+  --input: 217 30% 12%;
+  --radius: 1.5rem;
 }
 
 @layer base {
@@ -71,9 +27,10 @@
   }
 
   body {
-    @apply font-sans antialiased bg-background text-foreground overflow-x-hidden selection:bg-primary/30 selection:text-primary-foreground;
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
+    @apply font-sans antialiased bg-[#050a15] text-foreground overflow-x-hidden selection:bg-primary/30;
+    /* Subtle scanline effect like the reference image */
+    background-image: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
+    background-size: 100% 2px, 3px 100%;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -83,18 +40,24 @@
 }
 
 @layer components {
-  /* 💎 Premium Vector Border Logic (Like your inspiration image) */
-  .premium-border-blue {
-    @apply relative rounded-[3rem] border border-blue-500/20 bg-[#0a0f1d]/40 backdrop-blur-xl overflow-hidden;
+  /* 💎 The "Modular Box" Logic (Matching your reference image) */
+  .modular-border-neon {
+    @apply relative rounded-3xl border border-blue-500/10 bg-[#0a0f1d]/60 backdrop-blur-2xl overflow-hidden;
     box-shadow: 
-      0 0 0 1px rgba(37, 99, 235, 0.05),
-      0 20px 50px -10px rgba(0, 0, 0, 0.8),
-      inset 0 1px 1px 0 rgba(255, 255, 255, 0.05);
+      0 0 40px -10px rgba(0, 0, 0, 0.5),
+      inset 0 1px 1px 0 rgba(255, 255, 255, 0.03);
   }
 
-  .premium-border-blue::before {
+  /* Inner light ring for that "glass" depth */
+  .modular-border-neon::after {
     content: "";
-    @apply absolute inset-[2px] rounded-[2.85rem] border border-white/5 pointer-events-none;
+    @apply absolute inset-0 rounded-3xl border border-white/5 pointer-events-none;
+  }
+
+  /* Neon Glow Header Text */
+  .inspo-title-display {
+    @apply font-black italic tracking-tighter uppercase;
+    text-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
   }
 
   /* 🚀 Navigation Spacing Fix */
@@ -102,48 +65,55 @@
     @apply pt-24 md:pt-32;
   }
 
-  /* 🧪 Glassmorphism Inputs */
+  /* 🧪 HUD-Style Glass Inputs */
   .glass-input {
-    @apply bg-white/5 border border-white/10 rounded-2xl p-4 outline-none transition-all focus:border-blue-500/50 focus:bg-white/10;
+    @apply bg-black/20 border border-white/10 rounded-2xl p-4 outline-none transition-all 
+           focus:border-blue-500/50 focus:bg-blue-500/5 font-medium text-white placeholder:text-zinc-600;
+  }
+
+  /* Status Indicators (The small pulsing dots in the ref image) */
+  .status-dot {
+    @apply w-2 h-2 rounded-full;
+    box-shadow: 0 0 10px currentColor;
   }
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar (Slim Tech Style) */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: transparent;
+  @apply bg-transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(59, 130, 246, 0.5);
+  @apply bg-blue-500/20 rounded-full hover:bg-blue-500/50 transition-all;
 }
 
-/* Utilities for gradient text */
-.text-gradient {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-blue-600 to-sky-400;
+/* Recharts Customization to match reference */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: rgba(255, 255, 255, 0.03);
 }
 
-/* Abstract blob animations */
-@keyframes blob {
-  0% { transform: translate(0px, 0px) scale(1); }
-  33% { transform: translate(30px, -50px) scale(1.1); }
-  66% { transform: translate(-20px, 20px) scale(0.9); }
-  100% { transform: translate(0px, 0px) scale(1); }
+.recharts-tooltip-cursor {
+  fill: rgba(59, 130, 246, 0.05);
 }
 
-.animate-blob {
-  animation: blob 10s infinite;
+/* Neon Text Glows */
+.text-neon-blue {
+  text-shadow: 0 0 10px rgba(59, 130, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.3);
 }
 
-.animation-delay-2000 {
-  animation-delay: 2s;
+.text-neon-cyan {
+  text-shadow: 0 0 10px rgba(34, 211, 238, 0.5);
 }
 
-.animation-delay-4000 {
-  animation-delay: 4s;
-    }
+/* Animations */
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 3s infinite;
+}
