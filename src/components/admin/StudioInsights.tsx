@@ -8,7 +8,7 @@ import {
   BarChart, Bar, PieChart, Pie, Cell, CartesianGrid, ComposedChart, Line
 } from 'recharts';
 
-export const StudioInsightsLedger = () => {
+export const StudioInsights = () => {
   const [metrics, setMetrics] = useState([]);
   const [isLogging, setIsLogging] = useState(false);
   const [period, setPeriod] = useState('daily');
