@@ -39,8 +39,12 @@ import Agreement from "@/pages/Agreement";
 import Receipt from "@/pages/Receipt"; 
 import Settings from "@/pages/Settings";
 import Verify from "@/pages/Verify"; 
+
 /* ── Added the Hub Page Import ── */
 import ClientHub from "@/pages/ClientHub"; 
+
+/* ── Added the Admin Insights Import ── */
+import { StudioInsights } from "@/components/admin/StudioInsights";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -51,7 +55,7 @@ const queryClient = new QueryClient({
   },
 });
 
-/* PROTECTED ROUTE COMPONENT - NOT TOUCHED */
+/* PROTECTED ROUTE COMPONENT */
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [, setLocation] = useLocation();
   const [loading, setLoading] = useState(true);
@@ -96,7 +100,7 @@ function Router() {
           <Route path="/blog" component={Blog} />
           <Route path="/blog/:id" component={BlogPost} />
           
-          {/* ── CLIENT HUB TOOLS (Synchronized with Navbar) ── */}
+          {/* ── CLIENT HUB TOOLS ── */}
           <Route path="/client-hub" component={ClientHub} />
           <Route path="/questionnaire" component={Questionnaire} />
           <Route path="/chat" component={Chat} />
@@ -107,20 +111,29 @@ function Router() {
           <Route path="/receipt" component={Receipt} />
           <Route path="/settings" component={Settings} />
 
-          {/* ✅ AUTH ROUTE: REMAINING AS /login */}
+          {/* ✅ AUTH ROUTE */}
           <Route path="/login" component={Login} />
 
-          {/* PROTECTED ROUTES - NOT TOUCHED */}
+          {/* ── PROTECTED ADMIN ROUTES ── */}
           <Route path="/dashboard">
             <ProtectedRoute>
               <Dashboard />
             </ProtectedRoute>
           </Route>
+          
+          {/* ✅ New Admin Command Center Route */}
+          <Route path="/studio-insights">
+            <ProtectedRoute>
+              <StudioInsights />
+            </ProtectedRoute>
+          </Route>
+
           <Route path="/create-post">
             <ProtectedRoute>
               <CreatePost />
             </ProtectedRoute>
           </Route>
+          
           <Route path="/questionnaires">
             <ProtectedRoute>
               <ViewQuestionnaires />
@@ -146,4 +159,4 @@ export default function App() {
       </TooltipProvider>
     </QueryClientProvider>
   );
-            }
+}
