@@ -3,12 +3,12 @@ import { supabase } from "@/lib/supabase";
 import { 
   Plus, Calendar, Activity, X, Target, FileText, Search, MessageSquare, 
   Users, PlusCircle, Trash2, Layers, BarChart3, PieChart as PieIcon, 
-  TrendingUp, Zap, MousePointer2, Info
+  TrendingUp, Zap, MousePointer2
 } from "lucide-react";
 import { 
   AreaChart, Area, XAxis, Tooltip, ResponsiveContainer, YAxis,
-  BarChart, Bar, PieChart, Pie, Cell, Radar, RadarChart, 
-  PolarGrid, PolarAngleAxis, LineChart, Line
+  BarChart, Bar, Radar, RadarChart, PolarGrid, PolarAngleAxis, 
+  LineChart, Line, CartesianGrid 
 } from 'recharts';
 
 export const StudioInsights = () => {
@@ -66,9 +66,8 @@ export const StudioInsights = () => {
 
   const allProjects = metrics.flatMap(log => log.insight_projects || []);
   const totalRev = allProjects.reduce((acc, p) => acc + Number(p.revenue_earned || 0), 0);
-  
-  // Designer Radar Data
   const categories = ['Logo Design', 'Flyer/Poster', 'Branding', 'Social Media', 'UI Design'];
+
   const radarData = categories.map(cat => ({
     subject: cat,
     A: allProjects.filter(p => p.project_category === cat).reduce((sum, p) => sum + Number(p.revenue_earned), 0) / 1000,
@@ -77,7 +76,7 @@ export const StudioInsights = () => {
   return (
     <div className="navbar-safe-pt min-h-screen bg-[#020617] text-white p-4 md:p-12 pb-32 font-sans selection:bg-blue-500">
       
-      {/* 🚀 ELITE HEADER */}
+      {/* 🚀 HEADER */}
       <div className="max-w-[1600px] mx-auto flex flex-col lg:flex-row justify-between items-start lg:items-end gap-8 mb-12">
         <div>
           <div className="flex items-center gap-3 mb-4">
@@ -96,10 +95,10 @@ export const StudioInsights = () => {
         </button>
       </div>
 
-      {/* 🧩 THE MOSAIC BENTO GRID */}
+      {/* 🧩 MOSAIC BENTO GRID */}
       <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-12 auto-rows-[180px] gap-4 mb-10">
         
-        {/* Main Trajectory Chart (Spans 8 cols, 3 rows) */}
+        {/* Main Trajectory */}
         <div className="lg:col-span-8 lg:row-span-3 modular-border-neon p-8 bg-[#070e1b]/80 relative overflow-hidden">
           <div className="flex justify-between items-center mb-8 relative z-10">
             <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500 flex items-center gap-2">
@@ -124,8 +123,8 @@ export const StudioInsights = () => {
           </div>
         </div>
 
-        {/* Radar Module (Spans 4 cols, 2 rows) */}
-        <div className="lg:col-span-4 lg:row-span-2 modular-border-neon p-6 bg-[#070e1b] flex flex-col">
+        {/* Service Radar */}
+        <div className="lg:col-span-4 lg:row-span-2 modular-border-neon p-6 bg-[#070e1b]">
           <h3 className="text-[9px] font-black uppercase tracking-[0.4em] text-zinc-600 mb-2">Service Portfolio</h3>
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart cx="50%" cy="50%" outerRadius="60%" data={radarData}>
@@ -136,7 +135,7 @@ export const StudioInsights = () => {
           </ResponsiveContainer>
         </div>
 
-        {/* Heatmap/Sprinkle (Spans 4 cols, 1 row) */}
+        {/* Outreach Heatmap */}
         <div className="lg:col-span-4 lg:row-span-1 modular-border-neon p-5 bg-gradient-to-br from-blue-500/10 to-transparent">
           <div className="flex justify-between mb-4">
              <h3 className="text-[9px] font-black uppercase tracking-[0.4em] text-zinc-500">Outreach Heat</h3>
@@ -150,8 +149,8 @@ export const StudioInsights = () => {
           <p className="text-[8px] font-bold text-zinc-600 mt-4 uppercase tracking-widest">30-Day Activity Pulse</p>
         </div>
 
-        {/* Sparkline Stat Modules (Small Bento Boxes) */}
-        <div className="lg:col-span-4 lg:row-span-1 modular-border-neon p-6 bg-[#070e1b] flex items-center justify-between">
+        {/* Sparkline & Stats */}
+        <div className="lg:col-span-4 modular-border-neon p-6 bg-[#070e1b] flex items-center justify-between">
            <div>
               <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Total Gross</p>
               <h4 className="text-3xl font-black italic">₦{totalRev.toLocaleString()}</h4>
@@ -164,32 +163,22 @@ export const StudioInsights = () => {
               </ResponsiveContainer>
            </div>
         </div>
-
-        <div className="lg:col-span-4 lg:row-span-1 modular-border-neon p-6 bg-[#070e1b] flex items-center justify-between">
-           <div>
-              <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Lead Capture</p>
-              <h4 className="text-3xl font-black italic text-emerald-400">
-                {metrics.length > 0 ? ((metrics.reduce((acc, c) => acc + c.clients_acquired, 0) / (metrics.reduce((acc, c) => acc + c.outreach_sent, 0) || 1)) * 100).toFixed(0) : 0}%
-              </h4>
-           </div>
-           <Activity className="text-emerald-500/20" size={40}/>
-        </div>
       </div>
 
-      {/* 🧾 THE DESIGN STACK LEDGER */}
+      {/* 🧾 DESIGN STACK LEDGER */}
       <div className="max-w-[1600px] mx-auto">
         <div className="flex items-center gap-6 mb-8">
            <Layers className="text-blue-500" size={20}/>
            <h2 className="text-2xl font-black italic uppercase tracking-tighter">Live Design Stack</h2>
            <div className="h-[1px] flex-1 bg-white/5" />
-           <div className="text-[10px] font-mono text-zinc-600">System_v4.0</div>
+           <div className="text-[10px] font-mono text-zinc-600">Total Entries: {allProjects.length}</div>
         </div>
         
         <div className="space-y-3">
           {allProjects.map((proj, i) => (
             <div key={i} className="group w-full flex flex-col md:flex-row justify-between items-center bg-[#0a0f1d]/40 border border-white/5 p-6 rounded-2xl hover:border-blue-500/30 transition-all">
                 <div className="flex items-center gap-6">
-                  <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/5 text-blue-500 group-hover:scale-110 transition-transform">
+                  <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/5 text-blue-500">
                     <MousePointer2 size={16}/>
                   </div>
                   <div>
@@ -203,10 +192,7 @@ export const StudioInsights = () => {
                     <p className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">Revenue Alpha</p>
                     <div className="text-3xl font-black italic text-white tracking-tighter">₦{Number(proj.revenue_earned).toLocaleString()}</div>
                   </div>
-                  <button 
-                    onClick={() => handleDeleteProject(proj.id)}
-                    className="p-3 bg-red-500/5 text-zinc-800 hover:text-red-500 rounded-lg transition-all"
-                  >
+                  <button onClick={() => handleDeleteProject(proj.id)} className="p-3 bg-red-500/5 text-zinc-800 hover:text-red-500 rounded-lg transition-all">
                     <Trash2 size={20}/>
                   </button>
                 </div>
@@ -215,25 +201,22 @@ export const StudioInsights = () => {
         </div>
       </div>
 
-      {/* 📝 THE INPUT MODAL (Enhanced Design Style) */}
+      {/* 📝 INPUT MODAL */}
       {isLogging && (
         <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-[#020617]/95 backdrop-blur-2xl">
-          <form onSubmit={handleSave} className="bg-[#0a0f1d] border border-blue-500/20 p-8 md:p-14 w-full max-w-4xl rounded-[40px] shadow-2xl overflow-y-auto max-h-[90vh] scrollbar-none relative">
+          <form onSubmit={handleSave} className="bg-[#0a0f1d] border border-blue-500/20 p-8 md:p-14 w-full max-w-4xl rounded-[40px] shadow-2xl overflow-y-auto max-h-[90vh] relative">
             <button type="button" onClick={() => setIsLogging(false)} className="absolute top-10 right-10 text-zinc-600 hover:text-white"><X size={32}/></button>
             
             <div className="mb-12 flex items-center gap-4">
                <div className="p-4 bg-blue-600/10 rounded-2xl"><Zap className="text-blue-500" size={30}/></div>
-               <div>
-                 <h2 className="text-4xl font-black italic tracking-tighter uppercase text-white">Log Session</h2>
-                 <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-[0.4em]">Syncing Terminal Data</p>
-               </div>
+               <h2 className="text-4xl font-black italic tracking-tighter uppercase text-white">Log Design Session</h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
                <input type="date" value={formData.date} className="glass-input w-full font-bold uppercase" onChange={(e) => setFormData({...formData, date: e.target.value})} />
                <div className="flex bg-white/5 p-1 rounded-2xl">
                   {['daily', 'weekly', 'monthly'].map(p => (
-                    <button key={p} type="button" onClick={() => setPeriod(p)} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest ${period === p ? 'bg-blue-600 text-white shadow-lg' : 'text-zinc-500'}`}>{p}</button>
+                    <button key={p} type="button" onClick={() => setPeriod(p)} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest ${period === p ? 'bg-blue-600 text-white' : 'text-zinc-500'}`}>{p}</button>
                   ))}
                </div>
             </div>
@@ -243,44 +226,42 @@ export const StudioInsights = () => {
                 <h4 className="text-xl font-black italic uppercase text-blue-500">Project Stack</h4>
                 <button type="button" onClick={() => setFormData({...formData, projects: [...formData.projects, { name: '', revenue: '0.00', category: 'Logo Design' }]})} className="text-[10px] font-black bg-blue-500/10 text-blue-500 px-4 py-2 rounded-full">+ Add Row</button>
                </div>
-               <div className="space-y-3">
-                 {formData.projects.map((p, idx) => (
-                   <div key={idx} className="flex flex-col md:flex-row gap-3 bg-white/5 p-4 rounded-3xl border border-white/5">
-                      <input placeholder="Job Title" className="flex-1 bg-transparent p-2 outline-none text-white font-bold"
-                        onChange={(e) => {
-                          const next = [...formData.projects];
-                          next[idx].name = e.target.value;
-                          setFormData({...formData, projects: next});
-                        }} />
-                      <select className="bg-[#050a15] p-3 rounded-xl text-[10px] font-bold uppercase text-blue-400 border border-white/5 outline-none"
-                        onChange={(e) => {
-                          const next = [...formData.projects];
-                          next[idx].category = e.target.value;
-                          setFormData({...formData, projects: next});
-                        }}>
-                        {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                      </select>
-                      <input placeholder="₦0.00" className="w-full md:w-32 bg-transparent p-2 outline-none text-white font-black text-xl"
-                         onChange={(e) => {
-                          const next = [...formData.projects];
-                          next[idx].revenue = e.target.value;
-                          setFormData({...formData, projects: next});
-                        }} />
-                   </div>
-                 ))}
-               </div>
+               {formData.projects.map((p, idx) => (
+                 <div key={idx} className="flex flex-col md:flex-row gap-3 bg-white/5 p-4 rounded-3xl mb-3">
+                    <input placeholder="Job Title" className="flex-1 bg-transparent p-2 outline-none text-white font-bold"
+                      onChange={(e) => {
+                        const next = [...formData.projects];
+                        next[idx].name = e.target.value;
+                        setFormData({...formData, projects: next});
+                      }} />
+                    <select className="bg-[#050a15] p-3 rounded-xl text-[10px] font-bold uppercase text-blue-400 border border-white/5"
+                      onChange={(e) => {
+                        const next = [...formData.projects];
+                        next[idx].category = e.target.value;
+                        setFormData({...formData, projects: next});
+                      }}>
+                      {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                    </select>
+                    <input placeholder="₦0.00" className="w-full md:w-32 bg-transparent p-2 outline-none text-white font-black text-xl"
+                       onChange={(e) => {
+                        const next = [...formData.projects];
+                        next[idx].revenue = e.target.value;
+                        setFormData({...formData, projects: next});
+                      }} />
+                 </div>
+               ))}
             </div>
 
             <div className="grid grid-cols-3 gap-6 mb-12">
                {[{l: 'Outreach', k: 'outreach'}, {l: 'Replies', k: 'responses'}, {l: 'Converted', k: 'clients'}].map(item => (
                  <div key={item.k}>
-                    <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest mb-2 block">{item.l}</label>
+                    <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest mb-2 block text-center">{item.l}</label>
                     <input type="number" className="glass-input w-full font-bold text-center text-xl" onChange={(e) => setFormData({...formData, [item.k]: parseInt(e.target.value) || 0})}/>
                  </div>
                ))}
             </div>
 
-            <button type="submit" className="w-full bg-blue-600 py-8 rounded-[25px] font-black italic uppercase tracking-widest text-sm hover:scale-[1.02] transition-all shadow-xl shadow-blue-600/20">
+            <button type="submit" className="w-full bg-blue-600 py-8 rounded-[25px] font-black italic uppercase tracking-widest text-sm shadow-xl shadow-blue-600/20">
               Initialize Data Transmission
             </button>
           </form>
