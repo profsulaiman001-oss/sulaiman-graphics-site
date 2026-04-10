@@ -3,12 +3,12 @@ import { supabase } from "@/lib/supabase";
 import { 
   Plus, Calendar, Activity, X, Target, FileText, Search, MessageSquare, 
   Users, PlusCircle, Trash2, Layers, BarChart3, PieChart as PieIcon, 
-  TrendingUp, Zap, MousePointer2
+  TrendingUp, Zap, MousePointer2, Linkedin, Twitter, Mail, Globe 
 } from "lucide-react";
 import { 
   AreaChart, Area, XAxis, Tooltip, ResponsiveContainer, YAxis,
   BarChart, Bar, Radar, RadarChart, PolarGrid, PolarAngleAxis, 
-  LineChart, Line, CartesianGrid 
+  LineChart, Line, CartesianGrid, PieChart, Pie, Cell
 } from 'recharts';
 
 export const StudioInsights = () => {
@@ -18,8 +18,11 @@ export const StudioInsights = () => {
   
   const [formData, setFormData] = useState({
     outreach: 0, responses: 0, clients: 0, 
+    source: 'LinkedIn',     // Added Tracking
+    leadQuality: 3,         // Added Energy Bar Logic
+    observations: '',       // Added Rich Notes
     date: new Date().toISOString().split('T')[0],
-    projects: [{ name: '', revenue: '0.00', category: 'Logo Design' }]
+    projects: [{ name: '', revenue: '0.00', category: 'Logo Design', isMilestone: false }]
   });
 
   useEffect(() => { fetchMetrics(); }, []);
@@ -44,34 +47,53 @@ export const StudioInsights = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return alert("Security Error: Identity unconfirmed.");
     
+    // Updated to include new data fields
     const { data: insightLog, error: logError } = await supabase.from('studio_insights').insert([{
       user_id: user.id,
-      outreach_sent: formData.outreach, responses_received: formData.responses,
-      clients_acquired: formData.clients, period_type: period, log_date: formData.date
+      outreach_sent: formData.outreach, 
+      responses_received: formData.responses,
+      clients_acquired: formData.clients, 
+      outreach_source: formData.source,    // Mapping Source
+      lead_quality: formData.leadQuality,   // Mapping Quality
+      notes: formData.observations,         // Mapping Notes
+      period_type: period, 
+      log_date: formData.date
     }]).select().single();
 
     if (logError) return alert(`Database Error: ${logError.message}`);
 
     const projectsToInsert = formData.projects.filter(p => p.name.trim() !== '').map(p => ({
         insight_id: insightLog.id, user_id: user.id,
-        project_name: p.name.trim(), revenue_earned: parseFloat(p.revenue) || 0,
-        project_category: p.category
+        project_name: p.name.trim(), 
+        revenue_earned: parseFloat(p.revenue) || 0,
+        project_category: p.category,
+        is_milestone: p.isMilestone // Mapping Milestone Tag
     }));
 
     await supabase.from('insight_projects').insert(projectsToInsert);
     setIsLogging(false); 
     fetchMetrics();
-    setFormData({ outreach: 0, responses: 0, clients: 0, date: new Date().toISOString().split('T')[0], projects: [{ name: '', revenue: '0.00', category: 'Logo Design' }] });
+    setFormData({ outreach: 0, responses: 0, clients: 0, source: 'LinkedIn', leadQuality: 3, observations: '', date: new Date().toISOString().split('T')[0], projects: [{ name: '', revenue: '0.00', category: 'Logo Design', isMilestone: false }] });
   };
 
   const allProjects = metrics.flatMap(log => log.insight_projects || []);
   const totalRev = allProjects.reduce((acc, p) => acc + Number(p.revenue_earned || 0), 0);
   const categories = ['Logo Design', 'Flyer/Poster', 'Branding', 'Social Media', 'UI Design'];
+  const sources = ['LinkedIn', 'X/Twitter', 'Cold Email', 'Referral'];
 
+  // Radar Data Logic
   const radarData = categories.map(cat => ({
     subject: cat,
     A: allProjects.filter(p => p.project_category === cat).reduce((sum, p) => sum + Number(p.revenue_earned), 0) / 1000,
   }));
+
+  // Pie Chart Logic: Which source has the most responses
+  const sourcePieData = sources.map(s => ({
+    name: s,
+    value: metrics.filter(m => m.outreach_source === s).reduce((acc, curr) => acc + curr.responses_received, 0)
+  })).filter(d => d.value > 0);
+
+  const COLORS = ['#3b82f6', '#6366f1', '#8b5cf6', '#2dd4bf'];
 
   return (
     <div className="navbar-safe-pt min-h-screen bg-[#020617] text-white p-4 md:p-12 pb-32 font-sans selection:bg-blue-500">
@@ -95,7 +117,7 @@ export const StudioInsights = () => {
         </button>
       </div>
 
-      {/* 🧩 MOSAIC BENTO GRID */}
+      {/* 🧩 MOSAIC BENTO GRID (RE-ARCHITECTED) */}
       <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-12 auto-rows-[180px] gap-4 mb-10">
         
         {/* Main Trajectory */}
@@ -123,6 +145,19 @@ export const StudioInsights = () => {
           </div>
         </div>
 
+        {/* Source Efficiency (New Pie Chart) */}
+        <div className="lg:col-span-4 lg:row-span-2 modular-border-neon p-6 bg-[#070e1b]">
+          <h3 className="text-[9px] font-black uppercase tracking-[0.4em] text-zinc-600 mb-4">Source Efficiency</h3>
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie data={sourcePieData} innerRadius="60%" outerRadius="80%" paddingAngle={5} dataKey="value">
+                {sourcePieData.map((entry, index) => <Cell key={index} fill={COLORS[index % COLORS.length]} />)}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
         {/* Service Radar */}
         <div className="lg:col-span-4 lg:row-span-2 modular-border-neon p-6 bg-[#070e1b]">
           <h3 className="text-[9px] font-black uppercase tracking-[0.4em] text-zinc-600 mb-2">Service Portfolio</h3>
@@ -135,33 +170,13 @@ export const StudioInsights = () => {
           </ResponsiveContainer>
         </div>
 
-        {/* Outreach Heatmap */}
-        <div className="lg:col-span-4 lg:row-span-1 modular-border-neon p-5 bg-gradient-to-br from-blue-500/10 to-transparent">
-          <div className="flex justify-between mb-4">
-             <h3 className="text-[9px] font-black uppercase tracking-[0.4em] text-zinc-500">Outreach Heat</h3>
-             <Zap size={12} className="text-yellow-500"/>
-          </div>
-          <div className="grid grid-cols-10 gap-1.5">
-            {Array.from({length: 30}).map((_, i) => (
-              <div key={i} className={`h-3 rounded-sm ${i < metrics.length ? 'bg-blue-500 shadow-[0_0_8px_#3b82f6]' : 'bg-white/5 hover:bg-white/10'}`} />
-            ))}
-          </div>
-          <p className="text-[8px] font-bold text-zinc-600 mt-4 uppercase tracking-widest">30-Day Activity Pulse</p>
-        </div>
-
         {/* Sparkline & Stats */}
         <div className="lg:col-span-4 modular-border-neon p-6 bg-[#070e1b] flex items-center justify-between">
            <div>
               <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Total Gross</p>
               <h4 className="text-3xl font-black italic">₦{totalRev.toLocaleString()}</h4>
            </div>
-           <div className="w-24 h-12">
-              <ResponsiveContainer width="100%" height="100%">
-                 <LineChart data={metrics}>
-                    <Line type="monotone" dataKey="responses_received" stroke="#3b82f6" strokeWidth={2} dot={false} />
-                 </LineChart>
-              </ResponsiveContainer>
-           </div>
+           <Activity className="text-blue-500/20" size={40}/>
         </div>
       </div>
 
@@ -171,25 +186,22 @@ export const StudioInsights = () => {
            <Layers className="text-blue-500" size={20}/>
            <h2 className="text-2xl font-black italic uppercase tracking-tighter">Live Design Stack</h2>
            <div className="h-[1px] flex-1 bg-white/5" />
-           <div className="text-[10px] font-mono text-zinc-600">Total Entries: {allProjects.length}</div>
         </div>
         
         <div className="space-y-3">
           {allProjects.map((proj, i) => (
-            <div key={i} className="group w-full flex flex-col md:flex-row justify-between items-center bg-[#0a0f1d]/40 border border-white/5 p-6 rounded-2xl hover:border-blue-500/30 transition-all">
+            <div key={i} className="group w-full flex justify-between items-center bg-[#0a0f1d]/40 border border-white/5 p-6 rounded-2xl hover:border-blue-500/30 transition-all">
                 <div className="flex items-center gap-6">
-                  <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/5 text-blue-500">
-                    <MousePointer2 size={16}/>
+                  <div className={`h-10 w-10 rounded-xl flex items-center justify-center border transition-all ${proj.is_milestone ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-500' : 'bg-white/5 border-white/5 text-blue-500'}`}>
+                    {proj.is_milestone ? <Target size={16}/> : <MousePointer2 size={16}/>}
                   </div>
                   <div>
                     <h4 className="text-xl font-bold italic text-white/90">{proj.project_name}</h4>
                     <span className="text-[9px] font-black uppercase text-blue-500/60 tracking-[0.2em]">{proj.project_category}</span>
                   </div>
                 </div>
-                
-                <div className="flex items-center gap-10 mt-4 md:mt-0">
+                <div className="flex items-center gap-10">
                   <div className="text-right">
-                    <p className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">Revenue Alpha</p>
                     <div className="text-3xl font-black italic text-white tracking-tighter">₦{Number(proj.revenue_earned).toLocaleString()}</div>
                   </div>
                   <button onClick={() => handleDeleteProject(proj.id)} className="p-3 bg-red-500/5 text-zinc-800 hover:text-red-500 rounded-lg transition-all">
@@ -201,33 +213,50 @@ export const StudioInsights = () => {
         </div>
       </div>
 
-      {/* 📝 INPUT MODAL */}
+      {/* 📝 ENHANCED INPUT MODAL (COMMAND CENTER) */}
       {isLogging && (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-[#020617]/95 backdrop-blur-2xl">
-          <form onSubmit={handleSave} className="bg-[#0a0f1d] border border-blue-500/20 p-8 md:p-14 w-full max-w-4xl rounded-[40px] shadow-2xl overflow-y-auto max-h-[90vh] relative">
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-[#020617]/98 backdrop-blur-3xl overflow-y-auto">
+          <form onSubmit={handleSave} className="bg-[#0a0f1d] border border-blue-500/20 p-8 md:p-14 w-full max-w-5xl rounded-[40px] shadow-2xl relative my-auto">
             <button type="button" onClick={() => setIsLogging(false)} className="absolute top-10 right-10 text-zinc-600 hover:text-white"><X size={32}/></button>
             
             <div className="mb-12 flex items-center gap-4">
                <div className="p-4 bg-blue-600/10 rounded-2xl"><Zap className="text-blue-500" size={30}/></div>
-               <h2 className="text-4xl font-black italic tracking-tighter uppercase text-white">Log Design Session</h2>
+               <h2 className="text-4xl font-black italic tracking-tighter uppercase text-white">Initialize Log</h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-               <input type="date" value={formData.date} className="glass-input w-full font-bold uppercase" onChange={(e) => setFormData({...formData, date: e.target.value})} />
-               <div className="flex bg-white/5 p-1 rounded-2xl">
-                  {['daily', 'weekly', 'monthly'].map(p => (
-                    <button key={p} type="button" onClick={() => setPeriod(p)} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest ${period === p ? 'bg-blue-600 text-white' : 'text-zinc-500'}`}>{p}</button>
-                  ))}
+            {/* Source & Quality Selection */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+               <div className="space-y-4">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Outreach Platform</label>
+                  <div className="grid grid-cols-4 gap-2">
+                     {sources.map(s => (
+                       <button key={s} type="button" onClick={() => setFormData({...formData, source: s})}
+                        className={`py-3 rounded-xl text-[9px] font-black uppercase transition-all border ${formData.source === s ? 'bg-blue-600 border-blue-500 text-white' : 'bg-white/5 border-white/5 text-zinc-500 hover:text-white'}`}>
+                         {s === 'LinkedIn' ? <Linkedin size={14} className="mx-auto mb-1"/> : s === 'X/Twitter' ? <Twitter size={14} className="mx-auto mb-1"/> : <Mail size={14} className="mx-auto mb-1"/>}
+                         {s.split(' ')[0]}
+                       </button>
+                     ))}
+                  </div>
+               </div>
+               <div className="space-y-4">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest flex justify-between">
+                    Lead Quality <span>Level {formData.leadQuality}</span>
+                  </label>
+                  <input type="range" min="1" max="5" value={formData.leadQuality} 
+                    className="w-full h-2 bg-white/5 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                    onChange={(e) => setFormData({...formData, leadQuality: parseInt(e.target.value)})}/>
                </div>
             </div>
 
+            {/* Dynamic Project Stack */}
             <div className="mb-10">
                <div className="flex justify-between items-center mb-6">
                 <h4 className="text-xl font-black italic uppercase text-blue-500">Project Stack</h4>
-                <button type="button" onClick={() => setFormData({...formData, projects: [...formData.projects, { name: '', revenue: '0.00', category: 'Logo Design' }]})} className="text-[10px] font-black bg-blue-500/10 text-blue-500 px-4 py-2 rounded-full">+ Add Row</button>
+                <button type="button" onClick={() => setFormData({...formData, projects: [...formData.projects, { name: '', revenue: '0.00', category: 'Logo Design', isMilestone: false }]})} 
+                  className="text-[9px] font-black bg-blue-500/10 text-blue-500 px-4 py-2 rounded-full border border-blue-500/20 hover:bg-blue-500/20 transition-all">+ Add Entry</button>
                </div>
                {formData.projects.map((p, idx) => (
-                 <div key={idx} className="flex flex-col md:flex-row gap-3 bg-white/5 p-4 rounded-3xl mb-3">
+                 <div key={idx} className="flex flex-col md:flex-row gap-3 bg-white/5 p-4 rounded-3xl mb-3 border border-white/5">
                     <input placeholder="Job Title" className="flex-1 bg-transparent p-2 outline-none text-white font-bold"
                       onChange={(e) => {
                         const next = [...formData.projects];
@@ -248,21 +277,34 @@ export const StudioInsights = () => {
                         next[idx].revenue = e.target.value;
                         setFormData({...formData, projects: next});
                       }} />
+                    <button type="button" onClick={() => {
+                        const next = [...formData.projects];
+                        next[idx].isMilestone = !next[idx].isMilestone;
+                        setFormData({...formData, projects: next});
+                    }} className={`p-3 rounded-xl border transition-all ${p.isMilestone ? 'bg-yellow-500/20 border-yellow-500/50 text-yellow-500' : 'bg-white/5 border-white/5 text-zinc-600'}`}>
+                      <Target size={16}/>
+                    </button>
                  </div>
                ))}
             </div>
 
-            <div className="grid grid-cols-3 gap-6 mb-12">
-               {[{l: 'Outreach', k: 'outreach'}, {l: 'Replies', k: 'responses'}, {l: 'Converted', k: 'clients'}].map(item => (
-                 <div key={item.k}>
-                    <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest mb-2 block text-center">{item.l}</label>
-                    <input type="number" className="glass-input w-full font-bold text-center text-xl" onChange={(e) => setFormData({...formData, [item.k]: parseInt(e.target.value) || 0})}/>
-                 </div>
-               ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+               <textarea placeholder="SYSTEM OBSERVATIONS: Technical notes..." 
+                className="bg-white/5 border border-white/5 p-6 rounded-3xl h-32 outline-none focus:border-blue-500 transition-all font-mono text-xs text-zinc-400"
+                onChange={(e) => setFormData({...formData, observations: e.target.value})}/>
+               
+               <div className="grid grid-cols-3 gap-4">
+                  {[{l: 'Outreach', k: 'outreach'}, {l: 'Replies', k: 'responses'}, {l: 'Converted', k: 'clients'}].map(item => (
+                    <div key={item.k}>
+                       <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest text-center block mb-2">{item.l}</label>
+                       <input type="number" className="glass-input w-full font-bold text-center text-xl p-4" onChange={(e) => setFormData({...formData, [item.k]: parseInt(e.target.value) || 0})}/>
+                    </div>
+                  ))}
+               </div>
             </div>
 
-            <button type="submit" className="w-full bg-blue-600 py-8 rounded-[25px] font-black italic uppercase tracking-widest text-sm shadow-xl shadow-blue-600/20">
-              Initialize Data Transmission
+            <button type="submit" className="w-full bg-blue-600 py-8 rounded-[25px] font-black italic uppercase tracking-widest text-sm shadow-xl shadow-blue-600/20 transition-all hover:scale-[1.01]">
+              Sync Intelligence Ledger
             </button>
           </form>
         </div>
