@@ -8,7 +8,7 @@ import {
 } from "recharts";
 import { 
   Edit3, Trash2, Save, XCircle, Bell, LogOut, CheckCircle, 
-  Clock, Loader2, Plus, HardDrive, Download, Settings, X, Mail, UserCheck, MessageSquare, Send, FileText, ClipboardList, Receipt as ReceiptIcon, Award
+  Clock, Loader2, Plus, HardDrive, Download, Settings, X, Mail, UserCheck, MessageSquare, Send, FileText, ClipboardList, Receipt as ReceiptIcon, Award, BarChart3
 } from "lucide-react";
 import { CertificateGenerator } from "./components/certificates/CertificateGenerator";
 
@@ -804,6 +804,14 @@ export default function Dashboard() {
               className="bg-background border border-border hover:border-amber-500 hover:text-amber-500 text-foreground font-semibold text-sm px-5 py-3 rounded-xl transition flex items-center justify-center gap-2"
             >
               <Award size={18} /> Ownership Certificate
+            </button>
+
+            {/* ✅ STUDIO INSIGHTS BUTTON INJECTED HERE */}
+            <button
+              onClick={() => setLocation("/studio-insights")}
+              className="bg-background border border-border hover:border-blue-600 hover:text-blue-600 text-foreground font-semibold text-sm px-5 py-3 rounded-xl transition flex items-center justify-center gap-2"
+            >
+              <BarChart3 size={18} /> Studio Insights
             </button>
           </div>
         )}
