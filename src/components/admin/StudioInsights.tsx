@@ -1,16 +1,9 @@
-/* Add this to your globals.css or Tailwind config if not present */
-// @keyframes pulse-blue { 
-//   0%, 100% { opacity: 1; } 
-//   50% { opacity: 0.5; } 
-// }
-// .animate-pulse-slow { animation: pulse-blue 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { 
   Plus, Calendar, Activity, X, Target, PlusCircle, Trash2, Layers, 
-  TrendingUp, Zap, MousePointer2, Linkedin, Twitter, Instagram, Star
-} from "lucide-react";
+  Zap, MousePointer2, Linkedin, Twitter, Instagram, Star, Search 
+} from "lucide-react"; // Fixed: Added Search here
 import { 
   AreaChart, Area, XAxis, Tooltip, ResponsiveContainer, YAxis,
   BarChart, Bar, Radar, RadarChart, PolarGrid, PolarAngleAxis, 
@@ -67,7 +60,7 @@ export const StudioInsights = () => {
   const handleSave = async (e) => {
     e.preventDefault();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return alert("Security Error.");
+    if (!user) return alert("Please login to sync data.");
     
     const { data: insightLog, error: logError } = await supabase.from('studio_insights').insert([{
       user_id: user.id,
@@ -85,7 +78,7 @@ export const StudioInsights = () => {
       log_date: formData.date
     }]).select().single();
 
-    if (logError) return alert(`Error: ${logError.message}`);
+    if (logError) return alert(`Log Error: ${logError.message}`);
 
     const projectsToInsert = formData.projects
       .filter(p => p.name.trim() !== '')
@@ -112,9 +105,11 @@ export const StudioInsights = () => {
     });
   };
 
+  // Data Processing for UI
   const allProjects = metrics.flatMap(log => log.insight_projects || []);
   const totalRev = allProjects.reduce((acc, p) => acc + Number(p.revenue_earned || 0), 0);
   const categories = ['Logo Design', 'Flyer/Poster', 'Branding', 'Social Media', 'UI Design'];
+  
   const platforms = [
     { id: 'linkedin', label: 'LinkedIn', icon: <Linkedin size={14}/>, color: 'text-blue-400' },
     { id: 'instagram', label: 'Instagram', icon: <Instagram size={14}/>, color: 'text-pink-500' },
@@ -160,10 +155,9 @@ export const StudioInsights = () => {
         </button>
       </div>
 
-      {/* 🧩 BENTO GRID */}
+      {/* 🧩 DASHBOARD BENTO */}
       <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-12 auto-rows-[160px] gap-4 mb-10">
         
-        {/* EFFICIENCY PULSE */}
         <div className="lg:col-span-9 lg:row-span-1 modular-border-neon p-6 bg-[#070e1b] flex items-center gap-8">
            <div className="min-w-[140px]">
               <h3 className="text-[9px] font-black tracking-[0.4em] text-blue-500 mb-1">Efficiency Pulse</h3>
@@ -178,7 +172,6 @@ export const StudioInsights = () => {
            </div>
         </div>
 
-        {/* TOTAL GROSS */}
         <div className="lg:col-span-3 lg:row-span-1 modular-border-neon p-6 bg-blue-600 flex items-center justify-between">
             <div>
               <p className="text-[9px] font-black text-white/60 tracking-widest mb-1">Total Gross</p>
@@ -187,9 +180,8 @@ export const StudioInsights = () => {
             <Activity className="text-white/40 animate-pulse" size={32}/>
         </div>
 
-        {/* OUTREACH YIELD */}
         <div className="lg:col-span-5 lg:row-span-3 modular-border-neon p-8 bg-[#070e1b]/80">
-          <h3 className="text-[10px] font-black tracking-[0.4em] text-zinc-500 mb-8 flex items-center gap-2 uppercase">
+          <h3 className="text-[10px] font-black tracking-[0.4em] text-zinc-500 mb-8 flex items-center gap-2">
             <Search size={14} className="text-blue-500"/> Outreach Yield Matrix
           </h3>
           <div className="h-[85%]">
@@ -205,9 +197,8 @@ export const StudioInsights = () => {
           </div>
         </div>
 
-        {/* SERVICE PORTFOLIO */}
         <div className="lg:col-span-4 lg:row-span-3 modular-border-neon p-8 bg-[#070e1b]/80">
-          <h3 className="text-[10px] font-black tracking-[0.4em] text-zinc-500 mb-2 uppercase">Service Portfolio Mix</h3>
+          <h3 className="text-[10px] font-black tracking-[0.4em] text-zinc-500 mb-2">Service Portfolio Mix</h3>
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
               <PolarGrid stroke="rgba(255,255,255,0.05)" />
@@ -217,33 +208,26 @@ export const StudioInsights = () => {
           </ResponsiveContainer>
         </div>
 
-        {/* REVENUE VELOCITY */}
         <div className="lg:col-span-3 lg:row-span-3 modular-border-neon p-6 bg-[#070e1b]">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-[9px] font-black tracking-[0.4em] text-zinc-600 uppercase">Revenue Velocity</h3>
-            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
+            <h3 className="text-[9px] font-black tracking-[0.4em] text-zinc-600">Revenue Velocity</h3>
+            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
           </div>
           <div className="h-[80%]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={metrics}>
-                <defs>
-                  <linearGradient id="nairaGlow" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <Area type="monotone" dataKey="responses_received" stroke="#3b82f6" fill="url(#nairaGlow)" strokeWidth={2} />
+                <Area type="monotone" dataKey="responses_received" stroke="#3b82f6" fillOpacity={0.1} strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
       </div>
 
-      {/* 🧾 LIVE DESIGN STACK */}
+      {/* 🧾 LIVE STACK LIST */}
       <div className="max-w-[1600px] mx-auto">
         <div className="flex items-center gap-6 mb-8">
            <Layers className="text-blue-500" size={20}/>
-           <h2 className="text-2xl font-black italic tracking-tighter uppercase">Live Design Stack</h2>
+           <h2 className="text-2xl font-black italic tracking-tighter">Live Design Stack</h2>
            <div className="h-[1px] flex-1 bg-white/5" />
         </div>
         
@@ -268,7 +252,7 @@ export const StudioInsights = () => {
         </div>
       </div>
 
-      {/* 📝 UPDATED MODAL */}
+      {/* 📝 CORRECTED MODAL */}
       {isLogging && (
         <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-[#020617]/98 backdrop-blur-3xl overflow-y-auto">
           <form onSubmit={handleSave} className="bg-[#0a0f1d] border border-blue-500/20 p-8 md:p-14 w-full max-w-6xl rounded-[40px] shadow-2xl relative my-auto">
@@ -332,8 +316,9 @@ export const StudioInsights = () => {
                         >
                           {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                         </select>
-                        {/* PRICE INPUT FIX: w-44 and higher padding */}
-                        <div className="relative w-full md:w-44">
+                        
+                        {/* ₦ PRICE FIX: Relative container + absolute icon ensures no overflow */}
+                        <div className="relative w-full md:w-48">
                            <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-blue-500">₦</span>
                            <input 
                             type="number" placeholder="PRICE" 
@@ -341,6 +326,7 @@ export const StudioInsights = () => {
                             value={project.revenue} onChange={(e) => handleProjectChange(idx, 'revenue', e.target.value)}
                            />
                         </div>
+
                         <button 
                           type="button" 
                           onClick={() => handleProjectChange(idx, 'isMilestone', !project.isMilestone)}
