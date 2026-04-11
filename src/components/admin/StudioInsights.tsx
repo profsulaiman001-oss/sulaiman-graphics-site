@@ -1,14 +1,20 @@
+/* Add this to your globals.css or Tailwind config if not present */
+// @keyframes pulse-blue { 
+//   0%, 100% { opacity: 1; } 
+//   50% { opacity: 0.5; } 
+// }
+// .animate-pulse-slow { animation: pulse-blue 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { 
-  Plus, Calendar, Activity, X, Target, FileText, Search, MessageSquare, 
-  Users, PlusCircle, Trash2, Layers, BarChart3, PieChart as PieIcon, 
-  TrendingUp, Zap, MousePointer2, Linkedin, Twitter, Instagram, Globe 
+  Plus, Calendar, Activity, X, Target, PlusCircle, Trash2, Layers, 
+  TrendingUp, Zap, MousePointer2, Linkedin, Twitter, Instagram, Star
 } from "lucide-react";
 import { 
   AreaChart, Area, XAxis, Tooltip, ResponsiveContainer, YAxis,
   BarChart, Bar, Radar, RadarChart, PolarGrid, PolarAngleAxis, 
-  LineChart, Line, CartesianGrid, PieChart, Pie, Cell
+  LineChart, Line
 } from 'recharts';
 
 export const StudioInsights = () => {
@@ -154,7 +160,7 @@ export const StudioInsights = () => {
         </button>
       </div>
 
-      {/* 🧩 BENTO GRID LAYOUT */}
+      {/* 🧩 BENTO GRID */}
       <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-12 auto-rows-[160px] gap-4 mb-10">
         
         {/* EFFICIENCY PULSE */}
@@ -178,12 +184,12 @@ export const StudioInsights = () => {
               <p className="text-[9px] font-black text-white/60 tracking-widest mb-1">Total Gross</p>
               <h4 className="text-3xl font-black italic text-white">₦{totalRev.toLocaleString()}</h4>
             </div>
-            <Activity className="text-white/40" size={32}/>
+            <Activity className="text-white/40 animate-pulse" size={32}/>
         </div>
 
-        {/* OUTREACH YIELD (Expanded) */}
+        {/* OUTREACH YIELD */}
         <div className="lg:col-span-5 lg:row-span-3 modular-border-neon p-8 bg-[#070e1b]/80">
-          <h3 className="text-[10px] font-black tracking-[0.4em] text-zinc-500 mb-8 flex items-center gap-2">
+          <h3 className="text-[10px] font-black tracking-[0.4em] text-zinc-500 mb-8 flex items-center gap-2 uppercase">
             <Search size={14} className="text-blue-500"/> Outreach Yield Matrix
           </h3>
           <div className="h-[85%]">
@@ -199,9 +205,9 @@ export const StudioInsights = () => {
           </div>
         </div>
 
-        {/* SERVICE PORTFOLIO (Expanded) */}
+        {/* SERVICE PORTFOLIO */}
         <div className="lg:col-span-4 lg:row-span-3 modular-border-neon p-8 bg-[#070e1b]/80">
-          <h3 className="text-[10px] font-black tracking-[0.4em] text-zinc-500 mb-2">Service Portfolio Mix</h3>
+          <h3 className="text-[10px] font-black tracking-[0.4em] text-zinc-500 mb-2 uppercase">Service Portfolio Mix</h3>
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
               <PolarGrid stroke="rgba(255,255,255,0.05)" />
@@ -211,9 +217,12 @@ export const StudioInsights = () => {
           </ResponsiveContainer>
         </div>
 
-        {/* REVENUE VELOCITY (Shrunk Widget) */}
+        {/* REVENUE VELOCITY */}
         <div className="lg:col-span-3 lg:row-span-3 modular-border-neon p-6 bg-[#070e1b]">
-          <h3 className="text-[9px] font-black tracking-[0.4em] text-zinc-600 mb-6">Revenue Velocity</h3>
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-[9px] font-black tracking-[0.4em] text-zinc-600 uppercase">Revenue Velocity</h3>
+            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
+          </div>
           <div className="h-[80%]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={metrics}>
@@ -230,11 +239,11 @@ export const StudioInsights = () => {
         </div>
       </div>
 
-      {/* 🧾 LIVE DESIGN STACK (List) */}
+      {/* 🧾 LIVE DESIGN STACK */}
       <div className="max-w-[1600px] mx-auto">
         <div className="flex items-center gap-6 mb-8">
            <Layers className="text-blue-500" size={20}/>
-           <h2 className="text-2xl font-black italic tracking-tighter">Live Design Stack</h2>
+           <h2 className="text-2xl font-black italic tracking-tighter uppercase">Live Design Stack</h2>
            <div className="h-[1px] flex-1 bg-white/5" />
         </div>
         
@@ -243,7 +252,7 @@ export const StudioInsights = () => {
             <div key={i} className="group w-full flex justify-between items-center bg-[#0a0f1d]/40 border border-white/5 p-6 rounded-2xl hover:border-blue-500/30 transition-all">
                 <div className="flex items-center gap-6">
                   <div className={`h-10 w-10 rounded-xl flex items-center justify-center border ${proj.is_milestone ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-500' : 'bg-white/5 border-white/5 text-blue-500'}`}>
-                    {proj.is_milestone ? <Target size={16}/> : <MousePointer2 size={16}/>}
+                    {proj.is_milestone ? <Star size={16}/> : <MousePointer2 size={16}/>}
                   </div>
                   <div>
                     <h4 className="text-xl font-bold italic text-white/90">{proj.project_name}</h4>
@@ -259,7 +268,7 @@ export const StudioInsights = () => {
         </div>
       </div>
 
-      {/* 📝 FULLY RESTORED INPUT MODAL */}
+      {/* 📝 UPDATED MODAL */}
       {isLogging && (
         <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-[#020617]/98 backdrop-blur-3xl overflow-y-auto">
           <form onSubmit={handleSave} className="bg-[#0a0f1d] border border-blue-500/20 p-8 md:p-14 w-full max-w-6xl rounded-[40px] shadow-2xl relative my-auto">
@@ -268,24 +277,23 @@ export const StudioInsights = () => {
             <div className="mb-10 flex flex-col md:flex-row justify-between items-center border-b border-white/5 pb-8 gap-6">
                <div className="flex items-center gap-4 text-white">
                  <Zap className="text-blue-500" size={30}/>
-                 <h2 className="text-4xl font-black italic tracking-tighter uppercase">Initialize Log</h2>
+                 <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none">Initialize Log</h2>
                </div>
 
                <div className="flex items-center gap-4">
                   <div className="flex items-center bg-white/5 px-6 py-3 rounded-2xl border border-white/5">
                     <Calendar size={16} className="text-blue-500 mr-3" />
-                    <input type="date" value={formData.date} className="bg-transparent text-[10px] font-bold outline-none text-zinc-300" onChange={(e)=>setFormData({...formData, date: e.target.value})}/>
+                    <input type="date" value={formData.date} className="bg-transparent text-[10px] font-bold outline-none text-zinc-300 uppercase" onChange={(e)=>setFormData({...formData, date: e.target.value})}/>
                   </div>
                   <div className="flex bg-black p-1 rounded-2xl border border-white/5">
                     {['daily', 'weekly', 'monthly'].map(p => (
-                      <button key={p} type="button" onClick={()=>setPeriod(p)} className={`px-4 py-2 rounded-xl text-[8px] font-black tracking-[0.2em] ${period===p ? 'bg-blue-600 text-white' : 'text-zinc-600'}`}>{p}</button>
+                      <button key={p} type="button" onClick={()=>setPeriod(p)} className={`px-4 py-2 rounded-xl text-[8px] font-black tracking-[0.2em] uppercase ${period===p ? 'bg-blue-600 text-white' : 'text-zinc-600'}`}>{p}</button>
                     ))}
                   </div>
                </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-10">
-               {/* OUTREACH STATS */}
                <div className="space-y-6">
                   <label className="text-[10px] font-black text-zinc-500 tracking-[0.4em] uppercase">Outreach Intelligence</label>
                   <div className="space-y-3">
@@ -302,7 +310,6 @@ export const StudioInsights = () => {
                   </div>
                </div>
                
-               {/* PROJECT REVENUE ROWS (RESTORED) */}
                <div className="space-y-6">
                   <div className="flex justify-between items-center">
                     <label className="text-[10px] font-black text-zinc-500 tracking-[0.4em] uppercase">Project Manifest</label>
@@ -313,10 +320,10 @@ export const StudioInsights = () => {
                   
                   <div className="space-y-4 max-h-[300px] overflow-y-auto pr-4 custom-scrollbar">
                     {formData.projects.map((project, idx) => (
-                      <div key={idx} className="flex flex-wrap md:flex-nowrap gap-3 bg-white/5 p-4 rounded-3xl border border-white/5">
+                      <div key={idx} className="flex flex-wrap md:flex-nowrap gap-3 bg-white/5 p-4 rounded-3xl border border-white/5 items-center">
                         <input 
                           type="text" placeholder="Project Name" 
-                          className="flex-1 bg-[#050a15] border border-white/5 p-4 rounded-2xl font-bold text-sm outline-none"
+                          className="flex-1 min-w-[150px] bg-[#050a15] border border-white/5 p-4 rounded-2xl font-bold text-sm outline-none uppercase"
                           value={project.name} onChange={(e) => handleProjectChange(idx, 'name', e.target.value)}
                         />
                         <select 
@@ -325,18 +332,29 @@ export const StudioInsights = () => {
                         >
                           {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                         </select>
-                        <input 
-                          type="number" placeholder="₦ PRICE" 
-                          className="w-32 bg-blue-600/10 border border-blue-500/20 p-4 rounded-2xl font-black text-blue-500 outline-none"
-                          value={project.revenue} onChange={(e) => handleProjectChange(idx, 'revenue', e.target.value)}
-                        />
+                        {/* PRICE INPUT FIX: w-44 and higher padding */}
+                        <div className="relative w-full md:w-44">
+                           <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-blue-500">₦</span>
+                           <input 
+                            type="number" placeholder="PRICE" 
+                            className="w-full bg-blue-600/10 border border-blue-500/20 pl-10 pr-4 py-4 rounded-2xl font-black text-blue-500 outline-none"
+                            value={project.revenue} onChange={(e) => handleProjectChange(idx, 'revenue', e.target.value)}
+                           />
+                        </div>
+                        <button 
+                          type="button" 
+                          onClick={() => handleProjectChange(idx, 'isMilestone', !project.isMilestone)}
+                          className={`p-4 rounded-2xl border transition-all ${project.isMilestone ? 'bg-yellow-500/20 border-yellow-500/50 text-yellow-500' : 'bg-white/5 border-white/10 text-zinc-600'}`}
+                        >
+                          <Target size={18}/>
+                        </button>
                       </div>
                     ))}
                   </div>
                </div>
             </div>
 
-            <button type="submit" className="w-full bg-blue-600 py-8 rounded-[25px] font-black italic tracking-widest text-sm shadow-xl shadow-blue-600/20 hover:scale-[1.01] transition-all">
+            <button type="submit" className="w-full bg-blue-600 py-8 rounded-[25px] font-black italic tracking-widest text-sm shadow-xl shadow-blue-600/20 hover:scale-[1.01] transition-all uppercase">
               Sync Studio Intelligence
             </button>
           </form>
