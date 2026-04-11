@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { 
   Plus, Calendar, Activity, X, Target, FileText, Search, MessageSquare, 
   Users, PlusCircle, Trash2, Layers, BarChart3, PieChart as PieIcon, 
-  TrendingUp, Zap, MousePointer2, Linkedin, Twitter, Mail, Globe 
+  TrendingUp, Zap, MousePointer2, Linkedin, Twitter, Instagram, Globe 
 } from "lucide-react";
 import { 
   AreaChart, Area, XAxis, Tooltip, ResponsiveContainer, YAxis,
@@ -16,11 +16,15 @@ export const StudioInsights = () => {
   const [isLogging, setIsLogging] = useState(false);
   const [period, setPeriod] = useState('daily');
   
+  // Updated state for per-platform tracking
   const [formData, setFormData] = useState({
-    outreach: 0, responses: 0, clients: 0, 
-    source: 'LinkedIn',     // Added Tracking
-    leadQuality: 3,         // Added Energy Bar Logic
-    observations: '',       // Added Rich Notes
+    linkedin: { sent: 0, replies: 0 },
+    instagram: { sent: 0, replies: 0 },
+    twitter: { sent: 0, replies: 0 },
+    referral: 0,
+    clients: 0, 
+    leadQuality: 3,         
+    observations: '',       
     date: new Date().toISOString().split('T')[0],
     projects: [{ name: '', revenue: '0.00', category: 'Logo Design', isMilestone: false }]
   });
@@ -47,15 +51,19 @@ export const StudioInsights = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return alert("Security Error: Identity unconfirmed.");
     
-    // Updated to include new data fields
     const { data: insightLog, error: logError } = await supabase.from('studio_insights').insert([{
       user_id: user.id,
-      outreach_sent: formData.outreach, 
-      responses_received: formData.responses,
+      // Map platform specific data to DB columns
+      linkedin_sent: formData.linkedin.sent,
+      linkedin_replies: formData.linkedin.replies,
+      instagram_sent: formData.instagram.sent,
+      instagram_replies: formData.instagram.replies,
+      twitter_sent: formData.twitter.sent,
+      twitter_replies: formData.twitter.replies,
+      referral_count: formData.referral,
       clients_acquired: formData.clients, 
-      outreach_source: formData.source,    // Mapping Source
-      lead_quality: formData.leadQuality,   // Mapping Quality
-      notes: formData.observations,         // Mapping Notes
+      lead_quality: formData.leadQuality,   
+      notes: formData.observations,         
       period_type: period, 
       log_date: formData.date
     }]).select().single();
@@ -67,33 +75,49 @@ export const StudioInsights = () => {
         project_name: p.name.trim(), 
         revenue_earned: parseFloat(p.revenue) || 0,
         project_category: p.category,
-        is_milestone: p.isMilestone // Mapping Milestone Tag
+        is_milestone: p.isMilestone 
     }));
 
     await supabase.from('insight_projects').insert(projectsToInsert);
     setIsLogging(false); 
     fetchMetrics();
-    setFormData({ outreach: 0, responses: 0, clients: 0, source: 'LinkedIn', leadQuality: 3, observations: '', date: new Date().toISOString().split('T')[0], projects: [{ name: '', revenue: '0.00', category: 'Logo Design', isMilestone: false }] });
+    setFormData({ 
+      linkedin: { sent: 0, replies: 0 },
+      instagram: { sent: 0, replies: 0 },
+      twitter: { sent: 0, replies: 0 },
+      referral: 0,
+      clients: 0, 
+      leadQuality: 3, 
+      observations: '', 
+      date: new Date().toISOString().split('T')[0], 
+      projects: [{ name: '', revenue: '0.00', category: 'Logo Design', isMilestone: false }] 
+    });
   };
 
   const allProjects = metrics.flatMap(log => log.insight_projects || []);
   const totalRev = allProjects.reduce((acc, p) => acc + Number(p.revenue_earned || 0), 0);
   const categories = ['Logo Design', 'Flyer/Poster', 'Branding', 'Social Media', 'UI Design'];
-  const sources = ['LinkedIn', 'X/Twitter', 'Cold Email', 'Referral'];
+  
+  // Platform definitions for UI generation
+  const platforms = [
+    { id: 'linkedin', label: 'LinkedIn', icon: <Linkedin size={14}/>, color: 'text-blue-400' },
+    { id: 'instagram', label: 'Instagram', icon: <Instagram size={14}/>, color: 'text-pink-500' },
+    { id: 'twitter', label: 'X/Twitter', icon: <Twitter size={14}/>, color: 'text-zinc-400' }
+  ];
 
-  // Radar Data Logic
   const radarData = categories.map(cat => ({
     subject: cat,
     A: allProjects.filter(p => p.project_category === cat).reduce((sum, p) => sum + Number(p.revenue_earned), 0) / 1000,
   }));
 
-  // Pie Chart Logic: Which source has the most responses
-  const sourcePieData = sources.map(s => ({
-    name: s,
-    value: metrics.filter(m => m.outreach_source === s).reduce((acc, curr) => acc + curr.responses_received, 0)
-  })).filter(d => d.value > 0);
+  // Chart Logic: Aggregate efficiency per platform
+  const sourceBarData = platforms.map(p => {
+    const sent = metrics.reduce((acc, curr) => acc + (curr[`${p.id}_sent`] || 0), 0);
+    const replies = metrics.reduce((acc, curr) => acc + (curr[`${p.id}_replies`] || 0), 0);
+    return { name: p.label, sent, replies };
+  });
 
-  const COLORS = ['#3b82f6', '#6366f1', '#8b5cf6', '#2dd4bf'];
+  const COLORS = ['#3b82f6', '#ec4899', '#6366f1', '#eab308'];
 
   return (
     <div className="navbar-safe-pt min-h-screen bg-[#020617] text-white p-4 md:p-12 pb-32 font-sans selection:bg-blue-500">
@@ -117,10 +141,9 @@ export const StudioInsights = () => {
         </button>
       </div>
 
-      {/* 🧩 MOSAIC BENTO GRID (RE-ARCHITECTED) */}
+      {/* 🧩 MOSAIC BENTO GRID */}
       <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-12 auto-rows-[180px] gap-4 mb-10">
         
-        {/* Main Trajectory */}
         <div className="lg:col-span-8 lg:row-span-3 modular-border-neon p-8 bg-[#070e1b]/80 relative overflow-hidden">
           <div className="flex justify-between items-center mb-8 relative z-10">
             <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500 flex items-center gap-2">
@@ -145,20 +168,20 @@ export const StudioInsights = () => {
           </div>
         </div>
 
-        {/* Source Efficiency (New Pie Chart) */}
+        {/* Updated Source Efficiency Chart */}
         <div className="lg:col-span-4 lg:row-span-2 modular-border-neon p-6 bg-[#070e1b]">
-          <h3 className="text-[9px] font-black uppercase tracking-[0.4em] text-zinc-600 mb-4">Source Efficiency</h3>
+          <h3 className="text-[9px] font-black uppercase tracking-[0.4em] text-zinc-600 mb-4">Fishing Hole Yield</h3>
           <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie data={sourcePieData} innerRadius="60%" outerRadius="80%" paddingAngle={5} dataKey="value">
-                {sourcePieData.map((entry, index) => <Cell key={index} fill={COLORS[index % COLORS.length]} />)}
-              </Pie>
-              <Tooltip />
-            </PieChart>
+            <BarChart data={sourceBarData} layout="vertical">
+              <XAxis type="number" hide />
+              <YAxis dataKey="name" type="category" tick={{fill: '#71717a', fontSize: 8, fontWeight: '900'}} />
+              <Tooltip cursor={{fill: 'transparent'}} contentStyle={{backgroundColor: '#0a0f1d', border: '1px solid #1e293b'}}/>
+              <Bar dataKey="sent" fill="#1e293b" radius={[0, 4, 4, 0]} barSize={10} />
+              <Bar dataKey="replies" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={10} />
+            </BarChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Service Radar */}
         <div className="lg:col-span-4 lg:row-span-2 modular-border-neon p-6 bg-[#070e1b]">
           <h3 className="text-[9px] font-black uppercase tracking-[0.4em] text-zinc-600 mb-2">Service Portfolio</h3>
           <ResponsiveContainer width="100%" height="100%">
@@ -170,13 +193,12 @@ export const StudioInsights = () => {
           </ResponsiveContainer>
         </div>
 
-        {/* Sparkline & Stats */}
         <div className="lg:col-span-4 modular-border-neon p-6 bg-[#070e1b] flex items-center justify-between">
-           <div>
+            <div>
               <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Total Gross</p>
               <h4 className="text-3xl font-black italic">₦{totalRev.toLocaleString()}</h4>
-           </div>
-           <Activity className="text-blue-500/20" size={40}/>
+            </div>
+            <Activity className="text-blue-500/20" size={40}/>
         </div>
       </div>
 
@@ -213,7 +235,7 @@ export const StudioInsights = () => {
         </div>
       </div>
 
-      {/* 📝 ENHANCED INPUT MODAL (COMMAND CENTER) */}
+      {/* 📝 UPDATED INPUT MODAL */}
       {isLogging && (
         <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-[#020617]/98 backdrop-blur-3xl overflow-y-auto">
           <form onSubmit={handleSave} className="bg-[#0a0f1d] border border-blue-500/20 p-8 md:p-14 w-full max-w-5xl rounded-[40px] shadow-2xl relative my-auto">
@@ -224,27 +246,45 @@ export const StudioInsights = () => {
                <h2 className="text-4xl font-black italic tracking-tighter uppercase text-white">Initialize Log</h2>
             </div>
 
-            {/* Source & Quality Selection */}
+            {/* Outreach Platform Intelligence Matrix */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
                <div className="space-y-4">
-                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Outreach Platform</label>
-                  <div className="grid grid-cols-4 gap-2">
-                     {sources.map(s => (
-                       <button key={s} type="button" onClick={() => setFormData({...formData, source: s})}
-                        className={`py-3 rounded-xl text-[9px] font-black uppercase transition-all border ${formData.source === s ? 'bg-blue-600 border-blue-500 text-white' : 'bg-white/5 border-white/5 text-zinc-500 hover:text-white'}`}>
-                         {s === 'LinkedIn' ? <Linkedin size={14} className="mx-auto mb-1"/> : s === 'X/Twitter' ? <Twitter size={14} className="mx-auto mb-1"/> : <Mail size={14} className="mx-auto mb-1"/>}
-                         {s.split(' ')[0]}
-                       </button>
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Outreach Intelligence Matrix</label>
+                  <div className="space-y-3">
+                     {platforms.map(p => (
+                       <div key={p.id} className="flex items-center gap-4 bg-white/5 p-4 rounded-3xl border border-white/5 hover:border-blue-500/20 transition-all">
+                         <div className={`p-3 rounded-2xl bg-white/5 ${p.color}`}>{p.icon}</div>
+                         <span className="flex-1 text-[10px] font-black uppercase tracking-widest">{p.label}</span>
+                         <div className="flex gap-2">
+                           <input type="number" placeholder="Sent" className="w-16 bg-[#050a15] border border-white/5 p-3 rounded-xl text-center font-bold text-blue-500 outline-none"
+                             onChange={(e) => setFormData({...formData, [p.id]: {...formData[p.id], sent: parseInt(e.target.value) || 0}})} />
+                           <input type="number" placeholder="In" className="w-16 bg-[#050a15] border border-white/10 p-3 rounded-xl text-center font-bold text-green-400 outline-none"
+                             onChange={(e) => setFormData({...formData, [p.id]: {...formData[p.id], replies: parseInt(e.target.value) || 0}})} />
+                         </div>
+                       </div>
                      ))}
+                     <div className="flex items-center gap-4 bg-white/5 p-4 rounded-3xl border border-white/5">
+                       <div className="p-3 rounded-2xl bg-white/5 text-yellow-500"><Users size={14}/></div>
+                       <span className="flex-1 text-[10px] font-black uppercase tracking-widest">Direct Referrals</span>
+                       <input type="number" placeholder="Total" className="w-34 bg-[#050a15] border border-white/5 p-3 rounded-xl text-center font-bold text-yellow-500 outline-none"
+                         onChange={(e) => setFormData({...formData, referral: parseInt(e.target.value) || 0})} />
+                     </div>
                   </div>
                </div>
-               <div className="space-y-4">
-                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest flex justify-between">
-                    Lead Quality <span>Level {formData.leadQuality}</span>
-                  </label>
-                  <input type="range" min="1" max="5" value={formData.leadQuality} 
-                    className="w-full h-2 bg-white/5 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                    onChange={(e) => setFormData({...formData, leadQuality: parseInt(e.target.value)})}/>
+               
+               <div className="space-y-8">
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest flex justify-between">
+                      Lead Quality <span>Level {formData.leadQuality}</span>
+                    </label>
+                    <input type="range" min="1" max="5" value={formData.leadQuality} 
+                      className="w-full h-2 bg-white/5 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                      onChange={(e) => setFormData({...formData, leadQuality: parseInt(e.target.value)})}/>
+                  </div>
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest text-center block mb-2">Total Converted Clients</label>
+                    <input type="number" className="glass-input w-full font-bold text-center text-xl p-4" onChange={(e) => setFormData({...formData, clients: parseInt(e.target.value) || 0})}/>
+                  </div>
                </div>
             </div>
 
@@ -288,19 +328,10 @@ export const StudioInsights = () => {
                ))}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+            <div className="grid grid-cols-1 gap-8 mb-12">
                <textarea placeholder="SYSTEM OBSERVATIONS: Technical notes..." 
                 className="bg-white/5 border border-white/5 p-6 rounded-3xl h-32 outline-none focus:border-blue-500 transition-all font-mono text-xs text-zinc-400"
                 onChange={(e) => setFormData({...formData, observations: e.target.value})}/>
-               
-               <div className="grid grid-cols-3 gap-4">
-                  {[{l: 'Outreach', k: 'outreach'}, {l: 'Replies', k: 'responses'}, {l: 'Converted', k: 'clients'}].map(item => (
-                    <div key={item.k}>
-                       <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest text-center block mb-2">{item.l}</label>
-                       <input type="number" className="glass-input w-full font-bold text-center text-xl p-4" onChange={(e) => setFormData({...formData, [item.k]: parseInt(e.target.value) || 0})}/>
-                    </div>
-                  ))}
-               </div>
             </div>
 
             <button type="submit" className="w-full bg-blue-600 py-8 rounded-[25px] font-black italic uppercase tracking-widest text-sm shadow-xl shadow-blue-600/20 transition-all hover:scale-[1.01]">
