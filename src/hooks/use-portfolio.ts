@@ -53,7 +53,7 @@ const projects: Project[] = [
     title: "Sarkin Mota Autos",
     category: "Branding",
     description:
-      "A premium brand identity combining royal symbolism with automotive elements for a luxury car business.",
+      "A premium brand identity combining royal symbolism with automotive elements for a luxury dealership experience.",
     fullDescription:
       "Sarkin Mota Autos needed a visual identity that conveyed authority and prestige in the automotive space. I developed a bold brand system rooted in royal Nigerian symbolism — blending regal typography, gold-toned palettes, and powerful iconography — to position the business as a trusted premium name in the local market.",
     gradient: "from-blue-600 to-cyan-500",
@@ -69,7 +69,7 @@ const projects: Project[] = [
     title: "Beach Party Flyer",
     category: "Flyer Design",
     description:
-      "Vibrant, eye-catching flyer design crafted to draw crowds to a summer beach event.",
+      "A high-energy, vibrant event identity designed to drive engagement and ticket sales through dynamic visual storytelling.",
     fullDescription:
       "At Sulaiman Graphics, I create bold and engaging flyer designs that help your brand stand out. This beach party flyer features a high-energy layout, vivid tropical colours, and clear event details that make the invitation impossible to ignore. Whether printed or shared digitally, it was designed to build excitement and drive attendance.",
     gradient: "from-sky-500 to-blue-700",
@@ -82,7 +82,7 @@ const projects: Project[] = [
     title: "Bilam Real Estate Flyer",
     category: "Flyer Design",
     description:
-      "Clean, professional flyer designed to market premium real estate listings with clarity.",
+      "A clean, high-contrast promotional layout engineered to communicate trust and highlight premium property values.",
     fullDescription:
       "Real estate is built on trust. For Bilam, I moved away from cluttered, traditional layouts to a 'Modern Luxury' aesthetic. By utilizing high-contrast typography and strategic white space, I ensured that the property imagery remained the hero of the composition. The result is a marketing asset that doesn't just look good—it guides the viewer's eye directly to the value proposition and call-to-action, increasing lead potential for the sales team.",
     gradient: "from-blue-500 to-indigo-600",
@@ -96,7 +96,7 @@ const projects: Project[] = [
     title: "Abdul Apple Links Flyer",
     category: "Flyer Design",
     description:
-      "Clean, professional flyer designed to market premium phone gadgets.",
+      "A sleek, product-focused marketing asset designed to establish brand authority in the high-end electronics market.",
     fullDescription:
       "For Abdul Apple Links, the mission was to move beyond a simple sales flyer and create a 'Tech Authority' identity. I utilized a high-depth composition, placing the products within a custom-modeled tech suite to symbolize security and variety. By pairing sharp, high-fidelity device renders with a sleek, dark-mode aesthetic, I ensured the brand feels like the premier choice for original Apple products and expert repairs.",
     gradient: "from-blue-500 to-indigo-600",
@@ -110,7 +110,7 @@ const projects: Project[] = [
     title: "Malanta Industry Ltd Flyer",
     category: "Flyer Design",
     description:
-      "Clean, professional flyer designed to showcase the brand services.",
+      "An industrial-grade communication tool designed to showcase technical expertise and API-compliant service standards.",
     fullDescription:
       "Technical industries often struggle with data-heavy marketing. For this project, I focused on strategic information hierarchy to ensure that key certifications—like 48-hour delivery and engineer expertise—are immediately scannable. Using a structured grid and custom iconography, I transformed complex service offerings into a clean, persuasive layout. This design serves as a professional 'first impression' that builds instant trust with procurement officers and industrial leads.",
     gradient: "from-blue-500 to-indigo-600",
@@ -124,7 +124,7 @@ const projects: Project[] = [
     title: "MGH Photo/Videography Flyer",
     category: "Flyer Design",
     description:
-      "Clean, professional flyer designed to showcase the brand services.",
+      "A sophisticated visual identity crafted to reflect creative professionalism and elegance in high-end documentation.",
     fullDescription:
       "For MGH Photo/Videography, the goal was to capture the essence of high-end storytelling through a visual identity that radiates elegance. I developed a sophisticated layout using gold accents and deep contrast to mirror the premium nature of their world-class visuals. By balancing high-fidelity imagery with refined typography, I created a brand-consistent marketing asset that communicates creative professionalism and instantly builds trust with clients looking to document their most special occasions.",
     gradient: "from-yellow-500 to-orange-600",
@@ -140,7 +140,7 @@ const projects: Project[] = [
     title: "MSA Special Pepper – Product Ad",
     category: "Motion Graphics",
     description:
-      "A personal favourite — bold motion ad I created to promote MSA Special Pepper with dynamic transitions and vivid energy.",
+      "Dynamic product visualization designed to enhance consumer desire through high-fidelity motion and sensory appeal.",
     fullDescription:
       "This motion design project is one I'm genuinely proud of. I was tasked with creating a promotional video for MSA Special Pepper, and I poured real creativity into it — blending punchy kinetic typography, fast-paced transitions, and rich colour grading that mirrors the boldness of the product itself. Every frame was designed to stop the scroll and make the viewer feel the heat and excitement of the brand.",
     gradient: "from-blue-700 to-cyan-600",
@@ -157,7 +157,7 @@ const projects: Project[] = [
     title: "Nexora Exchange",
     category: "Social Media Design",
     description:
-      "Scroll-stopping social media content for a crypto brand that boosted visibility and audience engagement.",
+      "A futuristic social media ecosystem designed to position the brand as a secure leader in the digital finance space.",
     fullDescription:
       "In the volatile crypto market, visual credibility is the ultimate currency. I collaborated with Nexora Exchange to develop a comprehensive content strategy that prioritizes clarity and high-impact messaging. Through structured typography, custom-rendered tech visuals, and a bold hierarchical layout, I ensured that key value propositions—like speed, security, and trust—are communicated instantly. The final designs serve as a high-performance conversion tool, optimized to stand out in crowded digital feeds and build long-term brand equity.",
     gradient: "from-green-500 to-green-400",
@@ -171,7 +171,7 @@ const projects: Project[] = [
     title: "Zesty Zone",
     category: "Social Media Design",
     description:
-      "Scroll-stopping social media content for a food brand that boosted visibility and audience engagement.",
+      "High-impact, appetitive social content engineered to boost brand visibility and digital foot traffic in the food sector.",
     fullDescription:
       "For Zesty Zone, the goal was to create a visual identity as bold and flavorful as the menu itself. I developed a high-energy social media suite using a vibrant 'Zesty' palette of reds and yellows to trigger appetite and excitement. By combining playful typography with creative manipulation—like the oversized product 'hero' shots—I established a brand voice that feels both fun and premium, specifically designed to capture attention in the fast-paced food and hospitality market.",
     gradient: "from-red-500 to-orange-400",
@@ -185,9 +185,9 @@ const projects: Project[] = [
     title: "Alkhairat Collections",
     category: "Social Media Design",
     description:
-      "Scroll-stopping social media content for a fashion brand that boosted visibility and audience engagement.",
+      "A refined series of brand-awareness assets blending traditional elegance with modern retail marketing strategies.",
     fullDescription:
-      "For Alkhairat Collections, I developed a cohesive series of promotional and brand awareness designs that reflect the brand’s elegance and cultural style. Each piece was thoughtfully crafted to showcase products such as Shadda, lace, and accessories while boosting engagement across social media platforms.",
+      "For Alkhairat Collections, the objective was to blend traditional Northern Nigerian elegance with a high-end, modern retail aesthetic. I developed a cohesive brand identity using a deep navy and cyan palette to provide a sophisticated backdrop for their vibrant Shadda and Lace collections. By meticulously framing high-quality product imagery within a sleek digital environment, I established Alkhairat as a premier fashion destination, boosting their brand authority across social media platforms.",
     gradient: "from-blue-500 to-sky-400",
     client: "Alkhairat Collections",
     tools: ["Pixellab", "Photopea"],
@@ -201,9 +201,9 @@ const projects: Project[] = [
     title: "MSA Special Pepper",
     category: "Product Design",
     description:
-      "Eye-catching product design for MSA Special Pepper that highlights the brand's uniqueness and market appeal.",
+      "Strategic packaging and 3D visualization designed to command shelf presence and communicate premium quality.",
     fullDescription:
-      "Bold and vibrant product design for MSA Special Pepper that communicates heat, flavour, and quality at a glance. The design system — from label artwork to mockup compositions — was crafted to stand out on shelves and on screen, giving the product a confident, memorable identity that resonates with its target audience.",
+      "In the competitive spice market, packaging must do more than hold a product; it must tell a story. I designed the MSA Special Pepper visual system to trigger immediate sensory appeal through strategic color theory and high-clarity typography. By focusing on a clean, modern label hierarchy and utilizing professional-grade 3D renders for presentation, I created a marketing asset that establishes consumer trust and drives purchase intent by highlighting the premium quality of the ingredients.",
     gradient: "from-blue-600 to-indigo-700",
     client: "MSA Brand",
     tools: ["Pixellab", "Photopea"],
@@ -215,12 +215,12 @@ const projects: Project[] = [
   
   {
     id: "webinar-1",
-    title: "Business Breakthrough Summit",
+    title: "The Business Breakthrough Summit",
     category: "Webinar Design",
     description:
-      "Complete visual identity for an online business summit — banners, speaker cards, and slide decks.",
+      "A comprehensive corporate branding suite developed to amplify event credibility and drive global registrations.",
     fullDescription:
-      "For The Business Breakthrough Summit, I crafted a cohesive visual identity that amplified the event’s impact. From speaker profile cards to branded slide templates and replay graphics, every element followed a unified blue-and-white system, delivering a premium, professional look that matched the caliber of the event.",
+      "Corporate events require a balance of high-impact visuals and rapid information delivery. For this summit, I focused on a strategic layout that prioritizes speaker credentials and key session data while maintaining a clean, modern profile. I utilized dynamic typography and professional image masking to create a series of 'scroll-stopping' assets that drive registration and engagement. The result is a comprehensive branding kit that successfully communicates the value proposition of a high-ticket business event.",
     gradient: "from-blue-500 to-cyan-700",
     client: "Summit Organiser",
     tools: ["Canva", "Pixellab", "Photopea"],
