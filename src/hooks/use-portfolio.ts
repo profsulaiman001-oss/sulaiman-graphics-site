@@ -84,7 +84,7 @@ const projects: Project[] = [
     description:
       "Clean, professional flyer designed to market premium real estate listings with clarity.",
     fullDescription:
-      "Bilam Real Estate required a flyer that clearly conveyed trust and professionalism. I developed a clean, well-structured layout with refined typography and impactful property imagery, enabling potential buyers to quickly understand the value proposition. The final design is a polished, brand-consistent marketing asset optimized for both print and digital use.",
+      "Real estate is built on trust. For Bilam, I moved away from cluttered, traditional layouts to a 'Modern Luxury' aesthetic. By utilizing high-contrast typography and strategic white space, I ensured that the property imagery remained the hero of the composition. The result is a marketing asset that doesn't just look good—it guides the viewer's eye directly to the value proposition and call-to-action, increasing lead potential for the sales team.",
     gradient: "from-blue-500 to-indigo-600",
     client: "Bilam Real Estate",
     tools: ["Pixellab", "Photopea"],
@@ -98,7 +98,7 @@ const projects: Project[] = [
     description:
       "Clean, professional flyer designed to market premium phone gadgets.",
     fullDescription:
-      "For Abdul Apple Links, the goal was to communicate reliability and product quality through design. I crafted a clean layout, applied structured typography, and incorporated sharp, high-impact phone visuals to present the products clearly and attractively. The result is a refined, brand-aligned flyer designed for effective promotion across print and digital channels.",
+      "For Abdul Apple Links, the mission was to move beyond a simple sales flyer and create a 'Tech Authority' identity. I utilized a high-depth composition, placing the products within a custom-modeled tech suite to symbolize security and variety. By pairing sharp, high-fidelity device renders with a sleek, dark-mode aesthetic, I ensured the brand feels like the premier choice for original Apple products and expert repairs.",
     gradient: "from-blue-500 to-indigo-600",
     client: "Abdurrahman Umar",
     tools: ["Pixellab", "Photopea"],
@@ -112,7 +112,7 @@ const projects: Project[] = [
     description:
       "Clean, professional flyer designed to showcase the brand services.",
     fullDescription:
-      "Malanta Industry Ltd required a flyer that conveyed trust, technical expertise, and industry credibility. I developed a clean, well-structured layout with precise typography and high-quality industrial imagery, enabling clients to quickly understand the value of their engineer-certified solutions and API-compliant equipment. The final design is a polished, brand-consistent marketing asset optimized for both print and digital distribution.",
+      "Technical industries often struggle with data-heavy marketing. For this project, I focused on strategic information hierarchy to ensure that key certifications—like 48-hour delivery and engineer expertise—are immediately scannable. Using a structured grid and custom iconography, I transformed complex service offerings into a clean, persuasive layout. This design serves as a professional 'first impression' that builds instant trust with procurement officers and industrial leads.",
     gradient: "from-blue-500 to-indigo-600",
     client: "Abdurrahman Tijjani Malanta",
     tools: ["Pixellab", "Photopea"],
@@ -126,7 +126,7 @@ const projects: Project[] = [
     description:
       "Clean, professional flyer designed to showcase the brand services.",
     fullDescription:
-      "MGH Photo/Videography required a flyer that conveyed trust and creative professionalism. I developed a clean, well-structured layout with refined typography and high-quality visual imagery, enabling potential clients to quickly understand the value of their services. The final design is a polished, brand-consistent marketing asset optimized for both print and digital distribution.",
+      "For MGH Photo/Videography, the goal was to capture the essence of high-end storytelling through a visual identity that radiates elegance. I developed a sophisticated layout using gold accents and deep contrast to mirror the premium nature of their world-class visuals. By balancing high-fidelity imagery with refined typography, I created a brand-consistent marketing asset that communicates creative professionalism and instantly builds trust with clients looking to document their most special occasions.",
     gradient: "from-yellow-500 to-orange-600",
     client: "Hafeez Tijjani Ali",
     tools: ["Pixellab", "Photopea"],
@@ -159,7 +159,7 @@ const projects: Project[] = [
     description:
       "Scroll-stopping social media content for a crypto brand that boosted visibility and audience engagement.",
     fullDescription:
-      "For Nexora Exchange, I developed a cohesive series of promotional and brand awareness content designed to communicate trust, innovation, and reliability. Each piece was carefully crafted with a modern, tech-driven aesthetic to reflect the brand’s identity while enhancing engagement across digital platforms.",
+      "In the volatile crypto market, visual credibility is the ultimate currency. I collaborated with Nexora Exchange to develop a comprehensive content strategy that prioritizes clarity and high-impact messaging. Through structured typography, custom-rendered tech visuals, and a bold hierarchical layout, I ensured that key value propositions—like speed, security, and trust—are communicated instantly. The final designs serve as a high-performance conversion tool, optimized to stand out in crowded digital feeds and build long-term brand equity.",
     gradient: "from-green-500 to-green-400",
     client: "Nexora Exchange",
     tools: ["Pixellab", "Photopea"],
@@ -173,7 +173,7 @@ const projects: Project[] = [
     description:
       "Scroll-stopping social media content for a food brand that boosted visibility and audience engagement.",
     fullDescription:
-      "For Zesty Zone, I created a cohesive range of promotional and brand awareness content that highlights the brand’s vibrant and appetizing identity. Each design was tailored to showcase the appeal of the meals while driving engagement and attracting customers across Instagram and Facebook.",
+      "For Zesty Zone, the goal was to create a visual identity as bold and flavorful as the menu itself. I developed a high-energy social media suite using a vibrant 'Zesty' palette of reds and yellows to trigger appetite and excitement. By combining playful typography with creative manipulation—like the oversized product 'hero' shots—I established a brand voice that feels both fun and premium, specifically designed to capture attention in the fast-paced food and hospitality market.",
     gradient: "from-red-500 to-orange-400",
     client: "Zesty Zone",
     tools: ["Pixellab", "Photopea"],
