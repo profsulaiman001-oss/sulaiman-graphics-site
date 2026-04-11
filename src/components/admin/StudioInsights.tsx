@@ -25,7 +25,7 @@ export const StudioInsights = () => {
     leadQuality: 3,         
     observations: '',       
     date: new Date().toISOString().split('T')[0],
-    projects: [{ name: '', revenue: '0.00', category: 'Logo Design', isMilestone: false }]
+    projects: [{ name: '', revenue: '', category: 'Logo Design', isMilestone: false }]
   });
 
   useEffect(() => { fetchMetrics(); }, []);
@@ -39,13 +39,26 @@ export const StudioInsights = () => {
     } catch (e) { console.error("Metrics Sync Error", e); }
   };
 
+  const handleAddProject = () => {
+    setFormData({
+      ...formData,
+      projects: [...formData.projects, { name: '', revenue: '', category: 'Logo Design', isMilestone: false }]
+    });
+  };
+
+  const handleProjectChange = (index, field, value) => {
+    const newProjects = [...formData.projects];
+    newProjects[index][field] = value;
+    setFormData({ ...formData, projects: newProjects });
+  };
+
   const handleDeleteProject = async (projectId) => {
     if (!confirm("Execute Delete Protocol?")) return;
     const { error } = await supabase.from('insight_projects').delete().eq('id', projectId);
     if (!error) fetchMetrics();
   };
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSave = async (e) => {
     e.preventDefault();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return alert("Security Error.");
@@ -68,22 +81,28 @@ export const StudioInsights = () => {
 
     if (logError) return alert(`Error: ${logError.message}`);
 
-    const projectsToInsert = formData.projects.filter(p => p.name.trim() !== '').map(p => ({
-        insight_id: insightLog.id, user_id: user.id,
+    const projectsToInsert = formData.projects
+      .filter(p => p.name.trim() !== '')
+      .map(p => ({
+        insight_id: insightLog.id, 
+        user_id: user.id,
         project_name: p.name.trim(), 
         revenue_earned: parseFloat(p.revenue) || 0,
         project_category: p.category,
         is_milestone: p.isMilestone 
-    }));
+      }));
 
-    await supabase.from('insight_projects').insert(projectsToInsert);
+    if (projectsToInsert.length > 0) {
+      await supabase.from('insight_projects').insert(projectsToInsert);
+    }
+
     setIsLogging(false); 
     fetchMetrics();
     setFormData({ 
       linkedin: { sent: 0, replies: 0 }, instagram: { sent: 0, replies: 0 },
       twitter: { sent: 0, replies: 0 }, referral: 0, clients: 0, 
       leadQuality: 3, observations: '', date: new Date().toISOString().split('T')[0], 
-      projects: [{ name: '', revenue: '0.00', category: 'Logo Design', isMilestone: false }] 
+      projects: [{ name: '', revenue: '', category: 'Logo Design', isMilestone: false }] 
     });
   };
 
@@ -135,10 +154,10 @@ export const StudioInsights = () => {
         </button>
       </div>
 
-      {/* 🧩 RESTRUCTURED BENTO GRID */}
+      {/* 🧩 BENTO GRID LAYOUT */}
       <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-12 auto-rows-[160px] gap-4 mb-10">
         
-        {/* EFFICIENCY PULSE (Header Banner) */}
+        {/* EFFICIENCY PULSE */}
         <div className="lg:col-span-9 lg:row-span-1 modular-border-neon p-6 bg-[#070e1b] flex items-center gap-8">
            <div className="min-w-[140px]">
               <h3 className="text-[9px] font-black tracking-[0.4em] text-blue-500 mb-1">Efficiency Pulse</h3>
@@ -153,7 +172,7 @@ export const StudioInsights = () => {
            </div>
         </div>
 
-        {/* TOTAL GROSS (Compact) */}
+        {/* TOTAL GROSS */}
         <div className="lg:col-span-3 lg:row-span-1 modular-border-neon p-6 bg-blue-600 flex items-center justify-between">
             <div>
               <p className="text-[9px] font-black text-white/60 tracking-widest mb-1">Total Gross</p>
@@ -162,7 +181,7 @@ export const StudioInsights = () => {
             <Activity className="text-white/40" size={32}/>
         </div>
 
-        {/* OUTREACH YIELD MATRIX (Expanded Center Stage) */}
+        {/* OUTREACH YIELD (Expanded) */}
         <div className="lg:col-span-5 lg:row-span-3 modular-border-neon p-8 bg-[#070e1b]/80">
           <h3 className="text-[10px] font-black tracking-[0.4em] text-zinc-500 mb-8 flex items-center gap-2">
             <Search size={14} className="text-blue-500"/> Outreach Yield Matrix
@@ -180,7 +199,7 @@ export const StudioInsights = () => {
           </div>
         </div>
 
-        {/* SERVICE PORTFOLIO (Expanded Center Stage) */}
+        {/* SERVICE PORTFOLIO (Expanded) */}
         <div className="lg:col-span-4 lg:row-span-3 modular-border-neon p-8 bg-[#070e1b]/80">
           <h3 className="text-[10px] font-black tracking-[0.4em] text-zinc-500 mb-2">Service Portfolio Mix</h3>
           <ResponsiveContainer width="100%" height="100%">
@@ -211,7 +230,7 @@ export const StudioInsights = () => {
         </div>
       </div>
 
-      {/* 🧾 DESIGN STACK LEDGER */}
+      {/* 🧾 LIVE DESIGN STACK (List) */}
       <div className="max-w-[1600px] mx-auto">
         <div className="flex items-center gap-6 mb-8">
            <Layers className="text-blue-500" size={20}/>
@@ -233,17 +252,17 @@ export const StudioInsights = () => {
                 </div>
                 <div className="flex items-center gap-10">
                    <div className="text-3xl font-black italic text-white tracking-tighter">₦{Number(proj.revenue_earned).toLocaleString()}</div>
-                   <button onClick={() => handleDeleteProject(proj.id)} className="p-3 bg-red-500/5 text-zinc-800 hover:text-red-500 rounded-lg transition-all"><Trash2 size={20}/></button>
+                   <button onClick={() => handleDeleteProject(proj.id)} className="p-3 bg-red-500/5 text-zinc-800 hover:text-red-500 rounded-lg"><Trash2 size={20}/></button>
                 </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* 📝 INPUT MODAL */}
+      {/* 📝 FULLY RESTORED INPUT MODAL */}
       {isLogging && (
         <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-[#020617]/98 backdrop-blur-3xl overflow-y-auto">
-          <form onSubmit={handleSave} className="bg-[#0a0f1d] border border-blue-500/20 p-8 md:p-14 w-full max-w-5xl rounded-[40px] shadow-2xl relative my-auto">
+          <form onSubmit={handleSave} className="bg-[#0a0f1d] border border-blue-500/20 p-8 md:p-14 w-full max-w-6xl rounded-[40px] shadow-2xl relative my-auto">
             <button type="button" onClick={() => setIsLogging(false)} className="absolute top-10 right-10 text-zinc-600 hover:text-white"><X size={32}/></button>
             
             <div className="mb-10 flex flex-col md:flex-row justify-between items-center border-b border-white/5 pb-8 gap-6">
@@ -265,36 +284,61 @@ export const StudioInsights = () => {
                </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-               <div className="space-y-4">
-                  <label className="text-[10px] font-black text-zinc-500 tracking-widest">Outreach Intelligence Matrix</label>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-10">
+               {/* OUTREACH STATS */}
+               <div className="space-y-6">
+                  <label className="text-[10px] font-black text-zinc-500 tracking-[0.4em] uppercase">Outreach Intelligence</label>
                   <div className="space-y-3">
                      {platforms.map(p => (
-                       <div key={p.id} className="flex items-center gap-4 bg-white/5 p-4 rounded-3xl border border-white/5 hover:border-blue-500/20 transition-all">
+                       <div key={p.id} className="flex items-center gap-4 bg-white/5 p-4 rounded-3xl border border-white/5">
                          <div className={`p-3 rounded-2xl bg-white/5 ${p.color}`}>{p.icon}</div>
                          <span className="flex-1 text-[10px] font-black uppercase tracking-widest">{p.label}</span>
                          <div className="flex gap-2">
-                           <input type="number" placeholder="Sent" className="w-16 bg-[#050a15] border border-white/5 p-3 rounded-xl text-center font-bold text-blue-500 outline-none" onChange={(e) => setFormData({...formData, [p.id]: {...formData[p.id], sent: parseInt(e.target.value) || 0}})} />
-                           <input type="number" placeholder="In" className="w-16 bg-[#050a15] border border-white/10 p-3 rounded-xl text-center font-bold text-green-400 outline-none" onChange={(e) => setFormData({...formData, [p.id]: {...formData[p.id], replies: parseInt(e.target.value) || 0}})} />
+                           <input type="number" placeholder="SENT" className="w-20 bg-[#050a15] border border-white/5 p-3 rounded-xl text-center font-bold text-blue-500 outline-none" onChange={(e) => setFormData({...formData, [p.id]: {...formData[p.id], sent: parseInt(e.target.value) || 0}})} />
+                           <input type="number" placeholder="REPLY" className="w-20 bg-[#050a15] border border-white/10 p-3 rounded-xl text-center font-bold text-green-400 outline-none" onChange={(e) => setFormData({...formData, [p.id]: {...formData[p.id], replies: parseInt(e.target.value) || 0}})} />
                          </div>
                        </div>
                      ))}
                   </div>
                </div>
                
-               <div className="space-y-8">
-                  <div className="space-y-4">
-                    <label className="text-[10px] font-black text-zinc-500 tracking-widest flex justify-between">Lead Quality <span>Level {formData.leadQuality}</span></label>
-                    <input type="range" min="1" max="5" value={formData.leadQuality} className="w-full h-2 bg-white/5 rounded-lg appearance-none accent-blue-500 cursor-pointer" onChange={(e) => setFormData({...formData, leadQuality: parseInt(e.target.value)})}/>
+               {/* PROJECT REVENUE ROWS (RESTORED) */}
+               <div className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[10px] font-black text-zinc-500 tracking-[0.4em] uppercase">Project Manifest</label>
+                    <button type="button" onClick={handleAddProject} className="text-blue-500 flex items-center gap-2 text-[10px] font-bold tracking-widest hover:bg-blue-500/10 px-4 py-2 rounded-xl transition-all">
+                      <Plus size={14}/> Add Row
+                    </button>
                   </div>
-                  <div className="space-y-4">
-                    <label className="text-[10px] font-black text-zinc-500 tracking-widest text-center block mb-2">Total Converted Clients</label>
-                    <input type="number" className="glass-input w-full font-bold text-center text-xl p-4" onChange={(e) => setFormData({...formData, clients: parseInt(e.target.value) || 0})}/>
+                  
+                  <div className="space-y-4 max-h-[300px] overflow-y-auto pr-4 custom-scrollbar">
+                    {formData.projects.map((project, idx) => (
+                      <div key={idx} className="flex flex-wrap md:flex-nowrap gap-3 bg-white/5 p-4 rounded-3xl border border-white/5">
+                        <input 
+                          type="text" placeholder="Project Name" 
+                          className="flex-1 bg-[#050a15] border border-white/5 p-4 rounded-2xl font-bold text-sm outline-none"
+                          value={project.name} onChange={(e) => handleProjectChange(idx, 'name', e.target.value)}
+                        />
+                        <select 
+                          className="bg-[#050a15] border border-white/5 p-4 rounded-2xl font-black text-[10px] uppercase outline-none"
+                          value={project.category} onChange={(e) => handleProjectChange(idx, 'category', e.target.value)}
+                        >
+                          {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                        </select>
+                        <input 
+                          type="number" placeholder="₦ PRICE" 
+                          className="w-32 bg-blue-600/10 border border-blue-500/20 p-4 rounded-2xl font-black text-blue-500 outline-none"
+                          value={project.revenue} onChange={(e) => handleProjectChange(idx, 'revenue', e.target.value)}
+                        />
+                      </div>
+                    ))}
                   </div>
                </div>
             </div>
 
-            <button type="submit" className="w-full bg-blue-600 py-8 rounded-[25px] font-black italic tracking-widest text-sm shadow-xl shadow-blue-600/20 hover:scale-[1.01] transition-all">Sync Intelligence Ledger</button>
+            <button type="submit" className="w-full bg-blue-600 py-8 rounded-[25px] font-black italic tracking-widest text-sm shadow-xl shadow-blue-600/20 hover:scale-[1.01] transition-all">
+              Sync Studio Intelligence
+            </button>
           </form>
         </div>
       )}
