@@ -1,62 +1,86 @@
-import { useState } from "react";
+import { useState, useEffect } from "react"; // Added useEffect
 import { useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
 import { motion } from "framer-motion";
-import { ArrowLeft, Send, Loader2, ImagePlus, CheckCircle, FileText } from "lucide-react";
+import { ArrowLeft, Send, Loader2, ImagePlus, CheckCircle, FileText, Trash2, Clock } from "lucide-react"; // Added Trash2 and Clock
 
 export default function CreatePost() {
   const [, setLocation] = useLocation();
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [posts, setPosts] = useState<any[]>([]); // State for post history
+  const [fetchingPosts, setFetchingPosts] = useState(true);
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [imageName, setImageName] = useState("");
 
+  // --- NEW: FETCH POST HISTORY ---
+  const fetchPosts = async () => {
+    setFetchingPosts(true);
+    const { data, error } = await supabase
+      .from("posts")
+      .select("*")
+      .order("created_at", { ascending: false });
+    
+    if (!error && data) setPosts(data);
+    setFetchingPosts(false);
+  };
+
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
+  // --- NEW: HANDLE DELETE ---
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this post? This action cannot be undone.")) return;
+
+    try {
+      const { error } = await supabase.from("posts").delete().eq("id", id);
+      if (error) throw error;
+      
+      // Update local state to remove the post
+      setPosts(posts.filter(post => post.id !== id));
+      alert("Post deleted successfully.");
+    } catch (error: any) {
+      alert("Error deleting post: " + error.message);
+    }
+  };
+
   const handleImageUpload = async (file: File) => {
     try {
       setUploadingImage(true);
-
-      // 1. Check file size (Limit to 5MB max)
       const maxFileSize = 5 * 1024 * 1024;
       if (file.size > maxFileSize) {
         alert("File is too large! Please pick an image under 5MB.");
-        setUploadingImage(false);
         return;
       }
 
-      // 2. Check file type
       const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
       if (!allowedTypes.includes(file.type)) {
-        alert("Unsupported file type! Please upload a PNG, JPG, or WEBP image.");
-        setUploadingImage(false);
+        alert("Unsupported file type!");
         return;
       }
 
-      // Create a clean filename
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}.${fileExt}`;
 
-      // Upload file to Supabase storage
       const { error: uploadError } = await supabase.storage
         .from('post-images')
         .upload(fileName, file);
 
       if (uploadError) throw uploadError;
 
-      // Get the live public URL of the uploaded image
       const { data: urlData } = supabase.storage
         .from('post-images')
         .getPublicUrl(fileName);
 
-      const publicUrl = urlData.publicUrl;
-
-      setImageUrl(publicUrl);
+      setImageUrl(urlData.publicUrl);
       setImageName(file.name);
 
     } catch (error: any) {
-      alert("Error uploading image: " + (error.message || error));
+      alert("Error uploading image: " + error.message);
     } finally {
       setUploadingImage(false);
     }
@@ -64,28 +88,30 @@ export default function CreatePost() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!title.trim() || !content.trim()) {
-      alert("Please provide both a title and content for your post!");
+      alert("Please provide both a title and content!");
       return;
     }
 
     setLoading(true);
-
     try {
       const { error } = await supabase
         .from("posts")
         .insert([{
           title: title.trim(),
           content: content.trim(),
-          image_url: imageUrl // This will be empty if they didn't upload an image
+          image_url: imageUrl
         }]);
 
       if (error) throw error;
       
       alert("Post created successfully!");
-      setLocation("/dashboard"); // Take you back to your dashboard after saving
-
+      // Reset form and refresh list instead of redirecting immediately
+      setTitle("");
+      setContent("");
+      setImageUrl("");
+      setImageName("");
+      fetchPosts(); 
     } catch (error: any) {
       alert("Failed to create post: " + error.message);
     } finally {
@@ -94,7 +120,7 @@ export default function CreatePost() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="min-h-screen bg-background text-foreground flex flex-col pb-20">
       {/* Header */}
       <header className="border-b border-border bg-background/90 backdrop-blur-md sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -104,123 +130,110 @@ export default function CreatePost() {
           >
             <ArrowLeft size={16} /> Back to Dashboard
           </button>
-          
-          <h1 className="font-display font-black text-lg tracking-tighter text-foreground">
+          <h1 className="font-display font-black text-lg tracking-tighter text-foreground uppercase italic">
              SULAIMAN <span className="text-primary">GRAPHICS</span>
           </h1>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8 flex-1 flex justify-center items-center">
+      <main className="container mx-auto px-4 py-12 grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+        
+        {/* LEFT SIDE: CREATE FORM */}
         <motion.div 
-          className="bg-card border border-border rounded-2xl w-full max-w-2xl p-6 shadow-xl"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
+          className="bg-card border border-border rounded-2xl p-6 shadow-xl"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
         >
           <div className="text-center mb-6">
             <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3 border border-primary/20">
               <FileText size={22} className="text-primary" />
             </div>
-            <h2 className="text-2xl font-display font-black text-foreground mb-1">Create A New Post</h2>
-            <p className="text-sm text-muted-foreground">Share an update, tutorial, or announcement with your clients.</p>
+            <h2 className="text-2xl font-display font-black text-foreground mb-1 uppercase italic">Create A New Post</h2>
+            <p className="text-sm text-muted-foreground">Publish an update to your design ecosystem.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            
-            {/* Title Input */}
             <div>
-              <label className="text-xs text-muted-foreground font-semibold uppercase mb-1 block">Post Title</label>
+              <label className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mb-1 block">Post Title</label>
               <input
                 type="text"
-                placeholder="Ex: How to request revisions efficiently"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition text-foreground"
+                className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-none transition"
               />
             </div>
 
-            {/* Content Textarea */}
             <div>
-              <label className="text-xs text-muted-foreground font-semibold uppercase mb-1 block">Post Content</label>
+              <label className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mb-1 block">Post Content</label>
               <textarea
-                placeholder="Write your post details here..."
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                rows={6}
-                className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition text-foreground resize-none"
+                rows={5}
+                className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:border-primary outline-none transition resize-none"
               />
             </div>
 
-            {/* Image Uploader */}
             <div>
-              <label className="text-xs text-muted-foreground font-semibold uppercase mb-1 block">Featured Image</label>
-              
-              <label className={`w-full flex flex-col items-center justify-center border-2 border-dashed rounded-xl p-6 transition-colors cursor-pointer ${
-                imageUrl 
-                  ? "border-green-500/50 bg-green-500/5" 
-                  : "border-border hover:border-primary/50 bg-background/50 hover:bg-primary/5"
-              }`}>
-                <input
-                  type="file"
-                  className="hidden"
-                  accept="image/*"
-                  onChange={(e) => {
-                    if (e.target.files && e.target.files[0]) {
-                      handleImageUpload(e.target.files[0]);
-                    }
-                  }}
-                  disabled={uploadingImage}
-                />
-                
-                {uploadingImage ? (
-                  <div className="flex flex-col items-center">
-                    <Loader2 size={24} className="animate-spin text-primary mb-2" />
-                    <span className="text-sm text-muted-foreground">Uploading image to server...</span>
-                  </div>
-                ) : imageUrl ? (
-                  <div className="flex flex-col items-center text-center">
-                    <CheckCircle size={24} className="text-green-500 mb-2" />
-                    <span className="text-sm font-semibold text-foreground">Image ready!</span>
-                    <span className="text-xs text-muted-foreground max-w-[250px] truncate mt-0.5">{imageName}</span>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center">
-                    <ImagePlus size={24} className="text-muted-foreground mb-2" />
-                    <span className="text-sm font-semibold text-foreground">Click to upload image</span>
-                    <span className="text-xs text-muted-foreground mt-0.5">PNG, JPG or WEBP (Max 5MB)</span>
-                  </div>
-                )}
+              <label className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mb-1 block">Featured Image (1920x1080)</label>
+              <label className={`w-full flex flex-col items-center justify-center border-2 border-dashed rounded-xl p-6 cursor-pointer transition-all ${imageUrl ? "border-green-500/50 bg-green-500/5" : "border-border hover:border-primary/50"}`}>
+                <input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files && handleImageUpload(e.target.files[0])} disabled={uploadingImage} />
+                {uploadingImage ? <Loader2 className="animate-spin text-primary" /> : imageUrl ? <CheckCircle className="text-green-500" /> : <ImagePlus className="text-muted-foreground" />}
+                <span className="text-xs mt-2 font-bold">{imageUrl ? "Image Ready" : "Upload Cover Page"}</span>
               </label>
             </div>
 
-            {/* Action Buttons */}
-            <div className="pt-2 border-t border-border flex flex-col sm:flex-row gap-3">
-              <button 
-                type="button"
-                onClick={() => setLocation("/dashboard")}
-                className="flex-1 bg-background border border-border hover:bg-muted text-foreground font-medium text-sm px-4 py-3 rounded-xl transition"
-              >
-                Cancel
-              </button>
-              
-              <button 
-                type="submit"
-                disabled={loading || uploadingImage}
-                className="flex-1 bg-primary hover:opacity-90 disabled:bg-primary/50 text-white font-semibold text-sm px-4 py-3 rounded-xl transition flex items-center justify-center gap-2"
-              >
-                {loading ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <Send size={16} />
-                )}
-                {loading ? "Publishing..." : "Publish Post"}
+            <div className="pt-4 border-t border-border flex gap-3">
+              <button type="submit" disabled={loading || uploadingImage} className="w-full bg-primary hover:opacity-90 text-white font-bold text-sm py-4 rounded-xl transition flex items-center justify-center gap-2">
+                {loading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                {loading ? "PUBLISHING..." : "PUBLISH TO BLOG"}
               </button>
             </div>
-
           </form>
         </motion.div>
+
+        {/* RIGHT SIDE: POST HISTORY & MANAGEMENT */}
+        <motion.div 
+          className="space-y-6"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <Clock size={18} className="text-primary" />
+            <h3 className="font-display font-black uppercase italic text-lg tracking-tight">Post Management</h3>
+          </div>
+
+          <div className="space-y-4">
+            {fetchingPosts ? (
+              <div className="flex items-center gap-3 text-muted-foreground">
+                <Loader2 size={16} className="animate-spin" /> Loading history...
+              </div>
+            ) : posts.length === 0 ? (
+              <div className="p-8 border border-dashed border-border rounded-2xl text-center text-muted-foreground text-sm">
+                No posts found. Your history will appear here.
+              </div>
+            ) : (
+              posts.map((post) => (
+                <div key={post.id} className="bg-card border border-border p-4 rounded-xl flex items-center justify-between group hover:border-primary/30 transition-all">
+                  <div className="flex flex-col gap-1 overflow-hidden">
+                    <span className="text-xs font-bold text-primary uppercase tracking-tighter">
+                      {new Date(post.created_at).toLocaleDateString()}
+                    </span>
+                    <h4 className="text-sm font-bold text-foreground truncate max-w-[200px] sm:max-w-xs uppercase italic">{post.title}</h4>
+                  </div>
+                  
+                  <button 
+                    onClick={() => handleDelete(post.id)}
+                    className="p-2.5 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all shadow-sm"
+                    title="Delete Post"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </motion.div>
+
       </main>
     </div>
   );
