@@ -8,7 +8,7 @@ import {
 } from "recharts";
 import { 
   Edit3, Trash2, Save, XCircle, Bell, LogOut, CheckCircle, 
-  Clock, Loader2, Plus, HardDrive, Download, Settings, X, Mail, UserCheck, MessageSquare, Send, FileText, ClipboardList, Receipt as ReceiptIcon, Award, BarChart3
+  Clock, Loader2, Plus, HardDrive, Download, Settings, X, Mail, UserCheck, MessageSquare, ShoppingBag, Send, FileText, ClipboardList, Receipt as ReceiptIcon, Award, BarChart3
 } from "lucide-react";
 import { CertificateGenerator } from "./components/certificates/CertificateGenerator";
 
@@ -815,6 +815,14 @@ export default function Dashboard() {
             </button>
           </div>
         )}
+        
+        {/* ✅ MANAGE STOREFRONT BUTTON INJECTED HERE */}
+            <button
+              onClick={() => setLocation("/admin/manage-shop")}
+              className="bg-background border border-border hover:border-blue-500 hover:text-blue-500 text-foreground font-semibold text-sm px-5 py-3 rounded-xl transition flex items-center justify-center gap-2"
+            >
+              <ShoppingBag size={18} /> Manage Storefront
+            </button>
 
         {isAdmin && (
           <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 mb-8">
