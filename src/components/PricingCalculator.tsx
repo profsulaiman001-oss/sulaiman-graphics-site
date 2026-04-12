@@ -9,13 +9,13 @@ const services = [
     id: "logo",
     name: "Logo Design",
     description: "Custom logo concept with color palette",
-    basePrice: 15000,
+    basePrice: 20000,
   },
   {
     id: "brand",
     name: "Brand Identity Design",
     description: "Full brand guidelines, variations, and icons",
-    basePrice: 40000,
+    basePrice: 80000,
   },
   {
     id: "flyer",
