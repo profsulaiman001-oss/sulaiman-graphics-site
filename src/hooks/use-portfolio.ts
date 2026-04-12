@@ -277,23 +277,23 @@ const testimonials: Testimonial[] = [
   {
     id: "t1",
     quote:
-      "Sulaiman completely transformed our visual identity. The attention to detail and modern approach made our brand instantly recognisable.",
-    author: "Sarah Jenkins",
-    role: "CEO, TechNova",
+      "Sulaiman transformed our technical service list into a professional, industrial-grade communication tool. The layout is sharp and authoritative, making it easy for our clients to understand our expertise at a glance.",
+    author: "Abdurrahman Tijjani",
+    role: "Manager, Malanta Industry Ltd",
   },
   {
     id: "t2",
     quote:
-      "Working with Sulaiman was a breeze. He understood our vision immediately and delivered motion graphics that blew our audience away.",
-    author: "Marcus Thorne",
-    role: "Founder., MSA Company",
+      "The design for our real estate flyers perfectly balanced aesthetics with professionalism. It established instant trust with our clients and significantly improved our brand's physical and digital presence.",
+    author: "Bilam",
+    role: "CEO., Bilam Real Estate",
   },
   {
     id: "t3",
     quote:
-      "The social media designs for our brand are stunning. We've seen a noticeable jump in engagement since working with Sulaiman Graphics.",
-    author: "Alawiyya Ali",
-    role: "CEO, Alkhairat Collections",
+      "For a digital-first brand like Nexora, Sulaiman delivered a futuristic and high-energy social media ecosystem. His designs captured the exact 'tech' feel we were looking for and boosted our visibility across platforms.",
+    author: "Isaac David",
+    role: "CEO, Nexora Exchange",
   },
 ];
 
