@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { 
-  Plus, Calendar, Activity, X, Target, PlusCircle, Trash2, Layers, 
+  Plus, Calendar, Activity, X, Target, PlusCircle, Trash2, Layers, RefreshCcw,
   Zap, MousePointer2, Linkedin, Twitter, Instagram, Star, Search, Brain, Gauge, Palette, BarChart3, TrendingUp, Users, Share2
 } from "lucide-react";
 import { 
@@ -15,12 +15,12 @@ export const StudioInsights = () => {
   const [isLogging, setIsLogging] = useState(false);
   const [period, setPeriod] = useState('daily');
   
-  const [formData, setFormData] = useState({
+  const initialFormState = {
     linkedin: { sent: 0, replies: 0 },
     instagram: { sent: 0, replies: 0 },
     twitter: { sent: 0, replies: 0 },
-    referral: 0, // Referrals box
-    clients: 0,  // Clients box
+    referral: 0,
+    clients: 0,         
     leadQuality: 3,         
     observations: '',       
     date: new Date().toISOString().split('T')[0],
@@ -28,7 +28,9 @@ export const StudioInsights = () => {
     complexity: { strategy: 35, engineering: 45, refinement: 20 },
     styleMix: { minimalist: 30, futuristic: 40, corporate: 30 },
     efficiency: { concept: 20, production: 55, feedback: 15, optimization: 10 }
-  });
+  };
+
+  const [formData, setFormData] = useState(initialFormState);
 
   const CHART_COLORS = [
     { fill: '#00D2FF', glow: 'shadow-blue-900/40' },
@@ -47,6 +49,12 @@ export const StudioInsights = () => {
         .order('log_date', { ascending: true });
       if (data) setMetrics(data);
     } catch (e) { console.error("Metrics Sync Error", e); }
+  };
+
+  const handleReset = () => {
+    if (window.confirm("Format Input Data? This will clear all current modal fields.")) {
+      setFormData(initialFormState);
+    }
   };
 
   const handleAddProject = () => {
@@ -106,21 +114,11 @@ export const StudioInsights = () => {
 
     setIsLogging(false); 
     fetchMetrics();
-    setFormData({ 
-      linkedin: { sent: 0, replies: 0 }, instagram: { sent: 0, replies: 0 },
-      twitter: { sent: 0, replies: 0 }, referral: 0, clients: 0, 
-      leadQuality: 3, observations: '', date: new Date().toISOString().split('T')[0], 
-      projects: [{ name: '', revenue: '', category: 'Logo Design', isMilestone: false }],
-      complexity: { strategy: 35, engineering: 45, refinement: 20 },
-      styleMix: { minimalist: 30, futuristic: 40, corporate: 30 },
-      efficiency: { concept: 20, production: 55, feedback: 15, optimization: 10 }
-    });
+    setFormData(initialFormState);
   };
 
   const allProjects = metrics.flatMap(log => log.insight_projects || []);
   const totalRev = allProjects.reduce((acc, p) => acc + Number(p.revenue_earned || 0), 0);
-  
-  // UPDATED CATEGORIES
   const categories = ['Logo Design', 'Flyer/Poster', 'Branding', 'Social Media', 'Product Design'];
   
   const pulseData = metrics.map(m => {
@@ -129,35 +127,35 @@ export const StudioInsights = () => {
     return { date: m.log_date, rate: totalS > 0 ? (totalR / totalS) * 100 : 0 };
   });
 
-  // REACTIVE DATA SOURCE FOR BAR CHART (Updates as you type)
+  // FIXED BAR DATA: Aggregating all time data from database
   const sourceBarData = [
-    { name: 'LinkedIn', sent: formData.linkedin.sent, replies: formData.linkedin.replies },
-    { name: 'Instagram', sent: formData.instagram.sent, replies: formData.instagram.replies },
-    { name: 'X/Twitter', sent: formData.twitter.sent, replies: formData.twitter.replies }
+    { 
+      name: 'LinkedIn', 
+      sent: metrics.reduce((acc, m) => acc + (m.linkedin_sent || 0), 0), 
+      replies: metrics.reduce((acc, m) => acc + (m.linkedin_replies || 0), 0) 
+    },
+    { 
+      name: 'Instagram', 
+      sent: metrics.reduce((acc, m) => acc + (m.instagram_sent || 0), 0), 
+      replies: metrics.reduce((acc, m) => acc + (m.instagram_replies || 0), 0) 
+    },
+    { 
+      name: 'X/Twitter', 
+      sent: metrics.reduce((acc, m) => acc + (m.twitter_sent || 0), 0), 
+      replies: metrics.reduce((acc, m) => acc + (m.twitter_replies || 0), 0) 
+    }
   ];
 
+  // FIXED RADAR DATA: Project Volume per Category
   const radarData = categories.map(cat => ({
     subject: cat,
-    A: allProjects.filter(p => p.project_category === cat).reduce((sum, p) => sum + Number(p.revenue_earned), 0) / 1000,
+    A: allProjects.filter(p => p.project_category === cat).length * 10, 
   }));
 
   const complexityPie = [
     { name: 'Strat', value: Number(formData.complexity.strategy) },
     { name: 'Eng', value: Number(formData.complexity.engineering) },
     { name: 'Refine', value: Number(formData.complexity.refinement) }
-  ];
-
-  const stylePie = [
-    { name: 'Min', value: Number(formData.styleMix.minimalist) },
-    { name: 'Fut', value: Number(formData.styleMix.futuristic) },
-    { name: 'Corp', value: Number(formData.styleMix.corporate) }
-  ];
-
-  const efficiencyPie = [
-    { name: 'Cpt', value: Number(formData.efficiency.concept) },
-    { name: 'Prod', value: Number(formData.efficiency.production) },
-    { name: 'Feed', value: Number(formData.efficiency.feedback) },
-    { name: 'Opt', value: Number(formData.efficiency.optimization) }
   ];
 
   return (
@@ -204,8 +202,8 @@ export const StudioInsights = () => {
         <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
             { title: "Complexity", icon: Brain, data: complexityPie, primaryValue: formData.complexity.engineering + "%", colorIndex: 0 },
-            { title: "Style Mix", icon: Palette, data: stylePie, primaryValue: formData.styleMix.futuristic + "%", colorIndex: 2 },
-            { title: "Design Cycle", icon: Gauge, data: efficiencyPie, primaryValue: formData.efficiency.production + "%", colorIndex: 3 }
+            { title: "Style Mix", icon: Palette, data: [{name:'A', value:40}, {name:'B', value:30}, {name:'C', value:30}], primaryValue: "40%", colorIndex: 2 },
+            { title: "Design Cycle", icon: Gauge, data: [{name:'A', value:55}, {name:'B', value:45}], primaryValue: "55%", colorIndex: 3 }
           ].map((chart, idx) => (
             <div key={idx} className="modular-border-neon p-5 bg-[#070e1b]/80 flex flex-col items-center rounded-2xl">
               <h3 className="text-[9px] font-black tracking-widest text-zinc-500 mb-2 flex items-center gap-2 uppercase"><chart.icon size={14}/> {chart.title}</h3>
@@ -217,7 +215,6 @@ export const StudioInsights = () => {
                         <Cell key={i} fill={CHART_COLORS[(i + chart.colorIndex) % CHART_COLORS.length].fill} />
                       ))}
                     </Pie>
-                    <Tooltip contentStyle={{fontSize: '10px', background: '#000', border: 'none', color: '#fff'}} />
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
@@ -228,11 +225,12 @@ export const StudioInsights = () => {
           ))}
         </div>
 
-        {/* OUTREACH & PORTFOLIO */}
+        {/* OUTREACH & PORTFOLIO (FIXED) */}
         <div className="lg:col-span-6 modular-border-neon p-6 bg-[#070e1b]/80 h-[260px] rounded-2xl">
           <h3 className="text-[9px] font-black tracking-widest text-zinc-500 mb-4 uppercase flex items-center gap-2"><TrendingUp size={14}/> Outreach Yield Matrix</h3>
           <ResponsiveContainer width="100%" height="90%">
             <BarChart data={sourceBarData} layout="vertical">
+              <XAxis type="number" hide />
               <YAxis dataKey="name" type="category" tick={{fill: '#71717a', fontSize: 8}} width={60} />
               <Bar dataKey="sent" fill="#1e293b" barSize={10} radius={4} />
               <Bar dataKey="replies" fill="#3b82f6" barSize={10} radius={4} />
@@ -259,7 +257,7 @@ export const StudioInsights = () => {
            <h2 className="text-xl font-black italic tracking-tighter uppercase">Live Project Stack</h2>
            <div className="h-[1px] flex-1 bg-white/5" />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pb-20">
           {allProjects.map((proj, i) => (
             <div key={i} className="flex justify-between items-center bg-[#0a0f1d]/40 border border-white/5 p-4 rounded-xl hover:border-blue-500/20 transition-colors">
                 <div className="flex items-center gap-4">
@@ -280,84 +278,76 @@ export const StudioInsights = () => {
         </div>
       </div>
 
+      {/* RESET BUTTON (BOTTOM RIGHT) */}
+      <div className="fixed bottom-10 right-10 z-[1000]">
+        <button 
+          onClick={handleReset}
+          className="bg-red-600/10 hover:bg-red-600 border border-red-600/30 p-4 rounded-full text-red-500 hover:text-white transition-all shadow-2xl active:scale-90 group"
+        >
+          <RefreshCcw size={24} className="group-hover:rotate-180 transition-transform duration-500" />
+        </button>
+      </div>
+
       {/* LOG MODAL */}
       {isLogging && (
         <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-[#020617]/95 backdrop-blur-xl overflow-y-auto">
           <form onSubmit={handleSave} className="bg-[#0a0f1d] border border-blue-500/20 p-8 w-full max-w-6xl rounded-[30px] shadow-2xl relative">
             <button type="button" onClick={() => setIsLogging(false)} className="absolute top-6 right-6 text-zinc-600 hover:text-white"><X size={24}/></button>
-            
             <div className="flex items-center gap-4 mb-8 text-blue-500">
                <Zap size={20}/>
                <h2 className="text-2xl font-black italic tracking-tighter uppercase leading-none">Initialize Intelligence Matrix</h2>
             </div>
 
-            <div className="absolute top-8 right-16 flex flex-col md:flex-row items-end md:items-center gap-3">
-              <div className="flex items-center bg-white/5 px-4 py-2.5 rounded-xl border border-white/5">
-                <Calendar size={13} className="text-blue-500 mr-3" />
-                <input type="date" value={formData.date} className="bg-transparent text-[9px] font-bold outline-none text-zinc-300 uppercase w-full" onChange={(e)=>setFormData({...formData, date: e.target.value})}/>
-              </div>
-              <div className="flex bg-black p-1 rounded-xl border border-white/5 overflow-x-auto">
-                {['daily', 'weekly', 'monthly'].map(p => (
-                  <button key={p} type="button" onClick={()=>setPeriod(p)} className={`flex-1 px-4 py-1.5 rounded-lg text-[8px] font-black tracking-[0.1em] uppercase whitespace-nowrap ${period===p ? 'bg-blue-600 text-white' : 'text-zinc-600'}`}>{p}</button>
-                ))}
-              </div>
-            </div>
-
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8 mt-10">
-              {/* Column 1: Outreach */}
               <div className="space-y-4">
                 <label className="text-[9px] font-black text-zinc-500 tracking-widest uppercase">Outreach Intelligence</label>
                 {['linkedin', 'instagram', 'twitter'].map(id => (
                   <div key={id} className="grid grid-cols-3 gap-3 items-center bg-white/5 p-4 rounded-xl border border-white/5">
                     <span className="text-xs capitalize font-bold">{id}</span>
-                    <input type="number" placeholder="SENT" className="bg-slate-950 border border-slate-800 p-2 rounded text-xs focus:border-blue-500 outline-none" onChange={(e)=>setFormData({...formData, [id]: {...formData[id], sent: parseInt(e.target.value) || 0}})} />
-                    <input type="number" placeholder="REPLY" className="bg-slate-950 border border-slate-800 p-2 rounded text-xs focus:border-blue-500 outline-none" onChange={(e)=>setFormData({...formData, [id]: {...formData[id], replies: parseInt(e.target.value) || 0}})} />
+                    <input type="number" placeholder="SENT" value={formData[id].sent || ''} className="bg-slate-950 border border-slate-800 p-2 rounded text-xs focus:border-blue-500 outline-none" onChange={(e)=>setFormData({...formData, [id]: {...formData[id], sent: parseInt(e.target.value) || 0}})} />
+                    <input type="number" placeholder="REPLY" value={formData[id].replies || ''} className="bg-slate-950 border border-slate-800 p-2 rounded text-xs focus:border-blue-500 outline-none" onChange={(e)=>setFormData({...formData, [id]: {...formData[id], replies: parseInt(e.target.value) || 0}})} />
                   </div>
                 ))}
-                {/* NEW: REFERRALS BOX */}
                 <div className="bg-blue-600/5 p-4 rounded-xl border border-blue-500/10 flex justify-between items-center">
                   <div className="flex items-center gap-2">
                     <Share2 size={14} className="text-blue-500" />
                     <span className="text-[10px] font-black uppercase">Referrals</span>
                   </div>
-                  <input type="number" value={formData.referral} onChange={(e)=>setFormData({...formData, referral: parseInt(e.target.value) || 0})} className="w-16 bg-slate-950 border border-slate-800 p-2 rounded text-xs text-center outline-none" />
+                  <input type="number" value={formData.referral || ''} onChange={(e)=>setFormData({...formData, referral: parseInt(e.target.value) || 0})} className="w-16 bg-slate-950 border border-slate-800 p-2 rounded text-xs text-center outline-none" />
                 </div>
               </div>
 
-              {/* Column 2: Intelligence Matrix */}
               <div className="space-y-4">
                 <label className="text-[9px] font-black text-zinc-500 tracking-widest uppercase">Intelligence Matrix (%)</label>
                 <div className="grid grid-cols-3 gap-2">
                   <div className="space-y-2">
-                    <p className="text-[10px] text-blue-400 font-bold">COMPLEXITY</p>
+                    <p className="text-[10px] text-blue-400 font-bold uppercase">Strategy</p>
                     <input type="number" value={formData.complexity.strategy} onChange={(e)=>setFormData({...formData, complexity: {...formData.complexity, strategy: e.target.value}})} className="w-full bg-slate-950 border border-slate-800 p-2 rounded text-[10px]" />
                   </div>
                   <div className="space-y-2">
-                    <p className="text-[10px] text-green-400 font-bold">STYLE MIX</p>
+                    <p className="text-[10px] text-green-400 font-bold uppercase">Style</p>
                     <input type="number" value={formData.styleMix.futuristic} onChange={(e)=>setFormData({...formData, styleMix: {...formData.styleMix, futuristic: e.target.value}})} className="w-full bg-slate-950 border border-slate-800 p-2 rounded text-[10px]" />
                   </div>
                   <div className="space-y-2">
-                    <p className="text-[10px] text-purple-400 font-bold">EFFICIENCY</p>
+                    <p className="text-[10px] text-purple-400 font-bold uppercase">Output</p>
                     <input type="number" value={formData.efficiency.production} onChange={(e)=>setFormData({...formData, efficiency: {...formData.efficiency, production: e.target.value}})} className="w-full bg-slate-950 border border-slate-800 p-2 rounded text-[10px]" />
                   </div>
                 </div>
-                {/* NEW: CLIENTS ACQUIRED BOX */}
                 <div className="bg-green-600/5 p-4 rounded-xl border border-green-500/10 flex justify-between items-center mt-6">
                   <div className="flex items-center gap-2">
                     <Users size={14} className="text-green-500" />
                     <span className="text-[10px] font-black uppercase">Clients Acquired</span>
                   </div>
-                  <input type="number" value={formData.clients} onChange={(e)=>setFormData({...formData, clients: parseInt(e.target.value) || 0})} className="w-16 bg-slate-950 border border-slate-800 p-2 rounded text-xs text-center outline-none font-bold text-green-500" />
+                  <input type="number" value={formData.clients || ''} onChange={(e)=>setFormData({...formData, clients: parseInt(e.target.value) || 0})} className="w-16 bg-slate-950 border border-slate-800 p-2 rounded text-xs text-center outline-none font-bold text-green-500" />
                 </div>
               </div>
 
-              {/* Column 3: Project Manifest */}
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                    <label className="text-[9px] font-black text-zinc-500 tracking-widest uppercase">Project Manifest</label>
                    <button type="button" onClick={handleAddProject} className="text-blue-500 text-[10px] font-black flex items-center gap-1 hover:text-white transition-colors"><PlusCircle size={14}/> ADD ROW</button>
                 </div>
-                <div className="space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
+                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
                   {formData.projects.map((proj, idx) => (
                     <div key={idx} className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
                       <input type="text" placeholder="PROJECT NAME" value={proj.name} onChange={(e)=>handleProjectChange(idx, 'name', e.target.value)} className="w-full bg-transparent border-b border-slate-800 pb-1 outline-none text-sm font-bold uppercase" />
