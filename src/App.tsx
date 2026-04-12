@@ -46,6 +46,12 @@ import ClientHub from "@/pages/ClientHub";
 /* ── Added the Admin Insights Import ── */
 import { StudioInsights } from "@/components/admin/StudioInsights";
 
+/* ── NEW SHOP IMPORTS ── */
+import Shop from "@/pages/shop/Shop";
+import Cart from "@/pages/shop/Cart";
+import SuccessPage from "@/pages/shop/SuccessPage";
+import ManageShop from "@/pages/admin/ManageShop";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -100,6 +106,11 @@ function Router() {
           <Route path="/blog" component={Blog} />
           <Route path="/blog/:id" component={BlogPost} />
           
+          {/* ── NEW SHOP ROUTES ── */}
+          <Route path="/shop" component={Shop} />
+          <Route path="/shop/cart" component={Cart} />
+          <Route path="/shop/success" component={SuccessPage} />
+          
           {/* ── CLIENT HUB TOOLS ── */}
           <Route path="/client-hub" component={ClientHub} />
           <Route path="/questionnaire" component={Questionnaire} />
@@ -131,6 +142,12 @@ function Router() {
           <Route path="/create-post">
             <ProtectedRoute>
               <CreatePost />
+            </ProtectedRoute>
+          </Route>
+
+          <Route path="/admin/manage-shop">
+            <ProtectedRoute>
+              <ManageShop />
             </ProtectedRoute>
           </Route>
           
