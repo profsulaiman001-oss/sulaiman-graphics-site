@@ -16,7 +16,7 @@ export default function Home() {
   const faqs = [
     {
       question: "What is your typical turnaround time for a project?",
-      answer: "Turnaround times vary depending on the scope of the project. A logo design typically takes 3-5 business days, while a full brand identity or complex website can take 1-2 weeks. I prioritize quality to ensure you get the best results!"
+      answer: "Turnaround times vary depending on the scope of the project. A logo design typically takes 3-5 business days, while a full brand identity or motion can take 1-2 weeks. I prioritize quality to ensure you get the best results!"
     },
     {
       question: "How do revisions work?",
