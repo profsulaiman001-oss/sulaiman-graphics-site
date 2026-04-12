@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ShoppingBag } from "lucide-react"; // Added ShoppingBag
+import { Menu, X, ShoppingBag } from "lucide-react"; 
 import { cn } from "@/lib/utils";
 import { SettingsDropdown } from "@/components/SettingsDropdown";
 
@@ -10,7 +10,7 @@ const links = [
   { name: "About", path: "/#about", hash: true },
   { name: "Services", path: "/services" },
   { name: "Portfolio", path: "/portfolio" },
-  { name: "Shop", path: "/shop" }, // Added Shop Link
+  { name: "Shop", path: "/shop" }, 
   { name: "Blog", path: "/blog" },
   { name: "Client Hub", path: "/client-hub", special: false },
   { name: "Contact", path: "/contact" },
@@ -21,7 +21,7 @@ export function Navbar() {
   const [location] = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [cartCount, setCartCount] = useState(0); // Cart state
+  const [cartCount, setCartCount] = useState(0);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
@@ -29,7 +29,6 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Update Cart Count logic
   useEffect(() => {
     const updateCount = () => {
       const savedCart = localStorage.getItem("sulaiman_cart");
@@ -40,10 +39,8 @@ export function Navbar() {
       }
     };
 
-    updateCount(); // Initial check
-    window.addEventListener("storage", updateCount); // Listen for changes in other tabs
-    
-    // Custom event listener for same-tab updates
+    updateCount();
+    window.addEventListener("storage", updateCount);
     window.addEventListener("cartUpdated", updateCount);
     
     return () => {
@@ -96,7 +93,6 @@ export function Navbar() {
               );
             })}
 
-            {/* Cart Icon Badge (Desktop) */}
             <Link href="/shop/cart">
               <a className="relative p-2 text-gray-400 hover:text-blue-500 transition-colors">
                 <ShoppingBag size={18} />
@@ -112,23 +108,27 @@ export function Navbar() {
             <SettingsDropdown />
           </nav>
 
-          {/* Mobile Toggle */}
-          <div className="md:hidden flex items-center gap-4">
-             <Link href="/shop/cart" className="relative p-2 text-white">
-                <ShoppingBag size={20} />
-                {cartCount > 0 && (
-                  <span className="absolute -top-0 -right-0 bg-blue-600 text-white text-[8px] font-black w-3.5 h-3.5 flex items-center justify-center rounded-full">
-                    {cartCount}
-                  </span>
-                )}
+          {/* Mobile Toggle - FIXED: Added Menu Button back */}
+          <div className="md:hidden flex items-center gap-2">
+             <Link href="/shop/cart">
+               <a className="relative p-2 text-white bg-white/5 rounded-xl border border-white/10">
+                  <ShoppingBag size={20} />
+                  {cartCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-[8px] font-black w-3.5 h-3.5 flex items-center justify-center rounded-full">
+                      {cartCount}
+                    </span>
+                  )}
+               </a>
              </Link>
+             
              <SettingsDropdown />
-            <button 
-              className="text-white p-2 bg-white/5 rounded-xl border border-white/10 transition-colors active:bg-white/20"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            >
-              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
+             
+             <button 
+               className="text-white p-2 bg-white/5 rounded-xl border border-white/10 transition-colors active:bg-white/20"
+               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+             >
+               {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+             </button>
           </div>
         </div>
       </div>
