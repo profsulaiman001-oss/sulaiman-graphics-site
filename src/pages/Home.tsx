@@ -193,7 +193,7 @@ export default function Home() {
                   <span className="text-gradient">Sulaiman Rabiu</span>
                 </h2>
                 <p className="text-lg text-muted-foreground leading-relaxed">
-                  I'm a passionate graphic designer and motion designer. I create bold, colorful designs that capture attention and tell a story.
+                  I am a multi-disciplinary graphic designer dedicated to crafting bold, high-impact brand identities. I transform ideas into vibrant visual systems that capture attention and give businesses a professional, distinct edge in their market.
                 </p>
               </div>
 
