@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { 
   Plus, Calendar, Activity, X, Target, PlusCircle, Trash2, Layers, 
-  Zap, MousePointer2, Linkedin, Twitter, Instagram, Star, Search, Brain, Gauge, Palette
+  Zap, MousePointer2, Linkedin, Twitter, Instagram, Star, Search, Brain, Gauge, Palette, BarChart3, TrendingUp
 } from "lucide-react";
 import { 
   AreaChart, Area, XAxis, Tooltip, ResponsiveContainer, YAxis,
@@ -25,13 +25,20 @@ export const StudioInsights = () => {
     observations: '',       
     date: new Date().toISOString().split('T')[0],
     projects: [{ name: '', revenue: '', category: 'Logo Design', isMilestone: false }],
-    // Intelligence Matrix - Local State
+    // Matrix defaults
     complexity: { strategy: 35, engineering: 45, refinement: 20 },
     styleMix: { minimalist: 30, futuristic: 40, corporate: 30 },
     efficiency: { concept: 20, production: 55, feedback: 15, optimization: 10 }
   });
 
-  const CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+  // PREMIUM STUDIO PALETTE
+  const CHART_COLORS = [
+    { fill: '#00D2FF', glow: 'shadow-blue-900/40' }, // Matrix Neon Blue
+    { fill: '#10b981', glow: 'shadow-green-900/40' }, // Studio Green
+    { fill: '#f59e0b', glow: 'shadow-orange-900/40' }, // Warm Amber
+    { fill: '#ff0055', glow: 'shadow-pink-900/40' }, // Cyber Pink
+    { fill: '#9D00FF', glow: 'shadow-purple-900/40' }, // Electric Purple
+  ];
 
   useEffect(() => { fetchMetrics(); }, []);
 
@@ -68,7 +75,7 @@ export const StudioInsights = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return alert("Please login to sync data.");
     
-    // REMOVED 'intelligence_meta' from the insert to fix the Schema Cache error
+    // insert standard metrics
     const { data: insightLog, error: logError } = await supabase.from('studio_insights').insert([{
       user_id: user.id,
       linkedin_sent: formData.linkedin.sent,
@@ -104,7 +111,7 @@ export const StudioInsights = () => {
 
     setIsLogging(false); 
     fetchMetrics();
-    // Resetting form but keeping intelligence defaults
+    // Resetting form, preserving intelligence defaults for local charts
     setFormData({ 
       linkedin: { sent: 0, replies: 0 }, instagram: { sent: 0, replies: 0 },
       twitter: { sent: 0, replies: 0 }, referral: 0, clients: 0, 
@@ -172,7 +179,7 @@ export const StudioInsights = () => {
           </h1>
         </div>
         
-        <button onClick={() => setIsLogging(true)} className="w-full lg:w-auto bg-blue-600 px-10 py-6 rounded-2xl active:scale-95 shadow-2xl shadow-blue-600/20">
+        <button onClick={() => setIsLogging(true)} className="w-full lg:w-auto bg-blue-600 px-10 py-6 rounded-2xl active:scale-95 shadow-2xl shadow-blue-600/20 hover:bg-blue-500 transition-colors">
           <span className="flex items-center justify-center gap-4 text-[11px] font-black italic tracking-[0.3em]">
             <PlusCircle size={18}/> Initialize Log
           </span>
@@ -199,61 +206,54 @@ export const StudioInsights = () => {
 
         {/* COMPACT PIE MATRIX */}
         <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="modular-border-neon p-4 bg-[#070e1b]/80 flex flex-col items-center">
-            <h3 className="text-[8px] font-black tracking-widest text-zinc-500 mb-2 flex items-center gap-2"><Brain size={12}/> Complexity</h3>
-            <div className="h-32 w-full">
-              <ResponsiveContainer>
-                <PieChart>
-                  <Pie data={complexityPie} innerRadius={35} outerRadius={45} paddingAngle={5} dataKey="value">
-                    {complexityPie.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % 5]} />)}
-                  </Pie>
-                  <Tooltip contentStyle={{fontSize: '10px', background: '#000', border: 'none', color: '#fff'}} />
-                </PieChart>
-              </ResponsiveContainer>
+          {[
+            { title: "Complexity", icon: Brain, data: complexityPie, primaryValue: formData.complexity.engineering + "%", colorIndex: 0 },
+            { title: "Style Mix", icon: Palette, data: stylePie, primaryValue: formData.styleMix.futuristic + "%", colorIndex: 2 },
+            { title: "Design Cycle", icon: Gauge, data: efficiencyPie, primaryValue: formData.efficiency.production + "%", colorIndex: 3 }
+          ].map((chart, idx) => (
+            <div key={idx} className="modular-border-neon p-5 bg-[#070e1b]/80 flex flex-col items-center">
+              <h3 className="text-[9px] font-black tracking-widest text-zinc-500 mb-2 flex items-center gap-2"><chart.icon size={14}/> {chart.title}</h3>
+              <div className="h-36 w-full relative">
+                {/* MODERN DONUT LOOK */}
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={chart.data} innerRadius={40} outerRadius={55} paddingAngle={6} dataKey="value">
+                      {chart.data.map((_, i) => (
+                        <Cell key={i} fill={CHART_COLORS[(i + chart.colorIndex) % CHART_COLORS.length].fill} stroke="rgba(255,255,255,0.05)" />
+                      ))}
+                    </Pie>
+                    <Tooltip contentStyle={{fontSize: '10px', background: '#000', border: 'none', color: '#fff', textTransform: 'uppercase'}} />
+                  </PieChart>
+                </ResponsiveContainer>
+                {/* Premium Metric Centerpiece */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
+                   <p className="text-3xl font-black italic tracking-tighter text-white">{chart.primaryValue}</p>
+                   <p className="text-[7px] font-bold text-zinc-600 tracking-widest uppercase">Primary focus</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 w-full gap-2 mt-2">
+                 {chart.data.map((item, i) => (
+                    <div key={i} className={`h-1.5 rounded ${CHART_COLORS[(i + chart.colorIndex) % CHART_COLORS.length].glow}`} style={{ backgroundColor: CHART_COLORS[(i + chart.colorIndex) % CHART_COLORS.length].fill }} />
+                 ))}
+              </div>
             </div>
-          </div>
-          <div className="modular-border-neon p-4 bg-[#070e1b]/80 flex flex-col items-center">
-            <h3 className="text-[8px] font-black tracking-widest text-zinc-500 mb-2 flex items-center gap-2"><Palette size={12}/> Style Mix</h3>
-            <div className="h-32 w-full">
-              <ResponsiveContainer>
-                <PieChart>
-                  <Pie data={stylePie} innerRadius={35} outerRadius={45} paddingAngle={5} dataKey="value">
-                    {stylePie.map((_, i) => <Cell key={i} fill={CHART_COLORS[(i+2) % 5]} />)}
-                  </Pie>
-                  <Tooltip contentStyle={{fontSize: '10px', background: '#000', border: 'none', color: '#fff'}} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-          <div className="modular-border-neon p-4 bg-[#070e1b]/80 flex flex-col items-center">
-            <h3 className="text-[8px] font-black tracking-widest text-zinc-500 mb-2 flex items-center gap-2"><Gauge size={12}/> Design Cycle</h3>
-            <div className="h-32 w-full">
-              <ResponsiveContainer>
-                <PieChart>
-                  <Pie data={efficiencyPie} innerRadius={35} outerRadius={45} paddingAngle={5} dataKey="value">
-                    {efficiencyPie.map((_, i) => <Cell key={i} fill={CHART_COLORS[(i+3) % 5]} />)}
-                  </Pie>
-                  <Tooltip contentStyle={{fontSize: '10px', background: '#000', border: 'none', color: '#fff'}} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
+          ))}
         </div>
 
         {/* OUTREACH & PORTFOLIO */}
         <div className="lg:col-span-6 modular-border-neon p-6 bg-[#070e1b]/80 h-[260px]">
-          <h3 className="text-[9px] font-black tracking-widest text-zinc-500 mb-4 uppercase">Outreach Yield</h3>
+          <h3 className="text-[9px] font-black tracking-widest text-zinc-500 mb-4 uppercase flex items-center gap-2"><TrendingUp size={14}/> Outreach Yield Matrix</h3>
           <ResponsiveContainer width="100%" height="90%">
             <BarChart data={sourceBarData} layout="vertical">
               <YAxis dataKey="name" type="category" tick={{fill: '#71717a', fontSize: 8}} width={60} />
-              <Bar dataKey="sent" fill="#1e293b" barSize={8} radius={4} />
-              <Bar dataKey="replies" fill="#3b82f6" barSize={8} radius={4} />
+              <Bar dataKey="sent" fill="#1e293b" barSize={10} radius={4} />
+              <Bar dataKey="replies" fill="#3b82f6" barSize={10} radius={4} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
         <div className="lg:col-span-6 modular-border-neon p-6 bg-[#070e1b]/80 h-[260px]">
-          <h3 className="text-[9px] font-black tracking-widest text-zinc-500 mb-4 uppercase">Portfolio Focus</h3>
+          <h3 className="text-[9px] font-black tracking-widest text-zinc-500 mb-4 uppercase flex items-center gap-2"><BarChart3 size={14}/> Portfolio Analysis focus</h3>
           <ResponsiveContainer width="100%" height="90%">
             <RadarChart cx="50%" cy="50%" outerRadius="60%" data={radarData}>
               <PolarGrid stroke="rgba(255,255,255,0.05)" />
@@ -273,7 +273,7 @@ export const StudioInsights = () => {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           {allProjects.map((proj, i) => (
-            <div key={i} className="flex justify-between items-center bg-[#0a0f1d]/40 border border-white/5 p-4 rounded-xl">
+            <div key={i} className="flex justify-between items-center bg-[#0a0f1d]/40 border border-white/5 p-4 rounded-xl hover:border-blue-500/20 transition-colors">
                 <div className="flex items-center gap-4">
                   <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${proj.is_milestone ? 'text-yellow-500 bg-yellow-500/10' : 'text-blue-500 bg-blue-500/10'}`}>
                     {proj.is_milestone ? <Star size={14} fill="currentColor"/> : <MousePointer2 size={14}/>}
@@ -300,41 +300,52 @@ export const StudioInsights = () => {
             
             <div className="flex items-center gap-4 mb-8 text-blue-500">
                <Zap size={20}/>
-               <h2 className="text-2xl font-black italic tracking-tighter uppercase">Sync Studio Intel</h2>
+               <h2 className="text-2xl font-black italic tracking-tighter uppercase leading-none">Initialize Intelligence Matrix</h2>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            {/* 🔥 CALENDAR & PERIOD SELECTORS - BACK IN THE TOP RIGHT */}
+            <div className="absolute top-8 right-16 flex flex-col md:flex-row items-end md:items-center gap-3">
+              <div className="flex items-center bg-white/5 px-4 py-2.5 rounded-xl border border-white/5">
+                <Calendar size={13} className="text-blue-500 mr-3" />
+                <input type="date" value={formData.date} className="bg-transparent text-[9px] font-bold outline-none text-zinc-300 uppercase w-full" onChange={(e)=>setFormData({...formData, date: e.target.value})}/>
+              </div>
+              <div className="flex bg-black p-1 rounded-xl border border-white/5 overflow-x-auto">
+                {['daily', 'weekly', 'monthly'].map(p => (
+                  <button key={p} type="button" onClick={()=>setPeriod(p)} className={`flex-1 px-4 py-1.5 rounded-lg text-[8px] font-black tracking-[0.1em] uppercase whitespace-nowrap ${period===p ? 'bg-blue-600 text-white' : 'text-zinc-600'}`}>{p}</button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8 mt-10">
               {/* Column 1: Outreach */}
               <div className="space-y-4">
                 <label className="text-[9px] font-black text-zinc-500 tracking-widest uppercase">Outreach Intelligence</label>
                 {['linkedin', 'instagram', 'twitter'].map(id => (
-                  <div key={id} className="bg-white/5 p-3 rounded-2xl border border-white/5">
-                    <span className="text-[8px] font-bold uppercase text-blue-400 mb-2 block">{id}</span>
-                    <div className="flex gap-2">
-                      <input type="number" placeholder="SENT" className="w-full bg-black/50 p-2 rounded-lg text-xs font-bold text-center outline-none border border-white/5" onChange={(e)=>setFormData({...formData, [id]: {...formData[id], sent: parseInt(e.target.value) || 0}})} />
-                      <input type="number" placeholder="REPLY" className="w-full bg-black/50 p-2 rounded-lg text-xs font-bold text-center outline-none border border-white/5" onChange={(e)=>setFormData({...formData, [id]: {...formData[id], replies: parseInt(e.target.value) || 0}})} />
-                    </div>
-                  </div>
-                ))}
+              <div key={id} className="grid grid-cols-3 gap-3 items-center bg-white/5 p-4 rounded-xl border border-white/5">
+                <span className="text-xs capitalize font-bold">{id}</span>
+                <input type="number" placeholder="SENT" className="bg-slate-950 border border-slate-800 p-2 rounded text-xs focus:border-blue-500 outline-none" onChange={(e)=>setFormData({...formData, [id]: {...formData[id], sent: parseInt(e.target.value) || 0}})} />
+                <input type="number" placeholder="REPLY" className="bg-slate-950 border border-slate-800 p-2 rounded text-xs focus:border-blue-500 outline-none" onChange={(e)=>setFormData({...formData, [id]: {...formData[id], replies: parseInt(e.target.value) || 0}})} />
+              </div>
+            ))}
               </div>
 
               {/* Column 2: Intelligence Matrix */}
               <div className="space-y-4">
                 <label className="text-[9px] font-black text-zinc-500 tracking-widest uppercase">Intelligence Matrix (%)</label>
-                <div className="bg-white/5 p-5 rounded-2xl border border-white/5 space-y-4">
-                   <div className="space-y-1">
-                      <div className="flex justify-between text-[8px] font-bold uppercase text-zinc-400"><span>Strategy</span><span>{formData.complexity.strategy}%</span></div>
-                      <input type="range" className="w-full accent-blue-500" value={formData.complexity.strategy} onChange={(e)=>setFormData({...formData, complexity: {...formData.complexity, strategy: e.target.value}})} />
-                   </div>
-                   <div className="space-y-1">
-                      <div className="flex justify-between text-[8px] font-bold uppercase text-zinc-400"><span>Futuristic</span><span>{formData.styleMix.futuristic}%</span></div>
-                      <input type="range" className="w-full accent-green-500" value={formData.styleMix.futuristic} onChange={(e)=>setFormData({...formData, styleMix: {...formData.styleMix, futuristic: e.target.value}})} />
-                   </div>
-                   <div className="space-y-1">
-                      <div className="flex justify-between text-[8px] font-bold uppercase text-zinc-400"><span>Production</span><span>{formData.efficiency.production}%</span></div>
-                      <input type="range" className="w-full accent-orange-500" value={formData.efficiency.production} onChange={(e)=>setFormData({...formData, efficiency: {...formData.efficiency, production: e.target.value}})} />
-                   </div>
-                </div>
+                <div className="grid grid-cols-3 gap-2">
+              <div className="space-y-2">
+                <p className="text-[10px] text-blue-400">COMPLEXITY</p>
+                <input type="number" value={formData.complexity.strategy} onChange={(e)=>setFormData({...formData, complexity: {...formData.complexity, strategy: e.target.value}})} placeholder="Strategy" className="w-full bg-slate-950 border border-slate-800 p-2 rounded text-[10px]" />
+              </div>
+              <div className="space-y-2">
+                <p className="text-[10px] text-green-400">STYLE MIX</p>
+                <input type="number" value={formData.styleMix.futuristic} onChange={(e)=>setFormData({...formData, styleMix: {...formData.styleMix, futuristic: e.target.value}})} placeholder="Futuristic" className="w-full bg-slate-950 border border-slate-800 p-2 rounded text-[10px]" />
+              </div>
+              <div className="space-y-2">
+                <p className="text-[10px] text-purple-400">EFFICIENCY</p>
+                <input type="number" value={formData.efficiency.production} onChange={(e)=>setFormData({...formData, efficiency: {...formData.efficiency, production: e.target.value}})} placeholder="Production" className="w-full bg-slate-950 border border-slate-800 p-2 rounded text-[10px]" />
+              </div>
+            </div>
               </div>
 
               {/* Column 3: Project Manifest */}
@@ -343,25 +354,20 @@ export const StudioInsights = () => {
                    <label className="text-[9px] font-black text-zinc-500 tracking-widest uppercase">Project Manifest</label>
                    <button type="button" onClick={handleAddProject} className="text-blue-500 text-[8px] font-bold flex items-center gap-1"><PlusCircle size={12}/> Add</button>
                 </div>
-                <div className="space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-1">
-                  {formData.projects.map((p, idx) => (
-                    <div key={idx} className="bg-white/5 p-3 rounded-xl border border-white/5 space-y-2 relative">
-                      <input type="text" placeholder="Project Name" className="w-full bg-black/40 p-2 rounded text-[10px] font-bold outline-none border border-white/5 uppercase" value={p.name} onChange={(e)=>handleProjectChange(idx, 'name', e.target.value)}/>
-                      <div className="flex gap-2">
-                        <select className="bg-black/40 text-[9px] p-2 rounded border border-white/5 flex-1 uppercase" value={p.category} onChange={(e)=>handleProjectChange(idx, 'category', e.target.value)}>
-                          {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                        </select>
-                        <input type="number" placeholder="₦" className="bg-blue-600/10 text-blue-500 font-black p-2 rounded text-[10px] w-20 border border-blue-500/20" value={p.revenue} onChange={(e)=>handleProjectChange(idx, 'revenue', e.target.value)}/>
-                      </div>
-                      <button type="button" onClick={()=>handleProjectChange(idx, 'isMilestone', !p.isMilestone)} className={`absolute top-1 right-1 p-1 ${p.isMilestone ? 'text-yellow-500' : 'text-zinc-800'}`}><Star size={10} fill={p.isMilestone ? "currentColor" : "none"}/></button>
-                    </div>
-                  ))}
-                </div>
+                <div className="bg-slate-950 p-4 rounded border border-slate-800 space-y-3">
+               <input type="text" placeholder="PROJECT NAME" className="w-full bg-transparent border-b border-slate-800 pb-1 outline-none text-sm uppercase" />
+               <div className="flex gap-4">
+                 <select className="bg-transparent text-xs text-slate-400 outline-none">
+                   {categories.map(cat => <option key={cat}>{cat}</option>)}
+                 </select>
+                 <span className="text-blue-500 font-bold">₦ PRICE</span>
+               </div>
+            </div>
               </div>
             </div>
 
-            <button type="submit" className="w-full bg-blue-600 py-6 rounded-2xl font-black italic text-xs tracking-[0.2em] uppercase shadow-xl shadow-blue-600/20 active:scale-[0.98] transition-all">
-              Commit Studio Data
+            <button type="submit" className="w-full bg-blue-600 py-6 rounded-2xl font-black italic text-xs tracking-[0.2em] uppercase shadow-xl shadow-blue-600/20 active:scale-[0.98] transition-all hover:bg-blue-500">
+              Sync Studio Intelligence
             </button>
           </form>
         </div>
