@@ -24,7 +24,7 @@ export default function Home() {
     },
     {
       question: "What files do I receive at the end of a project?",
-      answer: "Once the project is completed and final payment is made, you will receive all necessary high-resolution files. This typically includes source files (AI or PSD), print-ready PDFs, and web-ready PNG/JPG formats."
+      answer: "Once the project is completed and final payment is made, you will receive all necessary high-resolution files. This typically includes, print-ready PDFs, PNG/JPG formats, and ownership license."
     },
     {
       question: "Do you require a deposit before starting?",
