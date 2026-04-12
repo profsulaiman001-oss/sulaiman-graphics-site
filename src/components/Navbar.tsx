@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Sparkles } from "lucide-react";
+import { Menu, X, ShoppingBag } from "lucide-react"; // Added ShoppingBag
 import { cn } from "@/lib/utils";
 import { SettingsDropdown } from "@/components/SettingsDropdown";
 
@@ -10,8 +10,9 @@ const links = [
   { name: "About", path: "/#about", hash: true },
   { name: "Services", path: "/services" },
   { name: "Portfolio", path: "/portfolio" },
+  { name: "Shop", path: "/shop" }, // Added Shop Link
   { name: "Blog", path: "/blog" },
-  { name: "Client Hub", path: "/client-hub", special: false }, // ✨ Box removed
+  { name: "Client Hub", path: "/client-hub", special: false },
   { name: "Contact", path: "/contact" },
   { name: "Login", path: "/login" },
 ];
@@ -20,6 +21,7 @@ export function Navbar() {
   const [location] = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [cartCount, setCartCount] = useState(0); // Cart state
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
@@ -27,7 +29,29 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Closes menu and ensures it doesn't block interactions on new pages
+  // Update Cart Count logic
+  useEffect(() => {
+    const updateCount = () => {
+      const savedCart = localStorage.getItem("sulaiman_cart");
+      if (savedCart) {
+        setCartCount(JSON.parse(savedCart).length);
+      } else {
+        setCartCount(0);
+      }
+    };
+
+    updateCount(); // Initial check
+    window.addEventListener("storage", updateCount); // Listen for changes in other tabs
+    
+    // Custom event listener for same-tab updates
+    window.addEventListener("cartUpdated", updateCount);
+    
+    return () => {
+      window.removeEventListener("storage", updateCount);
+      window.removeEventListener("cartUpdated", updateCount);
+    };
+  }, []);
+
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [location]);
@@ -72,12 +96,32 @@ export function Navbar() {
               );
             })}
 
+            {/* Cart Icon Badge (Desktop) */}
+            <Link href="/shop/cart">
+              <a className="relative p-2 text-gray-400 hover:text-blue-500 transition-colors">
+                <ShoppingBag size={18} />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full shadow-lg">
+                    {cartCount}
+                  </span>
+                )}
+              </a>
+            </Link>
+
             <div className="w-px h-6 bg-white/10 mx-2" />
             <SettingsDropdown />
           </nav>
 
           {/* Mobile Toggle */}
           <div className="md:hidden flex items-center gap-4">
+             <Link href="/shop/cart" className="relative p-2 text-white">
+                <ShoppingBag size={20} />
+                {cartCount > 0 && (
+                  <span className="absolute -top-0 -right-0 bg-blue-600 text-white text-[8px] font-black w-3.5 h-3.5 flex items-center justify-center rounded-full">
+                    {cartCount}
+                  </span>
+                )}
+             </Link>
              <SettingsDropdown />
             <button 
               className="text-white p-2 bg-white/5 rounded-xl border border-white/10 transition-colors active:bg-white/20"
@@ -93,7 +137,6 @@ export function Navbar() {
       <AnimatePresence>
         {mobileMenuOpen && (
           <>
-            {/* Backdrop to catch clicks and close menu */}
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -136,4 +179,4 @@ export function Navbar() {
       </AnimatePresence>
     </header>
   );
-                  }
+}
