@@ -15,7 +15,6 @@ export const StudioInsights = () => {
   const [isLogging, setIsLogging] = useState(false);
   const [period, setPeriod] = useState('daily');
   
-  // EXTENDED FORM DATA: Added Intelligence Matrix
   const [formData, setFormData] = useState({
     linkedin: { sent: 0, replies: 0 },
     instagram: { sent: 0, replies: 0 },
@@ -26,7 +25,7 @@ export const StudioInsights = () => {
     observations: '',       
     date: new Date().toISOString().split('T')[0],
     projects: [{ name: '', revenue: '', category: 'Logo Design', isMilestone: false }],
-    // Intelligence Matrix State
+    // Intelligence Matrix - Local State
     complexity: { strategy: 35, engineering: 45, refinement: 20 },
     styleMix: { minimalist: 30, futuristic: 40, corporate: 30 },
     efficiency: { concept: 20, production: 55, feedback: 15, optimization: 10 }
@@ -69,6 +68,7 @@ export const StudioInsights = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return alert("Please login to sync data.");
     
+    // REMOVED 'intelligence_meta' from the insert to fix the Schema Cache error
     const { data: insightLog, error: logError } = await supabase.from('studio_insights').insert([{
       user_id: user.id,
       linkedin_sent: formData.linkedin.sent,
@@ -82,13 +82,7 @@ export const StudioInsights = () => {
       lead_quality: formData.leadQuality,   
       notes: formData.observations,         
       period_type: period, 
-      log_date: formData.date,
-      // Optional: Add these to your Supabase table later
-      intelligence_meta: {
-        complexity: formData.complexity,
-        styleMix: formData.styleMix,
-        efficiency: formData.efficiency
-      }
+      log_date: formData.date
     }]).select().single();
 
     if (logError) return alert(`Log Error: ${logError.message}`);
@@ -110,7 +104,7 @@ export const StudioInsights = () => {
 
     setIsLogging(false); 
     fetchMetrics();
-    // RESET FORM
+    // Resetting form but keeping intelligence defaults
     setFormData({ 
       linkedin: { sent: 0, replies: 0 }, instagram: { sent: 0, replies: 0 },
       twitter: { sent: 0, replies: 0 }, referral: 0, clients: 0, 
@@ -122,7 +116,6 @@ export const StudioInsights = () => {
     });
   };
 
-  // --- DATA PROCESSING FOR CHARTS ---
   const allProjects = metrics.flatMap(log => log.insight_projects || []);
   const totalRev = allProjects.reduce((acc, p) => acc + Number(p.revenue_earned || 0), 0);
   const categories = ['Logo Design', 'Flyer/Poster', 'Branding', 'Social Media', 'UI Design'];
@@ -144,24 +137,24 @@ export const StudioInsights = () => {
     A: allProjects.filter(p => p.project_category === cat).reduce((sum, p) => sum + Number(p.revenue_earned), 0) / 1000,
   }));
 
-  // New Intelligence Pie Data
+  // Chart Data Mapping
   const complexityPie = [
-    { name: 'Strategy', value: formData.complexity.strategy },
-    { name: 'Engineering', value: formData.complexity.engineering },
-    { name: 'Refinement', value: formData.complexity.refinement }
+    { name: 'Strat', value: Number(formData.complexity.strategy) },
+    { name: 'Eng', value: Number(formData.complexity.engineering) },
+    { name: 'Refine', value: Number(formData.complexity.refinement) }
   ];
 
   const stylePie = [
-    { name: 'Minimalist', value: formData.styleMix.minimalist },
-    { name: 'Futuristic', value: formData.styleMix.futuristic },
-    { name: 'Corporate', value: formData.styleMix.corporate }
+    { name: 'Min', value: Number(formData.styleMix.minimalist) },
+    { name: 'Fut', value: Number(formData.styleMix.futuristic) },
+    { name: 'Corp', value: Number(formData.styleMix.corporate) }
   ];
 
   const efficiencyPie = [
-    { name: 'Concept', value: formData.efficiency.concept },
-    { name: 'Prod', value: formData.efficiency.production },
-    { name: 'Feedback', value: formData.efficiency.feedback },
-    { name: 'Opti', value: formData.efficiency.optimization }
+    { name: 'Cpt', value: Number(formData.efficiency.concept) },
+    { name: 'Prod', value: Number(formData.efficiency.production) },
+    { name: 'Feed', value: Number(formData.efficiency.feedback) },
+    { name: 'Opt', value: Number(formData.efficiency.optimization) }
   ];
 
   return (
@@ -186,10 +179,9 @@ export const StudioInsights = () => {
         </button>
       </div>
 
-      {/* DASHBOARD BENTO - COMPACT VIEW */}
+      {/* DASHBOARD BENTO */}
       <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
         
-        {/* TOTAL GROSS & PULSE (Row 1) */}
         <div className="lg:col-span-3 modular-border-neon p-5 bg-blue-600 flex flex-col justify-center">
           <p className="text-[8px] font-black text-white/60 tracking-widest mb-1">Live Revenue</p>
           <h4 className="text-3xl font-black italic">₦{totalRev.toLocaleString()}</h4>
@@ -205,50 +197,50 @@ export const StudioInsights = () => {
            </div>
         </div>
 
-        {/* MATRIX ROW (The 3 Shrunk Pies) */}
+        {/* COMPACT PIE MATRIX */}
         <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="modular-border-neon p-4 bg-[#070e1b]/80 flex flex-col items-center">
-            <h3 className="text-[8px] font-black tracking-widest text-zinc-500 mb-2 uppercase flex items-center gap-2"><Brain size={12}/> Complexity</h3>
+            <h3 className="text-[8px] font-black tracking-widest text-zinc-500 mb-2 flex items-center gap-2"><Brain size={12}/> Complexity</h3>
             <div className="h-32 w-full">
               <ResponsiveContainer>
                 <PieChart>
                   <Pie data={complexityPie} innerRadius={35} outerRadius={45} paddingAngle={5} dataKey="value">
                     {complexityPie.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % 5]} />)}
                   </Pie>
-                  <Tooltip contentStyle={{fontSize: '10px', background: '#000', border: 'none'}} />
+                  <Tooltip contentStyle={{fontSize: '10px', background: '#000', border: 'none', color: '#fff'}} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
           </div>
           <div className="modular-border-neon p-4 bg-[#070e1b]/80 flex flex-col items-center">
-            <h3 className="text-[8px] font-black tracking-widest text-zinc-500 mb-2 uppercase flex items-center gap-2"><Palette size={12}/> Style Mix</h3>
+            <h3 className="text-[8px] font-black tracking-widest text-zinc-500 mb-2 flex items-center gap-2"><Palette size={12}/> Style Mix</h3>
             <div className="h-32 w-full">
               <ResponsiveContainer>
                 <PieChart>
                   <Pie data={stylePie} innerRadius={35} outerRadius={45} paddingAngle={5} dataKey="value">
                     {stylePie.map((_, i) => <Cell key={i} fill={CHART_COLORS[(i+2) % 5]} />)}
                   </Pie>
-                  <Tooltip contentStyle={{fontSize: '10px', background: '#000', border: 'none'}} />
+                  <Tooltip contentStyle={{fontSize: '10px', background: '#000', border: 'none', color: '#fff'}} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
           </div>
           <div className="modular-border-neon p-4 bg-[#070e1b]/80 flex flex-col items-center">
-            <h3 className="text-[8px] font-black tracking-widest text-zinc-500 mb-2 uppercase flex items-center gap-2"><Gauge size={12}/> Design Cycle</h3>
+            <h3 className="text-[8px] font-black tracking-widest text-zinc-500 mb-2 flex items-center gap-2"><Gauge size={12}/> Design Cycle</h3>
             <div className="h-32 w-full">
               <ResponsiveContainer>
                 <PieChart>
                   <Pie data={efficiencyPie} innerRadius={35} outerRadius={45} paddingAngle={5} dataKey="value">
                     {efficiencyPie.map((_, i) => <Cell key={i} fill={CHART_COLORS[(i+3) % 5]} />)}
                   </Pie>
-                  <Tooltip contentStyle={{fontSize: '10px', background: '#000', border: 'none'}} />
+                  <Tooltip contentStyle={{fontSize: '10px', background: '#000', border: 'none', color: '#fff'}} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
           </div>
         </div>
 
-        {/* BOTTOM MATRIX (Outreach & Portfolio) */}
+        {/* OUTREACH & PORTFOLIO */}
         <div className="lg:col-span-6 modular-border-neon p-6 bg-[#070e1b]/80 h-[260px]">
           <h3 className="text-[9px] font-black tracking-widest text-zinc-500 mb-4 uppercase">Outreach Yield</h3>
           <ResponsiveContainer width="100%" height="90%">
@@ -272,7 +264,7 @@ export const StudioInsights = () => {
         </div>
       </div>
 
-      {/* LIVE PROJECT STACK */}
+      {/* PROJECT STACK */}
       <div className="max-w-[1600px] mx-auto">
         <div className="flex items-center gap-4 mb-6">
            <Layers className="text-blue-500" size={18}/>
@@ -300,57 +292,67 @@ export const StudioInsights = () => {
         </div>
       </div>
 
-      {/* LOGGING MODAL */}
+      {/* LOG MODAL */}
       {isLogging && (
         <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-[#020617]/95 backdrop-blur-xl overflow-y-auto">
           <form onSubmit={handleSave} className="bg-[#0a0f1d] border border-blue-500/20 p-8 w-full max-w-5xl rounded-[30px] shadow-2xl relative">
             <button type="button" onClick={() => setIsLogging(false)} className="absolute top-6 right-6 text-zinc-600 hover:text-white"><X size={24}/></button>
             
-            <div className="flex items-center gap-4 mb-8">
-               <Zap className="text-blue-500" size={20}/>
-               <h2 className="text-2xl font-black italic tracking-tighter uppercase">Initialize Intelligence</h2>
+            <div className="flex items-center gap-4 mb-8 text-blue-500">
+               <Zap size={20}/>
+               <h2 className="text-2xl font-black italic tracking-tighter uppercase">Sync Studio Intel</h2>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Outreach Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+              {/* Column 1: Outreach */}
               <div className="space-y-4">
-                <label className="text-[9px] font-black text-zinc-500 tracking-widest uppercase">Outreach</label>
+                <label className="text-[9px] font-black text-zinc-500 tracking-widest uppercase">Outreach Intelligence</label>
                 {['linkedin', 'instagram', 'twitter'].map(id => (
-                  <div key={id} className="bg-white/5 p-4 rounded-2xl border border-white/5 flex flex-col gap-2">
-                    <span className="text-[9px] font-bold uppercase text-blue-400">{id}</span>
+                  <div key={id} className="bg-white/5 p-3 rounded-2xl border border-white/5">
+                    <span className="text-[8px] font-bold uppercase text-blue-400 mb-2 block">{id}</span>
                     <div className="flex gap-2">
-                      <input type="number" placeholder="SENT" className="w-full bg-black/50 p-2 rounded-lg text-xs font-bold text-center outline-none" onChange={(e)=>setFormData({...formData, [id]: {...formData[id], sent: parseInt(e.target.value) || 0}})} />
-                      <input type="number" placeholder="REPLY" className="w-full bg-black/50 p-2 rounded-lg text-xs font-bold text-center outline-none" onChange={(e)=>setFormData({...formData, [id]: {...formData[id], replies: parseInt(e.target.value) || 0}})} />
+                      <input type="number" placeholder="SENT" className="w-full bg-black/50 p-2 rounded-lg text-xs font-bold text-center outline-none border border-white/5" onChange={(e)=>setFormData({...formData, [id]: {...formData[id], sent: parseInt(e.target.value) || 0}})} />
+                      <input type="number" placeholder="REPLY" className="w-full bg-black/50 p-2 rounded-lg text-xs font-bold text-center outline-none border border-white/5" onChange={(e)=>setFormData({...formData, [id]: {...formData[id], replies: parseInt(e.target.value) || 0}})} />
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* NEW: Intelligence Matrix Inputs */}
+              {/* Column 2: Intelligence Matrix */}
               <div className="space-y-4">
                 <label className="text-[9px] font-black text-zinc-500 tracking-widest uppercase">Intelligence Matrix (%)</label>
-                <div className="bg-white/5 p-4 rounded-2xl border border-white/5 space-y-3">
-                   <div className="flex justify-between items-center"><span className="text-[8px] font-bold">Strategy</span><input type="number" className="w-12 bg-black rounded text-center text-xs p-1" value={formData.complexity.strategy} onChange={(e)=>setFormData({...formData, complexity: {...formData.complexity, strategy: e.target.value}})} /></div>
-                   <div className="flex justify-between items-center"><span className="text-[8px] font-bold">Futuristic</span><input type="number" className="w-12 bg-black rounded text-center text-xs p-1" value={formData.styleMix.futuristic} onChange={(e)=>setFormData({...formData, styleMix: {...formData.styleMix, futuristic: e.target.value}})} /></div>
-                   <div className="flex justify-between items-center"><span className="text-[8px] font-bold">Production</span><input type="number" className="w-12 bg-black rounded text-center text-xs p-1" value={formData.efficiency.production} onChange={(e)=>setFormData({...formData, efficiency: {...formData.efficiency, production: e.target.value}})} /></div>
-                </div>
-                <div className="bg-blue-600/10 p-4 rounded-2xl border border-blue-500/20">
-                  <span className="text-[8px] font-black block mb-2">Lead Quality (1-5)</span>
-                  <input type="range" min="1" max="5" value={formData.leadQuality} className="w-full accent-blue-500" onChange={(e)=>setFormData({...formData, leadQuality: e.target.value})}/>
+                <div className="bg-white/5 p-5 rounded-2xl border border-white/5 space-y-4">
+                   <div className="space-y-1">
+                      <div className="flex justify-between text-[8px] font-bold uppercase text-zinc-400"><span>Strategy</span><span>{formData.complexity.strategy}%</span></div>
+                      <input type="range" className="w-full accent-blue-500" value={formData.complexity.strategy} onChange={(e)=>setFormData({...formData, complexity: {...formData.complexity, strategy: e.target.value}})} />
+                   </div>
+                   <div className="space-y-1">
+                      <div className="flex justify-between text-[8px] font-bold uppercase text-zinc-400"><span>Futuristic</span><span>{formData.styleMix.futuristic}%</span></div>
+                      <input type="range" className="w-full accent-green-500" value={formData.styleMix.futuristic} onChange={(e)=>setFormData({...formData, styleMix: {...formData.styleMix, futuristic: e.target.value}})} />
+                   </div>
+                   <div className="space-y-1">
+                      <div className="flex justify-between text-[8px] font-bold uppercase text-zinc-400"><span>Production</span><span>{formData.efficiency.production}%</span></div>
+                      <input type="range" className="w-full accent-orange-500" value={formData.efficiency.production} onChange={(e)=>setFormData({...formData, efficiency: {...formData.efficiency, production: e.target.value}})} />
+                   </div>
                 </div>
               </div>
 
-              {/* Project Manifest */}
-              <div className="space-y-4 lg:col-span-1">
+              {/* Column 3: Project Manifest */}
+              <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                   <label className="text-[9px] font-black text-zinc-500 tracking-widest uppercase">Manifest</label>
-                   <button type="button" onClick={handleAddProject} className="text-blue-500 text-[8px] font-bold"><Plus size={10}/> Add</button>
+                   <label className="text-[9px] font-black text-zinc-500 tracking-widest uppercase">Project Manifest</label>
+                   <button type="button" onClick={handleAddProject} className="text-blue-500 text-[8px] font-bold flex items-center gap-1"><PlusCircle size={12}/> Add</button>
                 </div>
-                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                <div className="space-y-2 max-h-[250px] overflow-y-auto custom-scrollbar pr-1">
                   {formData.projects.map((p, idx) => (
                     <div key={idx} className="bg-white/5 p-3 rounded-xl border border-white/5 space-y-2 relative">
-                      <input type="text" placeholder="Name" className="w-full bg-black/40 p-2 rounded text-[10px] font-bold outline-none uppercase" value={p.name} onChange={(e)=>handleProjectChange(idx, 'name', e.target.value)}/>
-                      <input type="number" placeholder="Price" className="w-full bg-blue-600/10 p-2 rounded text-[10px] font-black text-blue-500 outline-none" value={p.revenue} onChange={(e)=>handleProjectChange(idx, 'revenue', e.target.value)}/>
+                      <input type="text" placeholder="Project Name" className="w-full bg-black/40 p-2 rounded text-[10px] font-bold outline-none border border-white/5 uppercase" value={p.name} onChange={(e)=>handleProjectChange(idx, 'name', e.target.value)}/>
+                      <div className="flex gap-2">
+                        <select className="bg-black/40 text-[9px] p-2 rounded border border-white/5 flex-1 uppercase" value={p.category} onChange={(e)=>handleProjectChange(idx, 'category', e.target.value)}>
+                          {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                        </select>
+                        <input type="number" placeholder="₦" className="bg-blue-600/10 text-blue-500 font-black p-2 rounded text-[10px] w-20 border border-blue-500/20" value={p.revenue} onChange={(e)=>handleProjectChange(idx, 'revenue', e.target.value)}/>
+                      </div>
                       <button type="button" onClick={()=>handleProjectChange(idx, 'isMilestone', !p.isMilestone)} className={`absolute top-1 right-1 p-1 ${p.isMilestone ? 'text-yellow-500' : 'text-zinc-800'}`}><Star size={10} fill={p.isMilestone ? "currentColor" : "none"}/></button>
                     </div>
                   ))}
@@ -358,8 +360,8 @@ export const StudioInsights = () => {
               </div>
             </div>
 
-            <button type="submit" className="w-full bg-blue-600 py-6 rounded-2xl font-black italic text-xs tracking-[0.2em] uppercase mt-8 shadow-xl shadow-blue-600/20 active:scale-95 transition-all">
-              Sync Studio Intelligence
+            <button type="submit" className="w-full bg-blue-600 py-6 rounded-2xl font-black italic text-xs tracking-[0.2em] uppercase shadow-xl shadow-blue-600/20 active:scale-[0.98] transition-all">
+              Commit Studio Data
             </button>
           </form>
         </div>
