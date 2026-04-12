@@ -50,7 +50,7 @@ import { StudioInsights } from "@/components/admin/StudioInsights";
 import Shop from "@/pages/shop/Shop";
 import Cart from "@/pages/shop/Cart";
 import SuccessPage from "@/pages/shop/SuccessPage";
-import ManageShop from "@/pages/admin/ManageShop";
+import ManageShop from "@/pages/shop/ManageShop";
 
 const queryClient = new QueryClient({
   defaultOptions: {
