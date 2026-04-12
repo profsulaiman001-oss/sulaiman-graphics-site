@@ -10,7 +10,7 @@ const services = [
   {
     id: "logo",
     title: "Logo Design",
-    price: "₦15,000",
+    price: "₦20,000",
     priceSub: "per logo",
     gradient: "from-blue-600/20 to-cyan-500/10",
     accent: "text-blue-400",
@@ -25,7 +25,7 @@ const services = [
   {
     id: "brand",
     title: "Brand Identity Design",
-    price: "₦40,000",
+    price: "₦80,000",
     priceSub: "complete package",
     gradient: "from-indigo-600/30 to-blue-500/20",
     accent: "text-indigo-400",
@@ -37,6 +37,7 @@ const services = [
       "Colour Palette & Typography",
       "Brand Voice & Visual Identity",
       "Custom Icons & Graphics",
+      "Mockups",
       "3 Revisions",
     ],
   },
