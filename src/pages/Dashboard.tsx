@@ -813,9 +813,6 @@ export default function Dashboard() {
             >
               <BarChart3 size={18} /> Studio Insights
             </button>
-          </div>
-        )}
-        
             {/* ✅ MANAGE STOREFRONT BUTTON INJECTED HERE */}
             <button
               onClick={() => setLocation("/admin/manage-shop")}
@@ -823,6 +820,9 @@ export default function Dashboard() {
             >
               <ShoppingBag size={18} /> Manage Storefront
             </button>
+
+          </div>
+        )}
 
         {isAdmin && (
           <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 mb-8">
