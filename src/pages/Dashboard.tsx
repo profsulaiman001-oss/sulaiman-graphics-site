@@ -68,8 +68,15 @@ export default function Dashboard() {
       return;
     }
     setUser(user);
-    const adminStatus = user.email === "profsulaiman001@gmail.com";
-    setIsAdmin(adminStatus);
+
+      // Only your email grants admin rights
+      if (user.email === "profsulaiman001@gmail.com") {
+        setIsAdmin(true);
+      } else {
+        setIsAdmin(false);
+      }
+
+      setLoading(false);
     
     fetchProfile(user.id);
     fetchProjects(user, adminStatus);
