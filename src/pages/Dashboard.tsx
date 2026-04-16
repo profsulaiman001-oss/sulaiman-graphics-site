@@ -816,7 +816,7 @@ export default function Dashboard() {
           </div>
         )}
         
-        {/* ✅ MANAGE STOREFRONT BUTTON INJECTED HERE */}
+            {/* ✅ MANAGE STOREFRONT BUTTON INJECTED HERE */}
             <button
               onClick={() => setLocation("/admin/manage-shop")}
               className="bg-background border border-border hover:border-blue-500 hover:text-blue-500 text-foreground font-semibold text-sm px-5 py-3 rounded-xl transition flex items-center justify-center gap-2"
