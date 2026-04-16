@@ -57,28 +57,31 @@ export function Navbar() {
     <header
       className={cn(
         "fixed top-0 inset-x-0 z-50 transition-all duration-500",
+        // MODIFIED: Changed bg-transparent to solid black #02040a to ensure visibility
         isScrolled 
-          ? "bg-[#050a15]/80 backdrop-blur-xl border-b border-white/10 py-3 shadow-2xl" 
-          : "bg-transparent py-6"
+          ? "bg-[#02040a]/95 backdrop-blur-xl border-b border-white/10 py-3 shadow-2xl" 
+          : "bg-[#02040a] border-b border-white/5 py-5"
       )}
     >
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="flex items-center justify-between">
+       
           <Link href="/" className="relative z-10 group">
-            <span className="font-display font-black text-2xl tracking-tighter text-white group-hover:text-blue-500 transition-colors">
+            <span className="font-display font-black text-2xl tracking-tighter text-white group-hover:text-blue-500 transition-colors uppercase italic">
               SULAIMAN<span className="text-blue-600">.</span>GRAPHICS
             </span>
           </Link>
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-8">
+          
             {links.map((link) => {
               const isActive = !link.hash && (location === link.path || (link.path !== "/" && location.startsWith(link.path)));
               
               return (
                 <Link key={link.path} href={link.path}>
                   <a className={cn(
-                    "relative text-xs font-bold uppercase tracking-[0.2em] transition-all duration-300 py-2",
+                    "relative text-[10px] font-black uppercase tracking-[0.25em] transition-all duration-300 py-2",
                     isActive ? "text-blue-500" : "text-gray-400 hover:text-white"
                   )}>
                     {link.name}
@@ -94,10 +97,10 @@ export function Navbar() {
             })}
 
             <Link href="/shop/cart">
-              <a className="relative p-2 text-gray-400 hover:text-blue-500 transition-colors">
+              <a className="relative p-2.5 bg-white/5 rounded-xl border border-white/10 text-white hover:bg-blue-600/20 transition-all">
                 <ShoppingBag size={18} />
                 {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full shadow-lg">
+                  <span className="absolute -top-1.5 -right-1.5 bg-blue-600 text-white text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full border-2 border-[#02040a]">
                     {cartCount}
                   </span>
                 )}
@@ -105,16 +108,17 @@ export function Navbar() {
             </Link>
 
             <div className="w-px h-6 bg-white/10 mx-2" />
+ 
             <SettingsDropdown />
           </nav>
 
-          {/* Mobile Toggle - FIXED: Removed Settings icon & adjusted spacing */}
+          {/* Mobile Toggle */}
           <div className="md:hidden flex items-center gap-4">
              <Link href="/shop/cart">
-               <a className="relative p-2 text-white bg-white/5 rounded-xl border border-white/10">
+               <a className="relative p-2.5 bg-white/5 rounded-xl border border-white/10 text-white">
                   <ShoppingBag size={20} />
                   {cartCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-[8px] font-black w-3.5 h-3.5 flex items-center justify-center rounded-full">
+                    <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-[8px] font-black w-3.5 h-3.5 flex items-center justify-center rounded-full border-2 border-[#02040a]">
                       {cartCount}
                     </span>
                   )}
@@ -122,7 +126,7 @@ export function Navbar() {
              </Link>
              
              <button 
-               className="text-white p-2 bg-white/5 rounded-xl border border-white/10 transition-colors active:bg-white/20"
+               className="text-white p-2.5 bg-white/5 rounded-xl border border-white/10 transition-colors active:bg-white/20"
                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
              >
                {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -140,26 +144,25 @@ export function Navbar() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setMobileMenuOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm md:hidden"
+              className="fixed inset-0 bg-black/80 backdrop-blur-md md:hidden"
             />
-            
+           
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: -20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -20 }}
-              className="absolute top-full left-4 right-4 mt-2 bg-[#0a0f1d]/98 backdrop-blur-2xl border border-white/10 rounded-[2rem] shadow-2xl p-4 md:hidden overflow-hidden"
+              className="absolute top-full left-4 right-4 mt-4 bg-[#0a0f1d] border border-white/10 rounded-[2rem] shadow-2xl p-4 md:hidden overflow-hidden"
             >
               <div className="flex flex-col space-y-1 relative z-10">
                 {links.map((link) => {
                   const isActive = !link.hash && (location === link.path);
-                  
                   return (
                     <Link
                       key={link.path}
                       href={link.path}
                       onClick={() => setMobileMenuOpen(false)}
                       className={cn(
-                        "flex items-center justify-between px-5 py-3.5 rounded-xl text-[11px] font-black uppercase tracking-[0.25em] transition-all duration-300",
+                        "flex items-center justify-between px-5 py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.25em] transition-all duration-300",
                         isActive 
                           ? "bg-blue-600 text-white shadow-lg shadow-blue-900/40" 
                           : "text-gray-400 hover:bg-white/5 hover:text-white"
@@ -177,4 +180,4 @@ export function Navbar() {
       </AnimatePresence>
     </header>
   );
-}
+        }
