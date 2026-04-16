@@ -36,7 +36,7 @@ export default function ManageShop() {
       setUploading(true);
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random()}.${fileExt}`;
-      const filePath = `products/${fileName}`;
+      const filePath = `product-images/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('shop-assets')
@@ -44,10 +44,14 @@ export default function ManageShop() {
 
       if (uploadError) throw uploadError;
 
-      const { data } = supabase.storage.from('shop-assets').getPublicUrl(filePath);
-      setImageUrl(data.publicUrl);
-    } catch (error: any) {
-      console.error(error.message);
+      const { data: { publicUrl } } = supabase.storage
+        .from('shop-assets')
+        .getPublicUrl(filePath);
+
+      setImageUrl(publicUrl);
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert("Upload failed. Check storage permissions.");
     } finally {
       setUploading(false);
     }
@@ -57,120 +61,126 @@ export default function ManageShop() {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await supabase.from("products").insert([{
-      name,
-      description,
-      price: parseFloat(price),
-      discount_price: discountPrice ? parseFloat(discountPrice) : null,
-      category,
-      image_url: imageUrl,
-    }]);
+    try {
+      const { error } = await supabase.from("products").insert([{
+        name,
+        description,
+        price: parseFloat(price),
+        discount_price: discountPrice ? parseFloat(discountPrice) : null,
+        category,
+        image_url: imageUrl
+      }]);
 
-    if (!error) {
-      setName(""); setDescription(""); setPrice(""); setDiscountPrice(""); setImageUrl("");
-      fetchProducts();
+      if (error) throw error;
+
+      // Reset Form
+      setName("");
+      setDescription("");
+      setPrice("");
+      setDiscountPrice("");
+      setImageUrl("");
       setActiveTab("inventory");
+      fetchProducts();
+    } catch (error) {
+      console.error('Error adding product:', error);
+      alert("Failed to add product.");
+    } finally {
+      setLoading(true);
+      setTimeout(() => setLoading(false), 1000);
     }
-    setLoading(false);
   };
 
   const deleteProduct = async (id: string) => {
-    if (!confirm("Are you sure you want to remove this premium asset?")) return;
-    await supabase.from("products").delete().eq("id", id);
-    fetchProducts();
+    if (!confirm("Are you sure? This action is permanent.")) return;
+    
+    const { error } = await supabase.from("products").delete().eq("id", id);
+    if (!error) fetchProducts();
   };
 
-  const totalValue = products.reduce((acc, curr) => acc + (curr.price || 0), 0);
-
   return (
-    <div className="min-h-screen bg-[#02040a] text-white pt-28 pb-20 px-4 md:px-10 font-sans selection:bg-blue-500/30">
+    <div className="min-h-screen bg-[#02040a] text-white pt-32 pb-20 px-6">
       <div className="max-w-7xl mx-auto">
         
-        {/* --- PREMIUM HEADER SECTION --- */}
-        <header className="mb-12 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="h-px w-8 bg-blue-600"></span>
-              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-500">Admin Command Center</span>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-blue-600/20 rounded-xl flex items-center justify-center border border-blue-500/30">
+                <ShoppingBag className="text-blue-500" size={20} />
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500">Asset Management</span>
             </div>
-            <h1 className="text-4xl md:text-6xl font-black uppercase italic tracking-tighter leading-none">
-              Storefront <span className="text-zinc-700">Management</span>
+            <h1 className="text-5xl md:text-7xl font-black uppercase italic tracking-tighter leading-none">
+              CONTROL <span className="text-zinc-800">CENTER</span>
             </h1>
           </div>
 
-          <div className="flex bg-white/5 border border-white/10 p-1.5 rounded-2xl backdrop-blur-xl">
+          <div className="flex items-center bg-white/5 border border-white/10 p-1.5 rounded-[1.5rem] backdrop-blur-xl">
             <button 
               onClick={() => setActiveTab("inventory")}
               className={cn(
-                "px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                activeTab === "inventory" ? "bg-blue-600 text-white shadow-lg" : "text-zinc-500 hover:text-white"
+                "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
+                activeTab === "inventory" ? "bg-blue-600 text-white shadow-xl shadow-blue-900/40" : "text-zinc-500 hover:text-white"
               )}
             >
-              Inventory
+              <LayoutGrid size={14} /> Inventory
             </button>
             <button 
               onClick={() => setActiveTab("add")}
               className={cn(
-                "px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                activeTab === "add" ? "bg-blue-600 text-white shadow-lg" : "text-zinc-500 hover:text-white"
+                "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
+                activeTab === "add" ? "bg-blue-600 text-white shadow-xl shadow-blue-900/40" : "text-zinc-500 hover:text-white"
               )}
             >
-              New Entry
+              <Plus size={14} /> New Asset
             </button>
           </div>
-        </header>
-
-        {/* --- STATS OVERVIEW --- */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
-          {[
-            { label: "Active Assets", val: products.length, icon: Package, color: "text-blue-500" },
-            { label: "Inventory Value", val: `₦${totalValue.toLocaleString()}`, icon: TrendingUp, color: "text-green-500" },
-            { label: "Avg Price", val: `₦${Math.round(totalValue / (products.length || 1)).toLocaleString()}`, icon: BarChart3, color: "text-purple-500" }
-          ].map((stat, i) => (
-            <div key={i} className="bg-white/[0.03] border border-white/10 p-6 rounded-[2rem] backdrop-blur-sm">
-              <stat.icon className={cn("mb-4", stat.color)} size={24} />
-              <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{stat.label}</p>
-              <p className="text-2xl font-black mt-1">{stat.val}</p>
-            </div>
-          ))}
         </div>
 
-        {/* --- MAIN CONTENT AREA --- */}
         <AnimatePresence mode="wait">
           {activeTab === "inventory" ? (
             <motion.div 
-              key="inv" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              key="inventory"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
             >
-              {products.map((item) => (
-                <div key={item.id} className="group relative bg-white/[0.03] border border-white/10 rounded-[2.5rem] overflow-hidden hover:border-blue-500/50 transition-all duration-500">
-                  <div className="aspect-[4/5] overflow-hidden relative">
-                    <img src={item.image_url} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#02040a] via-transparent to-transparent opacity-60" />
-                    
-                    <button 
-                      onClick={() => deleteProduct(item.id)}
-                      className="absolute top-6 right-6 p-3 bg-black/50 backdrop-blur-md text-red-500 rounded-2xl opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                    
-                    {item.discount_price && (
-                      <span className="absolute top-6 left-6 bg-green-500 text-black px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter">Sale Active</span>
-                    )}
+              {products.map((product) => (
+                <div key={product.id} className="group bg-white/5 border border-white/10 rounded-[2.5rem] overflow-hidden hover:border-blue-500/50 transition-all duration-500">
+                  {/* FIXED: Aspect ratio set to square for flyer consistency */}
+                  <div className="aspect-square relative overflow-hidden bg-black/40">
+                    <img 
+                      src={product.image_url} 
+                      alt={product.name}
+                      className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-1000"
+                    />
+                    <div className="absolute top-4 right-4 flex gap-2">
+                       <button 
+                         onClick={() => deleteProduct(product.id)}
+                         className="w-10 h-10 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-xl backdrop-blur-xl border border-red-500/20 transition-all flex items-center justify-center"
+                       >
+                         <Trash2 size={16} />
+                       </button>
+                    </div>
                   </div>
 
                   <div className="p-8">
-                    <span className="text-[9px] font-bold text-blue-500 uppercase tracking-[0.2em]">{item.category}</span>
-                    <h3 className="text-xl font-black uppercase italic tracking-tighter mt-1 mb-4 truncate">{item.name}</h3>
-                    <div className="flex items-center justify-between">
-                      <div className="flex flex-col">
-                        <span className="text-2xl font-black">₦{item.price.toLocaleString()}</span>
-                        {item.discount_price && <span className="text-zinc-600 line-through text-xs italic">₦{item.discount_price.toLocaleString()}</span>}
-                      </div>
-                      <div className="h-10 w-10 rounded-full border border-white/10 flex items-center justify-center text-zinc-500">
-                        <ArrowUpRight size={18} />
-                      </div>
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-blue-500">{product.category}</span>
+                      <span className="text-lg font-black tracking-tighter">₦{product.price.toLocaleString()}</span>
+                    </div>
+                    <h3 className="text-xl font-black uppercase italic tracking-tighter mb-2 group-hover:text-blue-500 transition-colors">
+                      {product.name}
+                    </h3>
+                    {/* FIXED: Added Description field to management view */}
+                    <p className="text-zinc-500 text-[11px] font-medium line-clamp-2 leading-relaxed h-8 mb-4">
+                      {product.description}
+                    </p>
+                    <div className="pt-4 border-t border-white/5 flex items-center justify-between">
+                       <div className="flex items-center gap-2 text-[10px] font-black uppercase text-zinc-600">
+                         <Check size={12} className="text-green-500" /> Active in Shop
+                       </div>
                     </div>
                   </div>
                 </div>
@@ -178,46 +188,97 @@ export default function ManageShop() {
             </motion.div>
           ) : (
             <motion.div 
-              key="add" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+              key="add"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
               className="max-w-4xl mx-auto"
             >
-              <form onSubmit={handleSubmit} className="bg-white/[0.03] border border-white/10 rounded-[3rem] p-8 md:p-12 backdrop-blur-2xl shadow-2xl">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                  
-                  {/* Form Left */}
-                  <div className="space-y-6">
-                    <div>
-                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-3 block">Product Name</label>
-                      <input value={name} onChange={e => setName(e.target.value)} required className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 focus:border-blue-500 outline-none transition-all placeholder:text-zinc-700" placeholder="e.g. ULTRA FLYER PACK" />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-3 block">Price (₦)</label>
-                        <input type="number" value={price} onChange={e => setPrice(e.target.value)} required className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 focus:border-blue-500 outline-none transition-all" />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-3 block">Discount (₦)</label>
-                        <input type="number" value={discountPrice} onChange={e => setDiscountPrice(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 focus:border-green-500 outline-none transition-all" />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-3 block">Description</label>
-                      <textarea value={description} onChange={e => setDescription(e.target.value)} rows={4} className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 focus:border-blue-500 outline-none transition-all resize-none" placeholder="Describe the quality..." />
-                    </div>
+              <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-12 bg-white/5 border border-white/10 p-12 rounded-[3rem] backdrop-blur-3xl shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 blur-[100px] -z-10" />
+                
+                <div className="space-y-8">
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 ml-2">Core Identity</label>
+                    <input 
+                      type="text" 
+                      placeholder="Asset Name (e.g. Minimalist Event Flyer)"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 focus:border-blue-500 outline-none transition-all placeholder:text-zinc-700 font-bold tracking-tight"
+                      required
+                    />
                   </div>
 
-                  {/* Form Right - Uploader */}
-                  <div className="flex flex-col">
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-3 block">Product Mockup</label>
-                    <label className="flex-1 min-h-[300px] border-2 border-dashed border-white/10 rounded-[2rem] flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-all group relative overflow-hidden">
-                      <input type="file" className="hidden" accept="image/*" onChange={e => e.target.files && handleImageUpload(e.target.files[0])} />
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 ml-2">Full Description</label>
+                    <textarea 
+                      placeholder="Highlight features, formats, and design style..."
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 focus:border-blue-500 outline-none transition-all h-32 resize-none placeholder:text-zinc-700 font-bold tracking-tight"
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-4">
+                      <label className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 ml-2">Market Price (₦)</label>
+                      <input 
+                        type="number" 
+                        placeholder="5000"
+                        value={price}
+                        onChange={(e) => setPrice(e.target.value)}
+                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 focus:border-blue-500 outline-none transition-all font-black"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-4">
+                      <label className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 ml-2">Promo Price (₦)</label>
+                      <input 
+                        type="number" 
+                        placeholder="Optional"
+                        value={discountPrice}
+                        onChange={(e) => setDiscountPrice(e.target.value)}
+                        className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 focus:border-blue-500 outline-none transition-all font-black text-green-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-8">
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 ml-2">Categorization</label>
+                    <select 
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 focus:border-blue-500 outline-none transition-all font-black appearance-none uppercase tracking-widest text-xs"
+                    >
+                      <option value="Template" className="bg-[#02040a]">Template</option>
+                      <option value="UI Kit" className="bg-[#02040a]">UI Kit</option>
+                      <option value="Typography" className="bg-[#02040a]">Typography</option>
+                      <option value="Branding" className="bg-[#02040a]">Branding</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500 ml-2">Premium Showcase</label>
+                    <label className={cn(
+                      "w-full aspect-square border-2 border-dashed rounded-[2rem] flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden group relative",
+                      imageUrl ? "border-blue-500/50" : "border-white/10 hover:border-blue-500/30 bg-white/5"
+                    )}>
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => e.target.files?.[0] && handleImageUpload(e.target.files[0])}
+                      />
+                      
                       {imageUrl ? (
                         <div className="relative w-full h-full group">
-                          <img src={imageUrl} className="w-full h-full object-cover" />
-                          <div className="absolute inset-0 bg-blue-600/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <Check className="text-white" size={48} />
+                          <img src={imageUrl} className="w-full h-full object-cover" alt="Preview" />
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
+                             <span className="text-[10px] font-black uppercase tracking-widest">Change Image</span>
                           </div>
                         </div>
                       ) : (
@@ -243,14 +304,12 @@ export default function ManageShop() {
                       {loading ? <Loader2 className="animate-spin" /> : <><ShoppingBag size={18} /> Publish to Shop</>}
                     </button>
                   </div>
-
                 </div>
               </form>
             </motion.div>
           )}
         </AnimatePresence>
-
       </div>
     </div>
   );
-                        }
+}
