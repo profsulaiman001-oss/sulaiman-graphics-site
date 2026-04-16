@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { ShoppingCart, ShoppingBag, ArrowUpRight, Percent, Sparkles, Filter } from "lucide-react";
+import { ShoppingCart, ShoppingBag, Plus, Minus, Sparkles, Filter, ShieldCheck } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
@@ -24,14 +24,21 @@ export default function Shop() {
     setLoading(false);
   };
 
-  const addToCart = (product: any) => {
-    const updatedCart = [...cart, product];
+  // Quantity control logic
+  const updateQuantity = (product: any, delta: number) => {
+    let updatedCart = [...cart];
+    if (delta === 1) {
+      updatedCart.push(product);
+    } else {
+      const index = updatedCart.findIndex(item => item.id === product.id);
+      if (index !== -1) updatedCart.splice(index, 1);
+    }
     setCart(updatedCart);
     localStorage.setItem("sulaiman_cart", JSON.stringify(updatedCart));
-    
-    // Trigger Navbar update immediately
     window.dispatchEvent(new Event("cartUpdated"));
   };
+
+  const getQuantity = (id: string) => cart.filter(item => item.id === id).length;
 
   const categories = ["All", ...Array.from(new Set(products.map(p => p.category)))];
   const filteredProducts = selectedCategory === "All" 
@@ -41,32 +48,27 @@ export default function Shop() {
   return (
     <div className="min-h-screen bg-[#02040a] text-white selection:bg-blue-500/30">
       
-      {/* --- PREMIUM HERO SECTION --- */}
+      {/* --- HERO SECTION --- */}
       <section className="relative pt-32 pb-20 px-6 overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[500px] bg-blue-600/10 blur-[120px] rounded-full opacity-50" />
         
         <div className="max-w-7xl mx-auto relative z-10 text-center">
-          <motion.div 
-            initial={{ opacity: 0, y: 30 }} 
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-          >
+          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
             <div className="inline-flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-full mb-6 backdrop-blur-md">
               <Sparkles size={14} className="text-blue-500" />
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400">Premium Digital Assets</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400">Elite Digital Assets</span>
             </div>
             <h1 className="text-6xl md:text-8xl font-black uppercase italic tracking-tighter leading-[0.85] mb-8">
-              THE <span className="text-blue-600">TERMINAL</span><br />
-              <span className="text-zinc-800">COLLECTION</span>
+              DIGITAL <span className="text-blue-600">PROVISIONS</span>
             </h1>
             <p className="text-zinc-500 max-w-2xl mx-auto font-medium text-lg leading-relaxed">
-              High-performance frameworks, visual systems, and creative blueprints designed for the next generation of designers.
+              Premium visual frameworks and digital assets engineered for high-impact brands and professional creators.
             </p>
           </motion.div>
         </div>
       </section>
 
-      {/* --- CATEGORY FILTER BAR --- */}
+      {/* --- FILTER BAR --- */}
       <div className="sticky top-20 z-40 bg-[#02040a]/80 backdrop-blur-xl border-y border-white/5 mb-16">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-8 overflow-x-auto no-scrollbar">
@@ -83,105 +85,106 @@ export default function Shop() {
               </button>
             ))}
           </div>
-          <div className="hidden md:flex items-center gap-2 text-zinc-500">
-            <Filter size={14} />
-            <span className="text-[10px] font-black uppercase tracking-widest">{filteredProducts.length} Results</span>
-          </div>
         </div>
       </div>
 
       {/* --- PRODUCT GALLERY --- */}
       <main className="max-w-7xl mx-auto px-6 pb-40">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-40 gap-4">
+          <div className="flex justify-center py-40">
              <div className="w-12 h-12 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-             <span className="font-black uppercase tracking-[0.4em] text-zinc-800 italic">Synchronizing Assets</span>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-16">
             <AnimatePresence mode="popLayout">
-              {filteredProducts.map((product) => (
-                <motion.div 
-                  layout
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  key={product.id}
-                  className="group"
-                >
-                  {/* Image Container */}
-                  <div className="aspect-[4/5] bg-[#0a0a0a] rounded-[2.5rem] overflow-hidden relative border border-white/5 group-hover:border-blue-500/50 transition-all duration-700 shadow-2xl">
-                    <img 
-                      src={product.image_url} 
-                      alt={product.name} 
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 opacity-80 group-hover:opacity-100"
-                    />
-                    
-                    {/* Floating Status Badges */}
-                    <div className="absolute top-6 left-6 flex flex-col gap-2">
-                       {product.discount_price && (
-                         <div className="bg-green-500 text-black px-3 py-1.5 rounded-xl text-[9px] font-black flex items-center gap-1 shadow-xl">
-                           <Percent size={10} /> LIMITED OFFER
-                         </div>
-                       )}
-                    </div>
-
-                    {/* Quick Add Overlay */}
-                    <div className="absolute inset-x-6 bottom-6 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
-                      <button 
-                        onClick={() => addToCart(product)}
-                        className="w-full bg-white text-black py-4 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-blue-600 hover:text-white transition-colors shadow-2xl"
-                      >
-                        <ShoppingBag size={14} /> Add to Collection
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Product Details */}
-                  <div className="mt-8 px-2">
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.3em]">
-                        {product.category}
-                      </span>
-                      <ArrowUpRight size={18} className="text-zinc-800 group-hover:text-blue-500 transition-colors" />
-                    </div>
-                    
-                    <h3 className="text-2xl font-black uppercase italic tracking-tighter mb-2 group-hover:text-blue-500 transition-colors">
-                      {product.name}
-                    </h3>
-                    
-                    <div className="flex items-baseline gap-3">
-                      <span className="text-xl font-black tracking-tighter">₦{product.price.toLocaleString()}</span>
+              {filteredProducts.map((product) => {
+                const qty = getQuantity(product.id);
+                return (
+                  <motion.div layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} key={product.id} className="group">
+                    {/* SQUARE RATIO ENFORCED */}
+                    <div className="aspect-square bg-[#0a0a0a] rounded-[2rem] overflow-hidden relative border border-white/5 group-hover:border-blue-500/50 transition-all duration-700">
+                      <img 
+                        src={product.image_url} 
+                        alt={product.name} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000 opacity-90 group-hover:opacity-100"
+                      />
                       {product.discount_price && (
-                        <span className="text-sm text-zinc-700 line-through font-bold">₦{product.discount_price.toLocaleString()}</span>
+                        <div className="absolute top-4 left-4 bg-green-500 text-black px-3 py-1 rounded-lg text-[9px] font-black">
+                          OFFER
+                        </div>
                       )}
                     </div>
-                  </div>
-                </motion.div>
-              ))}
+
+                    <div className="mt-6 px-2">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex-1">
+                          <h3 className="text-2xl font-black uppercase italic tracking-tighter leading-tight">
+                            {product.name}
+                          </h3>
+                          {/* DESCRIPTION IS NOW VISIBLE */}
+                          <p className="text-zinc-500 text-[11px] font-medium line-clamp-2 mt-1 leading-relaxed h-8">
+                            {product.description}
+                          </p>
+                        </div>
+
+                        {/* QUANTITY CONTROLLER NEXT TO NAME */}
+                        <div className="flex items-center bg-white/5 border border-white/10 rounded-xl p-1 gap-1 shrink-0 ml-4">
+                          {qty > 0 && (
+                            <>
+                              <button onClick={() => updateQuantity(product, -1)} className="w-8 h-8 flex items-center justify-center hover:bg-white/10 rounded-lg text-red-500 transition-colors">
+                                <Minus size={14} />
+                              </button>
+                              <span className="text-xs font-black px-1 min-w-[20px] text-center">{qty}</span>
+                            </>
+                          )}
+                          <button 
+                            onClick={() => updateQuantity(product, 1)}
+                            className={cn(
+                              "w-8 h-8 flex items-center justify-center rounded-lg transition-all",
+                              qty > 0 ? "hover:bg-white/10 text-blue-500" : "bg-blue-600 text-white shadow-lg shadow-blue-900/40"
+                            )}
+                          >
+                            <Plus size={14} />
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-baseline gap-3">
+                        <span className="text-xl font-black tracking-tighter">₦{product.price.toLocaleString()}</span>
+                        {product.discount_price && (
+                          <span className="text-sm text-zinc-700 line-through font-bold tracking-tighter">₦{product.discount_price.toLocaleString()}</span>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </AnimatePresence>
           </div>
         )}
       </main>
 
-      {/* --- FLOATING CART FAB --- */}
+      {/* --- SECURE CHECKOUT BUTTON --- */}
       <AnimatePresence>
         {cart.length > 0 && (
-          <motion.button
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            onClick={() => setLocation("/shop/cart")}
-            className="fixed bottom-10 right-10 z-50 bg-blue-600 text-white p-6 rounded-[2rem] shadow-[0_20px_50px_rgba(37,99,235,0.4)] flex items-center gap-4 group hover:bg-blue-500 transition-all active:scale-95 border border-white/20"
-          >
-            <div className="relative">
-              <ShoppingCart size={24} />
-              <span className="absolute -top-1 -right-1 bg-white text-blue-600 text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center">
-                {cart.length}
-              </span>
-            </div>
-            <span className="font-black uppercase tracking-[0.2em] text-xs">Checkout Assets</span>
-          </motion.button>
+          <div className="fixed bottom-10 left-0 right-0 z-50 flex justify-center px-6">
+            <motion.button
+              initial={{ y: 100, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 100, opacity: 0 }}
+              onClick={() => setLocation("/shop/cart")}
+              className="bg-blue-600 text-white px-8 py-4 rounded-2xl shadow-[0_20px_50px_rgba(37,99,235,0.4)] flex items-center gap-4 hover:bg-blue-500 transition-all border border-white/20 active:scale-95"
+            >
+              <div className="relative">
+                <ShoppingBag size={20} />
+                <span className="absolute -top-2 -right-2 bg-white text-blue-600 text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center">
+                  {cart.length}
+                </span>
+              </div>
+              <span className="font-black uppercase tracking-[0.2em] text-[10px]">Secure Checkout</span>
+              <ShieldCheck size={16} className="text-blue-200/50" />
+            </motion.button>
+          </div>
         )}
       </AnimatePresence>
     </div>
