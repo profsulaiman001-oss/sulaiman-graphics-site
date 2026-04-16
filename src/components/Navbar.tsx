@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ShoppingBag } from "lucide-react"; 
+import { Menu, X, ShoppingBag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SettingsDropdown } from "@/components/SettingsDropdown";
 
@@ -108,8 +108,8 @@ export function Navbar() {
             <SettingsDropdown />
           </nav>
 
-          {/* Mobile Toggle - FIXED: Added Menu Button back */}
-          <div className="md:hidden flex items-center gap-2">
+          {/* Mobile Toggle - FIXED: Removed Settings icon & adjusted spacing */}
+          <div className="md:hidden flex items-center gap-4">
              <Link href="/shop/cart">
                <a className="relative p-2 text-white bg-white/5 rounded-xl border border-white/10">
                   <ShoppingBag size={20} />
@@ -120,8 +120,6 @@ export function Navbar() {
                   )}
                </a>
              </Link>
-             
-             <SettingsDropdown />
              
              <button 
                className="text-white p-2 bg-white/5 rounded-xl border border-white/10 transition-colors active:bg-white/20"
