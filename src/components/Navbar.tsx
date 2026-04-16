@@ -57,10 +57,10 @@ export function Navbar() {
     <header
       className={cn(
         "fixed top-0 inset-x-0 z-50 transition-all duration-500",
-        // MODIFIED: Changed bg-transparent to solid black #02040a to ensure visibility
+        // RESTORED: Main header is transparent, only showing a blur/border when scrolled
         isScrolled 
-          ? "bg-[#02040a]/95 backdrop-blur-xl border-b border-white/10 py-3 shadow-2xl" 
-          : "bg-[#02040a] border-b border-white/5 py-5"
+          ? "bg-[#02040a]/40 backdrop-blur-xl border-b border-white/10 py-3 shadow-2xl" 
+          : "bg-transparent py-5"
       )}
     >
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
@@ -72,7 +72,7 @@ export function Navbar() {
             </span>
           </Link>
 
-          {/* Desktop Nav */}
+          {/* Desktop Nav - The background logic is handled per-link or container if needed */}
           <nav className="hidden md:flex items-center gap-8">
           
             {links.map((link) => {
@@ -135,7 +135,7 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Nav Overlay */}
+      {/* Mobile Nav Overlay - FIXED: This part maintains the solid black for readability */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <>
@@ -151,7 +151,7 @@ export function Navbar() {
               initial={{ opacity: 0, scale: 0.95, y: -20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -20 }}
-              className="absolute top-full left-4 right-4 mt-4 bg-[#0a0f1d] border border-white/10 rounded-[2rem] shadow-2xl p-4 md:hidden overflow-hidden"
+              className="absolute top-full left-4 right-4 mt-4 bg-[#02040a] border border-white/10 rounded-[2rem] shadow-2xl p-4 md:hidden overflow-hidden"
             >
               <div className="flex flex-col space-y-1 relative z-10">
                 {links.map((link) => {
@@ -180,4 +180,4 @@ export function Navbar() {
       </AnimatePresence>
     </header>
   );
-        }
+}
