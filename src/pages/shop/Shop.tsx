@@ -24,7 +24,7 @@ export default function Shop() {
     setLoading(false);
   };
 
-  // Quantity control logic
+  // Quantity control logic preserved
   const updateQuantity = (product: any, delta: number) => {
     let updatedCart = [...cart];
     if (delta === 1) {
@@ -48,19 +48,26 @@ export default function Shop() {
   return (
     <div className="min-h-screen bg-[#02040a] text-white selection:bg-blue-500/30">
       
-      {/* --- HERO SECTION --- */}
+      {/* --- HERO SECTION - FIXED ALIGNMENT & GRADIENT --- */}
       <section className="relative pt-32 pb-20 px-6 overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[500px] bg-blue-600/10 blur-[120px] rounded-full opacity-50" />
         
-        <div className="max-w-7xl mx-auto relative z-10 text-center">
+        {/* Added items-center and justify-center to fix text being pushed right */}
+        <div className="max-w-7xl mx-auto relative z-10 text-center flex flex-col items-center justify-center">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
             <div className="inline-flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-full mb-6 backdrop-blur-md">
-              <Sparkles size={14} className="text-blue-500" />
+              <Sparkles size={14} className="text-blue-400" />
               <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400">Elite Digital Assets</span>
             </div>
-            <h1 className="text-6xl md:text-8xl font-black uppercase italic tracking-tighter leading-[0.85] mb-8">
-              DIGITAL <span className="text-blue-600">PROVISIONS</span>
+            
+            {/* UPDATED: High-contrast Gradient with Pop effect */}
+            <h1 className="text-6xl md:text-8xl font-black uppercase italic tracking-tighter leading-[0.9] mb-8 text-white">
+              DIGITAL <br />
+              <span className="bg-gradient-to-r from-blue-600 via-blue-400 to-cyan-400 bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(37,99,235,0.4)]">
+                PROVISIONS
+              </span>
             </h1>
+            
             <p className="text-zinc-500 max-w-2xl mx-auto font-medium text-lg leading-relaxed">
               Premium visual frameworks and digital assets engineered for high-impact brands and professional creators.
             </p>
@@ -101,34 +108,28 @@ export default function Shop() {
                 const qty = getQuantity(product.id);
                 return (
                   <motion.div layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} key={product.id} className="group">
-                    {/* SQUARE RATIO ENFORCED */}
-                    <div className="aspect-square bg-[#0a0a0a] rounded-[2rem] overflow-hidden relative border border-white/5 group-hover:border-blue-500/50 transition-all duration-700">
+                    {/* ASPECT RATIO: SQUARE */}
+                    <div className="aspect-square bg-[#0a0a0a] rounded-[2rem] overflow-hidden relative border border-white/5 group-hover:border-blue-500/50 transition-all duration-700 shadow-2xl">
                       <img 
                         src={product.image_url} 
                         alt={product.name} 
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000 opacity-90 group-hover:opacity-100"
                       />
-                      {product.discount_price && (
-                        <div className="absolute top-4 left-4 bg-green-500 text-black px-3 py-1 rounded-lg text-[9px] font-black">
-                          OFFER
-                        </div>
-                      )}
                     </div>
 
                     <div className="mt-6 px-2">
                       <div className="flex justify-between items-start mb-2">
-                        <div className="flex-1">
+                        <div className="flex-1 pr-4">
                           <h3 className="text-2xl font-black uppercase italic tracking-tighter leading-tight">
                             {product.name}
                           </h3>
-                          {/* DESCRIPTION IS NOW VISIBLE */}
                           <p className="text-zinc-500 text-[11px] font-medium line-clamp-2 mt-1 leading-relaxed h-8">
                             {product.description}
                           </p>
                         </div>
 
-                        {/* QUANTITY CONTROLLER NEXT TO NAME */}
-                        <div className="flex items-center bg-white/5 border border-white/10 rounded-xl p-1 gap-1 shrink-0 ml-4">
+                        {/* QUANTITY CONTROLLER */}
+                        <div className="flex items-center bg-white/5 border border-white/10 rounded-xl p-1 gap-1 shrink-0">
                           {qty > 0 && (
                             <>
                               <button onClick={() => updateQuantity(product, -1)} className="w-8 h-8 flex items-center justify-center hover:bg-white/10 rounded-lg text-red-500 transition-colors">
