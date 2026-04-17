@@ -9,7 +9,7 @@ export default function AgreementsPage() {
   const [agreements, setAgreements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedAg, setSelectedAg] = useState<any | null>(null); // State for the full view
+  const [selectedAg, setSelectedAg] = useState<any | null>(null);
 
   useEffect(() => {
     fetchAgreements();
@@ -39,13 +39,17 @@ export default function AgreementsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#0B0C10] text-gray-100 p-4 md:p-8">
+    // Added pt-24 (Padding Top) to push content below the fixed Navbar
+    <div className="min-h-screen bg-[#0B0C10] text-gray-100 p-4 md:p-8 pt-24 md:pt-32">
       <div className="max-w-6xl mx-auto">
         
         {/* Header Navigation */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
           <div className="flex items-center gap-4">
-            <button onClick={() => setLocation("/dashboard")} className="p-2 hover:bg-gray-800 rounded-full transition text-gray-400 hover:text-white">
+            <button 
+              onClick={() => setLocation("/dashboard")} 
+              className="p-2 hover:bg-gray-800 rounded-full transition text-gray-400 hover:text-white"
+            >
               <ChevronLeft size={28} />
             </button>
             <div>
@@ -55,6 +59,7 @@ export default function AgreementsPage() {
               <p className="text-xs text-gray-500 uppercase tracking-widest">Database Records</p>
             </div>
           </div>
+
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
             <input 
@@ -69,13 +74,23 @@ export default function AgreementsPage() {
 
         {/* List Content */}
         {loading ? (
-          <div className="flex justify-center py-20"><Loader2 className="text-purple-500 animate-spin" size={40} /></div>
+          <div className="flex justify-center py-20">
+            <Loader2 className="text-purple-500 animate-spin" size={40} />
+          </div>
         ) : (
           <div className="grid gap-4">
             {filteredAgreements.map((ag) => (
-              <div key={ag.id} className="bg-[#11141A] border border-gray-800 p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between hover:border-purple-500/30 transition-all cursor-pointer" onClick={() => setSelectedAg(ag)}>
+              <motion.div 
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                key={ag.id} 
+                className="bg-[#11141A] border border-gray-800 p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between hover:border-purple-500/30 transition-all cursor-pointer group" 
+                onClick={() => setSelectedAg(ag)}
+              >
                 <div className="flex items-center gap-5">
-                  <div className="bg-gray-900 p-4 rounded-xl text-purple-500"><User size={24} /></div>
+                  <div className="bg-gray-900 p-4 rounded-xl text-purple-500 group-hover:bg-purple-500/10 transition">
+                    <User size={24} />
+                  </div>
                   <div>
                     <h4 className="text-lg font-bold text-white">{ag.client_name}</h4>
                     <p className="text-sm text-gray-500">{ag.project_name}</p>
@@ -83,12 +98,17 @@ export default function AgreementsPage() {
                 </div>
                 <div className="flex items-center gap-6 mt-4 md:mt-0">
                   <div className="text-right">
-                    <p className="text-cyan-400 font-mono font-black">{ag.currency}{ag.project_price}</p>
+                    <p className="text-cyan-400 font-mono font-black text-lg">{ag.currency}{ag.project_price}</p>
                     <p className="text-[10px] text-gray-600 uppercase italic">Click to view full</p>
                   </div>
-                  <button onClick={(e) => { e.stopPropagation(); deleteAgreement(ag.id); }} className="p-3 text-gray-500 hover:text-red-500 transition"><Trash2 size={20} /></button>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); deleteAgreement(ag.id); }} 
+                    className="p-3 text-gray-500 hover:text-red-500 transition"
+                  >
+                    <Trash2 size={20} />
+                  </button>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         )}
@@ -97,40 +117,55 @@ export default function AgreementsPage() {
       {/* --- FULL AGREEMENT OVERLAY --- */}
       <AnimatePresence>
         {selectedAg && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex justify-center overflow-y-auto p-4 md:p-10">
-            <div className="w-full max-w-4xl relative">
-              <button onClick={() => setSelectedAg(null)} className="fixed top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white z-[110]"><X size={24}/></button>
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
+            // Added z-[999] to ensure this covers the Navbar entirely
+            className="fixed inset-0 z-[999] bg-black/95 backdrop-blur-md flex justify-center overflow-y-auto p-4 md:p-10"
+          >
+            <div className="w-full max-w-4xl relative mt-4">
+              <button 
+                onClick={() => setSelectedAg(null)} 
+                className="fixed top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white z-[1000] transition-colors"
+              >
+                <X size={24}/>
+              </button>
               
-              <div className="bg-[#11141A] border border-gray-800 rounded-2xl p-8 md:p-12 shadow-2xl text-gray-300 print:bg-white print:text-black">
+              <div className="bg-[#11141A] border border-gray-800 rounded-2xl p-8 md:p-12 shadow-2xl text-gray-300 mb-10">
                 {/* Header */}
                 <div className="flex justify-between items-start border-b border-gray-800 pb-8 mb-8">
                   <div>
-                    <h1 className="font-black text-2xl tracking-tighter text-white">SULAIMAN<span className="text-cyan-500">.</span>GRAPHICS</h1>
-                    <p className="text-xs text-gray-500 mt-1 uppercase">Design & Digital Media Agreement</p>
+                    <h1 className="font-black text-2xl tracking-tighter text-white">
+                      SULAIMAN<span className="text-cyan-500">.</span>GRAPHICS
+                    </h1>
+                    <p className="text-xs text-gray-500 mt-1 uppercase tracking-widest">Design & Digital Media Agreement</p>
                   </div>
                   <div className="text-right text-xs text-gray-500">
                     <p>Date Signed</p>
-                    <p className="text-sm font-medium text-white">{new Date(selectedAg.signed_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                    <p className="text-sm font-medium text-white">
+                      {new Date(selectedAg.signed_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                    </p>
                   </div>
                 </div>
 
                 {/* Body Content */}
-                <div className="space-y-8 text-sm leading-relaxed">
+                <div className="space-y-8 text-sm leading-relaxed max-w-none">
                   <p>This agreement is made between <span className="text-white font-bold">{selectedAg.client_name}</span> (The Client) and <span className="text-white font-bold">Sulaiman Graphics</span> (The Designer).</p>
                   
                   <div>
-                    <h3 className="text-white font-bold mb-2 uppercase text-xs tracking-widest">1. Scope of Work</h3>
+                    <h3 className="text-white font-bold mb-2 uppercase text-[10px] tracking-widest text-purple-400">1. Scope of Work</h3>
                     <p>The Designer agrees to produce visual assets for <span className="text-white">"{selectedAg.project_name}"</span>. Specific deliverables: <span className="text-white">{selectedAg.scope}</span>.</p>
                   </div>
 
                   <div>
-                    <h3 className="text-white font-bold mb-2 uppercase text-xs tracking-widest">2. Payment & Delivery</h3>
+                    <h3 className="text-white font-bold mb-2 uppercase text-[10px] tracking-widest text-purple-400">2. Payment & Delivery</h3>
                     <p>The total fee is <span className="text-cyan-400 font-bold">{selectedAg.currency}{selectedAg.project_price}</span>. Final high-resolution files will be delivered only after the final invoice is paid in full.</p>
                   </div>
 
                   <div>
-                    <h3 className="text-white font-bold mb-2 uppercase text-xs tracking-widest">3. Ownership</h3>
-                    <p>Upon final payment, full ownership and commercial rights to the final approved designs are transferred to the Client.</p>
+                    <h3 className="text-white font-bold mb-2 uppercase text-[10px] tracking-widest text-purple-400">3. Ownership</h3>
+                    <p>Upon final payment, full ownership and commercial rights to the final approved designs are transferred to the Client. The Designer retains the right to display assets in their portfolio.</p>
                   </div>
 
                   {/* Signature Box */}
@@ -139,10 +174,15 @@ export default function AgreementsPage() {
                       <ShieldCheck className="text-cyan-500" size={32} />
                       <div>
                         <p className="text-[10px] uppercase text-gray-500">Digitally Signed By</p>
-                        <p className="font-serif italic text-xl text-white">{selectedAg.signature}</p>
+                        <p className="font-serif italic text-2xl text-white">{selectedAg.signature}</p>
                       </div>
                     </div>
-                    <button onClick={() => window.print()} className="flex items-center gap-2 bg-white text-black px-6 py-3 rounded-xl font-bold hover:bg-gray-200 transition shrink-0"><Download size={18}/> Save as PDF</button>
+                    <button 
+                      onClick={() => window.print()} 
+                      className="flex items-center gap-2 bg-white text-black px-6 py-3 rounded-xl font-bold hover:bg-gray-200 transition shrink-0"
+                    >
+                      <Download size={18}/> Save PDF
+                    </button>
                   </div>
                 </div>
               </div>
