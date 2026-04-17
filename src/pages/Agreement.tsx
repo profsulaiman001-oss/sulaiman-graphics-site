@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ShieldCheck, PenLine, Download, Loader2 } from "lucide-react"; // Added Loader2
-import { supabase } from "../supabaseClient"; // Ensure your path is correct
+import { supabase } from "@/lib/supabase"; // Ensure your path is correct
 
 export default function Agreement() {
   const [clientName, setClientName] = useState("");
