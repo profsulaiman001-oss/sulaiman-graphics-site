@@ -805,6 +805,13 @@ export default function Dashboard() {
             >
               <Award size={18} /> Ownership Certificate
             </button>
+            
+            <button
+              onClick={() => setLocation("/agreements")}
+              className="bg-background border border-border hover:border-purple-500 hover:text-purple-500 text-foreground font-semibold text-sm px-5 py-3 rounded-xl transition flex items-center justify-center gap-2"
+            >
+              <FileText size={18} /> View Agreements
+            </button>
 
             {/* ✅ STUDIO INSIGHTS BUTTON INJECTED HERE */}
             <button
