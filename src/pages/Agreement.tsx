@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { ShieldCheck, PenLine, Download } from "lucide-react";
+import { ShieldCheck, PenLine, Download, Loader2 } from "lucide-react"; // Added Loader2
+import { supabase } from "../supabaseClient"; // Ensure your path is correct
 
 export default function Agreement() {
   const [clientName, setClientName] = useState("");
@@ -10,6 +11,7 @@ export default function Agreement() {
   
   const [signature, setSignature] = useState("");
   const [isAgreed, setIsAgreed] = useState(false);
+  const [loading, setLoading] = useState(false); // Track database saving status
 
   const today = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
@@ -17,10 +19,36 @@ export default function Agreement() {
     day: 'numeric'
   });
 
+  // --- NEW LOGIC: SAVE TO DATABASE ---
+  const handleSignAndSubmit = async () => {
+    if (signature.trim() === "") return;
+    
+    setLoading(true);
+    const { error } = await supabase
+      .from('client_agreements')
+      .insert([
+        { 
+          client_name: clientName, 
+          project_name: projectName,
+          project_price: projectPrice,
+          currency: currency,
+          scope: scope,
+          signature: signature 
+        }
+      ]);
+
+    if (error) {
+      alert("Error saving to dashboard: " + error.message);
+    } else {
+      setIsAgreed(true);
+    }
+    setLoading(false);
+  };
+
   return (
     <div className="bg-[#0B0C10] min-h-screen text-gray-100 flex flex-col items-center justify-center p-4 pt-24 pb-12">
       
-      {/* 🖨️ AGGRESSIVE PRINT CSS: Destroys headers/footers & extra pages */}
+      {/* 🖨️ AGGRESSIVE PRINT CSS: Fixed to prevent clipping of scrollable text */}
       <style>{`
         @media print {
           /* Hide EVERYTHING on the website except the contract box */
@@ -44,6 +72,13 @@ export default function Agreement() {
             box-shadow: none !important;
           }
 
+          /* FIX: Expand the scrollable body during print so no text is missing */
+          .contract-body-scroll {
+            max-height: none !important;
+            overflow: visible !important;
+            padding-right: 0 !important;
+          }
+
           /* Remove gray backgrounds and force pitch black text for ink */
           .print-text-black {
             color: #000000 !important;
@@ -63,7 +98,7 @@ export default function Agreement() {
       <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-6">
         
         {/* Left Side: Contract Setup Inputs */}
-        <div className="md:col-span-1 space-y-4">
+        <div className="md:col-span-1 space-y-4 print:hidden">
           <div className="bg-[#11141A] border border-gray-800 rounded-2xl p-5 sticky top-24">
             <h3 className="font-bold text-lg mb-4 text-white flex items-center gap-2">
               <PenLine className="w-4 h-4 text-cyan-500" /> Contract Setup
@@ -145,8 +180,8 @@ export default function Agreement() {
               </div>
             </div>
 
-            {/* Contract Body */}
-            <div className="space-y-6 text-sm text-gray-400 print-text-black leading-relaxed max-h-[400px] overflow-y-auto pr-2">
+            {/* Contract Body - ADDED class 'contract-body-scroll' for print fix */}
+            <div className="contract-body-scroll space-y-6 text-sm text-gray-400 print-text-black leading-relaxed max-h-[400px] overflow-y-auto pr-2">
               <p>
                 This agreement is made between <span className="text-white font-medium print-text-black">{clientName || "[Client Name]"}</span> (The Client) and <span className="text-white font-medium print-text-black">Sulaiman Graphics</span> (The Designer).
               </p>
@@ -199,12 +234,11 @@ export default function Agreement() {
                   />
                 </div>
                 <button 
-                  onClick={() => {
-                    if (signature.trim() !== "") setIsAgreed(true);
-                  }}
-                  disabled={!signature.trim() || !clientName || !projectPrice}
-                  className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-black font-bold py-2.5 px-6 rounded-lg transition-all disabled:opacity-30 whitespace-nowrap text-sm"
+                  onClick={handleSignAndSubmit}
+                  disabled={loading || !signature.trim() || !clientName || !projectPrice}
+                  className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-black font-bold py-2.5 px-6 rounded-lg transition-all disabled:opacity-30 whitespace-nowrap text-sm flex items-center gap-2"
                 >
+                  {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                   Sign & Agree
                 </button>
               </div>
@@ -221,7 +255,7 @@ export default function Agreement() {
                 <div className="flex gap-2">
                   <button 
                     onClick={() => window.print()}
-                    className="text-gray-400 hover:text-white p-2 border border-gray-700 rounded-lg"
+                    className="text-gray-400 hover:text-white p-2 border border-gray-700 rounded-lg print:hidden"
                     title="Print or Save as PDF"
                   >
                     <Download className="w-4 h-4" />
