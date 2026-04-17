@@ -52,6 +52,9 @@ import Cart from "@/pages/shop/Cart";
 import SuccessPage from "@/pages/shop/SuccessPage";
 import ManageShop from "@/pages/shop/ManageShop";
 
+/* ── NEW AGREEMENTS PAGE IMPORT ── */
+import AgreementsPage from "@/pages/AgreementsPage";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -136,6 +139,13 @@ function Router() {
           <Route path="/studio-insights">
             <ProtectedRoute>
               <StudioInsights />
+            </ProtectedRoute>
+          </Route>
+
+          {/* ✅ New Agreements List Page Route */}
+          <Route path="/agreements">
+            <ProtectedRoute>
+              <AgreementsPage />
             </ProtectedRoute>
           </Route>
 
