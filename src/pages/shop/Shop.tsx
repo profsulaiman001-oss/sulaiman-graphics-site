@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { ShoppingBag, Plus, Minus, Sparkles, ShieldCheck, ShoppingCart, Package } from "lucide-react";
+import { ShoppingBag, Plus, Minus, Sparkles, ShieldCheck, Package } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
@@ -40,14 +40,13 @@ export default function Shop() {
   const getQuantity = (id: string) => cart.filter(item => item.id === id).length;
 
   const categories = ["All", ...Array.from(new Set(products.map(p => p.category)))];
-  const filteredProducts = selectedCategory === "All" 
-    ? products 
-    : products.filter(p => p.category === selectedCategory);
+  const filteredProducts = selectedCategory === "All" ? products : products.filter(p => p.category === selectedCategory);
 
   return (
-    <div className="min-h-screen bg-[#02040a] text-white selection:bg-blue-500/30 font-sans">
+    // Background updated to match footer blue [#020617]
+    <div className="min-h-screen bg-[#020617] text-white selection:bg-blue-500/30 font-sans">
       
-      {/* --- HEADER (LEFT ALIGNED & CLEAN) --- */}
+      {/* --- HEADER --- */}
       <header className="pt-32 pb-8 px-6 lg:px-12">
         <div className="max-w-7xl mx-auto flex flex-col items-start">
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
@@ -63,7 +62,7 @@ export default function Shop() {
       </header>
 
       {/* --- CATEGORY TABS --- */}
-      <div className="sticky top-0 z-40 bg-[#02040a]/80 backdrop-blur-xl border-b border-white/5 mb-10">
+      <div className="sticky top-0 z-40 bg-[#020617]/80 backdrop-blur-xl border-b border-white/5 mb-10">
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-4 flex items-center gap-8 overflow-x-auto no-scrollbar">
           {categories.map((cat) => (
             <button
@@ -80,7 +79,7 @@ export default function Shop() {
         </div>
       </div>
 
-      {/* --- PRODUCT GRID (MATCHES MANAGE SHOP CARDS) --- */}
+      {/* --- PRODUCT GRID --- */}
       <main className="max-w-7xl mx-auto px-6 lg:px-12 pb-40">
         {loading ? (
           <div className="flex justify-center py-40">
@@ -97,10 +96,10 @@ export default function Shop() {
                     initial={{ opacity: 0, y: 20 }} 
                     animate={{ opacity: 1, y: 0 }} 
                     key={product.id} 
-                    className="group bg-[#080808] border border-white/5 rounded-[2.5rem] p-4 hover:border-blue-500/30 transition-all duration-500 shadow-2xl"
+                    // Card color slightly lighter than background for depth
+                    className="group bg-[#080c1d] border border-white/5 rounded-[2.5rem] p-4 hover:border-blue-500/30 transition-all duration-500 shadow-2xl"
                   >
-                    {/* SQUARE IMAGE - CONTAINED IN CARD */}
-                    <div className="aspect-square bg-[#02040a] rounded-[1.8rem] overflow-hidden relative border border-white/5 mb-5">
+                    <div className="aspect-square bg-[#020617] rounded-[1.8rem] overflow-hidden relative border border-white/5 mb-5">
                       <img 
                         src={product.image_url} 
                         alt={product.name} 
@@ -112,25 +111,20 @@ export default function Shop() {
                       </div>
                     </div>
 
-                    {/* TEXT INFO - INSIDE THE CARD */}
                     <div className="px-2 pb-2">
                       <h3 className="text-xl font-black uppercase italic tracking-tighter leading-tight group-hover:text-blue-500 transition-colors">
                         {product.name}
                       </h3>
-                      
-                      {/* Description Integrated */}
                       <p className="text-zinc-500 text-[11px] font-medium mt-3 line-clamp-2 leading-relaxed h-8">
                         {product.description}
                       </p>
 
-                      {/* CONTROLS ROW - MATCHES MANAGE SHOP ACTIONS */}
                       <div className="mt-6 flex items-center justify-between gap-4 pt-5 border-t border-white/5">
                         <div className="flex flex-col">
                           <span className="text-[9px] font-black uppercase text-zinc-600 tracking-widest mb-1">Price</span>
                           <span className="text-xl font-black tracking-tighter text-white">₦{product.price.toLocaleString()}</span>
                         </div>
 
-                        {/* QUANTITY CONTROLLER */}
                         <div className="flex items-center bg-white/5 border border-white/10 rounded-2xl p-1 gap-1">
                           {qty > 0 && (
                             <>
@@ -169,7 +163,7 @@ export default function Shop() {
           <div className="fixed bottom-10 left-0 right-0 z-50 flex justify-center px-6">
             <motion.button
               initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }}
-              onClick={() => setLocation("/shop/cart")}
+              onClick={() => setLocation("/shop/cart")} // Redirects to internal Collection page
               className="bg-blue-600 text-white px-8 py-4 rounded-2xl shadow-[0_25px_50px_rgba(37,99,235,0.4)] flex items-center gap-4 hover:bg-blue-500 transition-all border border-white/20 active:scale-95 group"
             >
               <div className="relative">
