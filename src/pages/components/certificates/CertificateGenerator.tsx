@@ -1,17 +1,19 @@
 import React, { useState } from "react";
 import { jsPDF } from "jspdf";
 import { supabase } from "../../../lib/supabase";
-import { X, FileText, Download, Loader2, ShieldCheck, Cpu } from "lucide-react";
+import { X, Download, Loader2, ShieldCheck, Cpu } from "lucide-react";
 
 export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
   const [formData, setFormData] = useState({
     clientName: "",
     projectName: "",
-    // Keeping your exact ID generation logic
     certNo: `SG-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
   });
 
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // The Public URL you provided
+  const BACKGROUND_URL = "https://lqdeybfkgcihcsticzes.supabase.co/storage/v1/object/public/certificates/1776511592134_865bkg_2_1.jpg";
 
   const generatePremiumAsset = async () => {
     if (!formData.clientName || !formData.projectName) {
@@ -22,7 +24,7 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
     setIsGenerating(true);
     
     try {
-      // 1. SUPABASE LOGIC (UNTOUCHED)
+      // 1. SUPABASE LOGIC
       const { error } = await supabase
         .from('certificates')
         .insert([
@@ -36,119 +38,97 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
 
       if (error) throw error;
 
-      // 2. PREMIUM PDF GENERATION (ENCRYPTED ASSET CARD STYLE)
-      const doc = new jsPDF("l", "mm", [297, 210]); // A4 Landscape
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
+      // 2. PREMIUM PDF GENERATION
+      const doc = new jsPDF("l", "mm", "a4"); 
+      const pageWidth = doc.internal.pageSize.getWidth(); // 297mm
+      const pageHeight = doc.internal.pageSize.getHeight(); // 210mm
+
+      // Load and add the background image
+      const img = new Image();
+      img.src = BACKGROUND_URL;
       
-      // COLORS
-      const brandBlue = [37, 99, 235]; 
-      const darkBg = [5, 10, 21]; // Matches your Hub's dark theme
-      const white = [255, 255, 255];
-      const gray = [100, 116, 139];
+      img.onload = () => {
+        // Draw Background
+        doc.addImage(img, 'JPEG', 0, 0, pageWidth, pageHeight);
 
-      // BACKGROUND: FULL DARK SPACE
-      doc.setFillColor(darkBg[0], darkBg[1], darkBg[2]);
-      doc.rect(0, 0, pageWidth, pageHeight, "F");
+        // --- TEXT STYLING & POSITIONING ---
+        // Colors to match the background (Deep Navy and Gold-ish hues)
+        const navyColor = "#020617";
+        const goldAccent = "#B8860B"; 
 
-      // GLOWING BORDER
-      doc.setDrawColor(brandBlue[0], brandBlue[1], brandBlue[2]);
-      doc.setLineWidth(1.5);
-      doc.rect(10, 10, pageWidth - 20, pageHeight - 20, "S");
-      
-      // HEADER: STUDIO IDENTITY
-      doc.setTextColor(brandBlue[0], brandBlue[1], brandBlue[2]);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(8);
-      doc.text("SULAIMAN GRAPHICS // SECURE ASSET MANAGEMENT", pageWidth / 2, 25, { align: "center", charSpace: 3 });
+        // 1. HEADER TITLE
+        doc.setTextColor(navyColor);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.text("OFFICIAL CERTIFICATE OF OWNERSHIP", pageWidth / 2, 45, { align: "center", charSpace: 2 });
 
-      // MAIN TITLE
-      doc.setTextColor(white[0], white[1], white[2]);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(42);
-      doc.text("CERTIFICATE OF OWNERSHIP", pageWidth / 2, 60, { align: "center" });
-      
-      // DESCRIPTION
-      doc.setTextColor(gray[0], gray[1], gray[2]);
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.text("FORMAL INTELLECTUAL PROPERTY & USAGE RIGHTS TRANSFER", pageWidth / 2, 72, { align: "center", charSpace: 1.5 });
+        // 2. CLIENT NAME (The focus of the certificate)
+        doc.setTextColor(navyColor);
+        doc.setFontSize(38);
+        doc.setFont("times", "bolditalic"); // Using Times for a more classic/legal feel
+        doc.text(formData.clientName.toUpperCase(), pageWidth / 2, 95, { align: "center" });
 
-      // THE ASSIGNEE SECTION (Glassmorphism Effect)
-      doc.setFillColor(255, 255, 255, 0.03); 
-      doc.roundedRect(40, 90, pageWidth - 80, 50, 5, 5, "F");
-      
-      doc.setTextColor(brandBlue[0], brandBlue[1], brandBlue[2]);
-      doc.setFontSize(9);
-      doc.text("LEGAL RIGHTS ASSIGNED TO:", pageWidth / 2, 102, { align: "center" });
+        // 3. PROJECT DESCRIPTION
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(11);
+        doc.setTextColor("#4b5563");
+        const description = `This document confirms that full commercial rights and legal ownership of the digital assets produced for "${formData.projectName.toUpperCase()}" have been officially transferred from Sulaiman Graphics to the assignee named above.`;
+        const splitDescription = doc.splitTextToSize(description, 180);
+        doc.text(splitDescription, pageWidth / 2, 115, { align: "center" });
 
-      doc.setTextColor(white[0], white[1], white[2]);
-      doc.setFontSize(32);
-      doc.setFont("helvetica", "bold");
-      doc.text(formData.clientName.toUpperCase(), pageWidth / 2, 122, { align: "center" });
+        // 4. FOOTER LEFT: LICENSE ID
+        doc.setFontSize(8);
+        doc.setTextColor("#9ca3af");
+        doc.text("VERIFIED LICENSE ID", 45, 170);
+        doc.setTextColor(navyColor);
+        doc.setFont("courier", "bold");
+        doc.setFontSize(12);
+        doc.text(formData.certNo, 45, 178);
 
-      // PROJECT INFO
-      doc.setTextColor(gray[0], gray[1], gray[2]);
-      doc.setFontSize(11);
-      doc.text(`PROJECT: ${formData.projectName.toUpperCase()}`, pageWidth / 2, 160, { align: "center" });
+        // 5. FOOTER RIGHT: DATE
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor("#9ca3af");
+        doc.text("DATE OF ISSUANCE", pageWidth - 45, 170, { align: "right" });
+        doc.setTextColor(navyColor);
+        doc.setFontSize(12);
+        doc.text(new Date().toLocaleDateString('en-GB'), pageWidth - 45, 178, { align: "right" });
 
-      // FOOTER DATA
-      const footerY = 185;
-      
-      // Date
-      doc.setFontSize(8);
-      doc.setTextColor(gray[0], gray[1], gray[2]);
-      doc.text("ISSUE DATE", 40, footerY);
-      doc.setTextColor(white[0], white[1], white[2]);
-      doc.setFontSize(12);
-      doc.text(new Date().toLocaleDateString(), 40, footerY + 8);
+        // 6. BOTTOM BRANDING
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(goldAccent);
+        doc.text("SULAIMAN GRAPHICS", pageWidth / 2, 190, { align: "center", charSpace: 1 });
 
-      // LICENSE ID (The Key Data)
-      doc.setFontSize(8);
-      doc.setTextColor(brandBlue[0], brandBlue[1], brandBlue[2]);
-      doc.text("VERIFIED LICENSE ID", pageWidth / 2, footerY, { align: "center" });
-      doc.setTextColor(white[0], white[1], white[2]);
-      doc.setFontSize(14);
-      doc.setFont("courier", "bold"); 
-      doc.text(formData.certNo, pageWidth / 2, footerY + 8, { align: "center" });
+        // Save PDF
+        doc.save(`Certificate_${formData.clientName.replace(/\s+/g, '_')}.pdf`);
+        setIsGenerating(false);
+      };
 
-      // AUTHENTICATOR
-      doc.setFontSize(8);
-      doc.setTextColor(gray[0], gray[1], gray[2]);
-      doc.text("AUTHENTICATED BY", pageWidth - 40, footerY, { align: "right" });
-      doc.setTextColor(brandBlue[0], brandBlue[1], brandBlue[2]);
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "bolditalic");
-      doc.text("Sulaiman Graphics", pageWidth - 40, footerY + 8, { align: "right" });
-
-      // Save PDF
-      doc.save(`SG_License_${formData.clientName.replace(/\s+/g, '_')}.pdf`);
-      
     } catch (err) {
-      console.error("Masterpiece Save Error:", err);
+      console.error("Generation Error:", err);
       alert("Failed to secure license record.");
-    } finally {
       setIsGenerating(false);
     }
   };
 
   return (
     <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/95 backdrop-blur-2xl">
-      <div className="bg-[#0a0f1d] border border-blue-500/20 rounded-[2.5rem] w-full max-w-lg shadow-[0_0_50px_rgba(37,99,235,0.1)] overflow-hidden">
-        <div className="p-6 border-b border-white/5 flex justify-between items-center bg-blue-500/5">
+      <div className="bg-[#0a0f1d] border border-blue-500/20 rounded-[2.5rem] w-full max-w-lg shadow-[0_0_50px_rgba(37,99,235,0.1)]">
+        <div className="p-6 border-b border-white/5 flex justify-between items-center bg-blue-500/5 rounded-t-[2.5rem]">
           <h2 className="text-white font-bold flex items-center gap-3 italic tracking-tight">
-            <ShieldCheck className="text-blue-500" size={20} /> MINT LICENSE ASSET
+            <ShieldCheck className="text-blue-500" size={20} /> MINT PREMIUM LICENSE
           </h2>
           <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors"><X /></button>
         </div>
 
         <div className="p-8 space-y-6">
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Client Name</label>
+            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Assignee / Client Name</label>
             <input 
               type="text" 
-              placeholder="e.g. SULAIMAN RABIU"
-              className="w-full bg-white/5 border border-white/10 p-4 rounded-2xl text-white outline-none focus:border-blue-500/50 transition-all font-medium"
+              placeholder="Full Legal Name"
+              className="w-full bg-white/5 border border-white/10 p-4 rounded-2xl text-white outline-none focus:border-blue-500/50 transition-all"
               onChange={(e) => setFormData({...formData, clientName: e.target.value})}
             />
           </div>
@@ -157,8 +137,8 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
             <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Project Title</label>
             <input 
               type="text" 
-              placeholder="e.g. SG Flyer Design"
-              className="w-full bg-white/5 border border-white/10 p-4 rounded-2xl text-white outline-none focus:border-blue-500/50 transition-all font-medium"
+              placeholder="e.g. Brand Identity System"
+              className="w-full bg-white/5 border border-white/10 p-4 rounded-2xl text-white outline-none focus:border-blue-500/50 transition-all"
               onChange={(e) => setFormData({...formData, projectName: e.target.value})}
             />
           </div>
@@ -167,7 +147,7 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
             <div className="flex items-center gap-3">
                <Cpu className="text-blue-500/50" size={18} />
                <div>
-                  <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Generated ID</p>
+                  <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">License Serial</p>
                   <p className="text-blue-400 font-mono text-sm">{formData.certNo}</p>
                </div>
             </div>
@@ -177,17 +157,17 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
           <button 
             onClick={generatePremiumAsset}
             disabled={!formData.clientName || !formData.projectName || isGenerating}
-            className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-white/5 disabled:text-zinc-600 text-white py-5 rounded-2xl font-black mt-4 flex items-center justify-center gap-3 transition-all active:scale-95 shadow-xl shadow-blue-600/20 uppercase tracking-[0.2em] text-[10px]"
+            className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-white/5 disabled:text-zinc-600 text-white py-5 rounded-2xl font-black mt-4 flex items-center justify-center gap-3 transition-all shadow-xl shadow-blue-600/20 uppercase tracking-[0.2em] text-[10px]"
           >
             {isGenerating ? (
               <>
                 <Loader2 className="animate-spin" size={18} />
-                ENCRYPTING DATA...
+                SECURELY GENERATING...
               </>
             ) : (
               <>
                 <Download size={18} /> 
-                SECURE & GENERATE ASSET
+                GENERATE PREMIUM ASSET
               </>
             )}
           </button>
