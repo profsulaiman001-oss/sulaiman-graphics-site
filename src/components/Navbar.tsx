@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ShoppingBag } from "lucide-react";
+import { Menu, X } from "lucide-react"; // Removed ShoppingBag import
 import { cn } from "@/lib/utils";
 import { SettingsDropdown } from "@/components/SettingsDropdown";
 
@@ -21,32 +21,11 @@ export function Navbar() {
   const [location] = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [cartCount, setCartCount] = useState(0);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  useEffect(() => {
-    const updateCount = () => {
-      const savedCart = localStorage.getItem("sulaiman_cart");
-      if (savedCart) {
-        setCartCount(JSON.parse(savedCart).length);
-      } else {
-        setCartCount(0);
-      }
-    };
-
-    updateCount();
-    window.addEventListener("storage", updateCount);
-    window.addEventListener("cartUpdated", updateCount);
-    
-    return () => {
-      window.removeEventListener("storage", updateCount);
-      window.removeEventListener("cartUpdated", updateCount);
-    };
   }, []);
 
   useEffect(() => {
@@ -57,7 +36,6 @@ export function Navbar() {
     <header
       className={cn(
         "fixed top-0 inset-x-0 z-50 transition-all duration-500",
-        // RESTORED: Main header is transparent, only showing a blur/border when scrolled
         isScrolled 
           ? "bg-[#02040a]/40 backdrop-blur-xl border-b border-white/10 py-3 shadow-2xl" 
           : "bg-transparent py-5"
@@ -72,9 +50,8 @@ export function Navbar() {
             </span>
           </Link>
 
-          {/* Desktop Nav - The background logic is handled per-link or container if needed */}
+          {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-8">
-          
             {links.map((link) => {
               const isActive = !link.hash && (location === link.path || (link.path !== "/" && location.startsWith(link.path)));
               
@@ -96,16 +73,7 @@ export function Navbar() {
               );
             })}
 
-            <Link href="/shop/cart">
-              <a className="relative p-2.5 bg-white/5 rounded-xl border border-white/10 text-white hover:bg-blue-600/20 transition-all">
-                <ShoppingBag size={18} />
-                {cartCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 bg-blue-600 text-white text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full border-2 border-[#02040a]">
-                    {cartCount}
-                  </span>
-                )}
-              </a>
-            </Link>
+            {/* Shopping Bag Icon Removed from here */}
 
             <div className="w-px h-6 bg-white/10 mx-2" />
  
@@ -114,16 +82,7 @@ export function Navbar() {
 
           {/* Mobile Toggle */}
           <div className="md:hidden flex items-center gap-4">
-             <Link href="/shop/cart">
-               <a className="relative p-2.5 bg-white/5 rounded-xl border border-white/10 text-white">
-                  <ShoppingBag size={20} />
-                  {cartCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-[8px] font-black w-3.5 h-3.5 flex items-center justify-center rounded-full border-2 border-[#02040a]">
-                      {cartCount}
-                    </span>
-                  )}
-               </a>
-             </Link>
+             {/* Shopping Bag Icon Removed from here */}
              
              <button 
                className="text-white p-2.5 bg-white/5 rounded-xl border border-white/10 transition-colors active:bg-white/20"
@@ -135,7 +94,7 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Nav Overlay - FIXED: This part maintains the solid black for readability */}
+      {/* Mobile Nav Overlay */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <>
