@@ -64,6 +64,15 @@ const queryClient = new QueryClient({
   },
 });
 
+/* 🛠️ SURGICAL UPDATE: Scroll to top on route change */
+function ScrollToTop() {
+  const [location] = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location]);
+  return null;
+}
+
 /* PROTECTED ROUTE COMPONENT */
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [, setLocation] = useLocation();
@@ -96,6 +105,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function Router() {
   return (
     <div className="flex flex-col min-h-screen">
+      {/* 🛠️ Ensures every page starts at the top */}
+      <ScrollToTop />
+      
       <Navbar />
       <div className="flex-grow">
         <Switch>
