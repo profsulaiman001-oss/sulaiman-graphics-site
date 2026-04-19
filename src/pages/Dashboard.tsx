@@ -820,6 +820,14 @@ export default function Dashboard() {
             >
               <BarChart3 size={18} /> Studio Insights
             </button>
+
+            {/* ✅ GENERATE INVOICE BUTTON INJECTED HERE */}
+            <button
+              onClick={() => setLocation("/invoice")}
+              className="bg-background border border-border hover:border-cyan-500 hover:text-cyan-500 text-foreground font-semibold text-sm px-5 py-3 rounded-xl transition flex items-center justify-center gap-2"
+            >
+              <FileText size={18} /> Generate Invoice
+            </button>
             {/* ✅ MANAGE STOREFRONT BUTTON INJECTED HERE */}
             <button
               onClick={() => setLocation("/admin/manage-shop")}
