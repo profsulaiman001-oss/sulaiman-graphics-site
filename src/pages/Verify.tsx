@@ -8,19 +8,22 @@ const VerifyLicense = () => {
   const [licenseId, setLicenseId] = useState('');
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [isScanning, setIsScanning] = useState(false); // New state for terminal feel
+  const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState(false);
+
+  // Dynamic Year Logic for placeholders and help text
+  const currentYear = new Date().getFullYear();
+  const fullDateString = `${currentYear}${String(new Date().getMonth() + 1).padStart(2, '0')}${String(new Date().getDate()).padStart(2, '0')}`;
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!licenseId) return;
 
     setLoading(true);
-    setIsScanning(true); // Start the "scan" animation
+    setIsScanning(true);
     setError(false);
     setResult(null);
 
-    // Artificial delay to make the "security scan" feel real
     setTimeout(async () => {
       try {
         const { data, error: dbError } = await supabase
@@ -40,17 +43,15 @@ const VerifyLicense = () => {
         setLoading(false);
         setIsScanning(false);
       }
-    }, 1500); // 1.5s of "Processing" time for premium feel
+    }, 1500);
   };
 
   return (
     <div className="min-h-screen bg-[#050a15] text-white selection:bg-blue-500/30 overflow-hidden relative">
       
-      {/* ── PREMIUM TERMINAL BACKGROUND ── */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-blue-600/10 blur-[150px] rounded-full" />
         <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-900/10 blur-[120px] rounded-full" />
-        {/* Digital Grid Overlay */}
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03]" />
       </div>
 
@@ -63,7 +64,7 @@ const VerifyLicense = () => {
           </a>
         </Link>
 
-        <div className="space-y-4 mb-12 relative">
+        <div className="space-y-4 mb-12 relative text-left">
            <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-500 text-[10px] font-black uppercase tracking-widest mb-2">
              <Fingerprint size={12} /> Identity Vault
            </div>
@@ -75,13 +76,13 @@ const VerifyLicense = () => {
           </p>
         </div>
 
-        {/* ── THE SCANNER INPUT ── */}
         <form onSubmit={handleVerify} className="relative mb-16 group">
           <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 rounded-[2rem] blur opacity-25 group-focus-within:opacity-100 transition duration-1000"></div>
           <div className="relative">
             <input
               type="text"
-              placeholder="SG-2026-XXXX"
+              // DYNAMIC PLACEHOLDER: Shows current secure format as example
+              placeholder={`SG-${fullDateString}-XXXX`}
               className="w-full bg-[#0a0f1d] border border-white/10 p-7 pr-24 rounded-[2rem] text-xl font-mono text-blue-400 outline-none focus:border-blue-500/50 transition-all backdrop-blur-xl"
               value={licenseId}
               onChange={(e) => setLicenseId(e.target.value.toUpperCase())}
@@ -96,7 +97,6 @@ const VerifyLicense = () => {
           </div>
         </form>
 
-        {/* ── RESULTS & TERMINAL LOGS ── */}
         <div className="min-h-[300px] relative">
           
           <AnimatePresence mode="wait">
@@ -107,7 +107,6 @@ const VerifyLicense = () => {
                 exit={{ opacity: 0 }}
                 className="bg-white/[0.02] border border-white/10 rounded-[2.5rem] p-10 flex flex-col items-center justify-center relative overflow-hidden"
               >
-                {/* Scanning Bar Animation */}
                 <motion.div 
                   initial={{ top: "0%" }}
                   animate={{ top: "100%" }}
@@ -126,7 +125,7 @@ const VerifyLicense = () => {
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-[#0a0f1d] border border-blue-500/30 rounded-[3rem] p-10 md:p-12 shadow-2xl relative overflow-hidden group"
+                className="bg-[#0a0f1d] border border-blue-500/30 rounded-[3rem] p-10 md:p-12 shadow-2xl relative overflow-hidden group text-left"
               >
                 <div className="absolute top-0 right-0 p-8 opacity-5">
                    <Terminal size={120} className="text-blue-500" />
