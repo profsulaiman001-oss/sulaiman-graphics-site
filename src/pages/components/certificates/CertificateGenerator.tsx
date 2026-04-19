@@ -12,7 +12,7 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
 
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // Updated JPG background link
+  // Premium JPG background
   const BACKGROUND_URL = "https://lqdeybfkgcihcsticzes.supabase.co/storage/v1/object/public/certificates/20260419_093930.jpg";
 
   const generatePremiumAsset = async () => {
@@ -46,10 +46,9 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
         doc.addImage(img, 'JPEG', 0, 0, pageWidth, pageHeight);
 
         // --- GLOBAL COLOR: ALL BLACK ---
-        const textColor = "#000000";
-        doc.setTextColor(textColor);
+        doc.setTextColor("#000000");
 
-        // 1. REPLACED HEADER: SULAIMAN GRAPHICS (Increased Size)
+        // 1. HEADER: SULAIMAN GRAPHICS
         doc.setFont("helvetica", "bold");
         doc.setFontSize(12);
         doc.text("SULAIMAN GRAPHICS", 25, 25, { charSpace: 1.5 });
@@ -60,21 +59,20 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
         doc.text("CERTIFICATE OF", 25, 55);
         doc.text("OWNERSHIP", 25, 67);
 
-        // 3. ASSIGNEE LABEL (Tighter spacing & Increased size)
+        // 3. ASSIGNEE LABEL
         doc.setFont("helvetica", "bold");
         doc.setFontSize(11);
-        doc.text("THIS IS TO CERTIFY THAT", 25, 85, { charSpace: 1 });
+        doc.text("THIS IS TO CERTIFY THAT", 25, 82, { charSpace: 1 });
 
         // 4. OWNER'S NAME (Normal style + Underline)
-        doc.setFont("times", "bold"); // Changed from BoldItalic to Regular/Bold
+        doc.setFont("times", "bold");
         doc.setFontSize(44);
-        doc.text(formData.clientName.toUpperCase(), 25, 108);
+        doc.text(formData.clientName.toUpperCase(), 25, 105);
         
-        // Underline logic
         const nameWidth = doc.getTextWidth(formData.clientName.toUpperCase());
         doc.setDrawColor(0);
         doc.setLineWidth(0.8);
-        doc.line(25, 111, 25 + nameWidth, 111);
+        doc.line(25, 108, 25 + nameWidth, 108);
 
         // 5. PARAGRAPH (Increased size + Bold Project Name)
         doc.setFont("helvetica", "normal");
@@ -84,19 +82,17 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
         const textPart2 = `"${formData.projectName.toUpperCase()}." `;
         const textPart3 = "This license serves as an official transfer of Intellectual Property from Sulaiman Graphics.";
 
-        // Manual bolding in paragraph
-        doc.text(textPart1, 25, 125);
+        doc.text(textPart1, 25, 122);
         const part1Width = doc.getTextWidth(textPart1);
         
-        doc.setFont("helvetica", "bold"); // Bolding the design name
-        doc.text(textPart2, 25 + part1Width, 125);
-        const part2Width = doc.getTextWidth(textPart2);
+        doc.setFont("helvetica", "bold"); 
+        doc.text(textPart2, 25 + part1Width, 122);
         
         doc.setFont("helvetica", "normal");
-        doc.text(textPart3, 25, 132); // Wrapped to next line for clarity
+        doc.text(textPart3, 25, 129);
 
-        // 6. BOTTOM SECTION (Proper Alignment & Balance)
-        const footerY = 172;
+        // 6. BOTTOM SECTION (Raised Y-position to prevent overlap)
+        const footerY = 165; // Lifted from 172 to 165
 
         // License ID
         doc.setFontSize(8);
@@ -109,12 +105,12 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
         // Issuance Date
         doc.setFontSize(8);
         doc.setFont("helvetica", "bold");
-        doc.text("ISSUANCE DATE", 95, footerY); // Balanced alignment
+        doc.text("ISSUANCE DATE", 95, footerY);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(12);
         doc.text(new Date().toLocaleDateString('en-GB'), 95, footerY + 7);
 
-        // Branding (Small signature)
+        // Footer Branding
         doc.setFontSize(9);
         doc.text("SULAIMAN.GRAPHICS", 25, 195);
 
@@ -136,12 +132,12 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
           <h2 className="text-white font-bold flex items-center gap-3 italic tracking-tight uppercase text-xs">
             <ShieldCheck className="text-blue-500" size={18} /> Asset Minting Station
           </h2>
-          <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors"><X /></button>
+          <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors focus:outline-none"><X /></button>
         </div>
 
         <div className="p-8 space-y-6">
-          <div className="space-y-2">
-            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest text-left block">Client Identity</label>
+          <div className="space-y-2 text-left">
+            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block pl-1">Client Identity</label>
             <input 
               type="text" 
               placeholder="Full Legal Name"
@@ -150,8 +146,8 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
             />
           </div>
 
-          <div className="space-y-2">
-            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest text-left block">Asset Project Title</label>
+          <div className="space-y-2 text-left">
+            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block pl-1">Asset Project Title</label>
             <input 
               type="text" 
               placeholder="e.g. Premium Brand Logo"
@@ -160,10 +156,21 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
             />
           </div>
 
+          {/* RESTORED LICENSE ID VISIBILITY SECTION */}
+          <div className="p-4 bg-blue-500/5 border border-blue-500/10 rounded-2xl flex items-center justify-between">
+            <div className="flex items-center gap-3">
+               <Cpu className="text-blue-500/50" size={18} />
+               <div className="text-left">
+                  <p className="text-[9px] font-black text-blue-500 uppercase tracking-widest">Allocated ID</p>
+                  <p className="text-blue-400 font-mono text-xs">{formData.certNo}</p>
+               </div>
+            </div>
+          </div>
+
           <button 
             onClick={generatePremiumAsset}
             disabled={!formData.clientName || !formData.projectName || isGenerating}
-            className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-white/5 disabled:text-zinc-600 text-white py-5 rounded-2xl font-black mt-4 flex items-center justify-center gap-3 transition-all uppercase tracking-[0.2em] text-[10px]"
+            className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-white/5 disabled:text-zinc-600 text-white py-5 rounded-2xl font-black mt-4 flex items-center justify-center gap-3 transition-all uppercase tracking-[0.2em] text-[10px] shadow-lg shadow-blue-600/20"
           >
             {isGenerating ? <Loader2 className="animate-spin" size={18} /> : <Download size={18} />}
             {isGenerating ? "Processing Asset..." : "Generate Official License"}
