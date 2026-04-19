@@ -40,6 +40,9 @@ import Receipt from "@/pages/Receipt";
 import Settings from "@/pages/Settings";
 import Verify from "@/pages/Verify"; 
 
+/* ── NEW INVOICE IMPORT ── */
+import Invoice from "@/pages/Invoice"; 
+
 /* ── Added the Hub Page Import ── */
 import ClientHub from "@/pages/ClientHub"; 
 
@@ -133,6 +136,9 @@ function Router() {
           <Route path="/assistant" component={Assistant} />
           <Route path="/agreement" component={Agreement} /> 
           <Route path="/verify" component={Verify} />
+          
+          {/* ✅ NEW INVOICE ROUTE */}
+          <Route path="/invoice" component={Invoice} />
           
           <Route path="/receipt" component={Receipt} />
           <Route path="/settings" component={Settings} />
