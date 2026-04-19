@@ -12,8 +12,8 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
 
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // The Public URL you provided
-  const BACKGROUND_URL = "https://lqdeybfkgcihcsticzes.supabase.co/storage/v1/object/public/certificates/1776511592134_865bkg_2_1.jpg";
+  // Your new "Clean" background link
+  const BACKGROUND_URL = "https://lqdeybfkgcihcsticzes.supabase.co/storage/v1/object/public/certificates/20260419_092504.png";
 
   const generatePremiumAsset = async () => {
     if (!formData.clientName || !formData.projectName) {
@@ -24,7 +24,6 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
     setIsGenerating(true);
     
     try {
-      // 1. SUPABASE LOGIC
       const { error } = await supabase
         .from('certificates')
         .insert([
@@ -38,75 +37,84 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
 
       if (error) throw error;
 
-      // 2. PREMIUM PDF GENERATION
       const doc = new jsPDF("l", "mm", "a4"); 
       const pageWidth = doc.internal.pageSize.getWidth(); // 297mm
       const pageHeight = doc.internal.pageSize.getHeight(); // 210mm
 
-      // Load and add the background image
       const img = new Image();
       img.src = BACKGROUND_URL;
       
       img.onload = () => {
-        // Draw Background
-        doc.addImage(img, 'JPEG', 0, 0, pageWidth, pageHeight);
+        doc.addImage(img, 'PNG', 0, 0, pageWidth, pageHeight);
 
-        // --- TEXT STYLING & POSITIONING ---
-        // Colors to match the background (Deep Navy and Gold-ish hues)
-        const navyColor = "#020617";
-        const goldAccent = "#B8860B"; 
+        const navyColor = "#050A15";
+        const accentBlue = "#2563EB"; 
 
-        // 1. HEADER TITLE
-        doc.setTextColor(navyColor);
+        // 1. TOP MARGIN LOGO TEXT
+        doc.setTextColor(accentBlue);
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(10);
-        doc.text("OFFICIAL CERTIFICATE OF OWNERSHIP", pageWidth / 2, 45, { align: "center", charSpace: 2 });
+        doc.setFontSize(8);
+        doc.text("SULAIMAN GRAPHICS // OFFICIAL ASSET LICENSE", 25, 25, { charSpace: 1 });
 
-        // 2. CLIENT NAME (The focus of the certificate)
+        // 2. MAIN HEADER (Hierarchy Level 1)
         doc.setTextColor(navyColor);
-        doc.setFontSize(38);
-        doc.setFont("times", "bolditalic"); // Using Times for a more classic/legal feel
-        doc.text(formData.clientName.toUpperCase(), pageWidth / 2, 95, { align: "center" });
+        doc.setFont("times", "bold");
+        doc.setFontSize(32);
+        doc.text("CERTIFICATE OF", 25, 60);
+        doc.text("OWNERSHIP", 25, 72);
 
-        // 3. PROJECT DESCRIPTION
+        // 3. ASSIGNEE LABEL
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.setTextColor("#64748b");
+        doc.text("THIS IS TO CERTIFY THAT", 25, 95, { charSpace: 1 });
+
+        // 4. CLIENT NAME (Hierarchy Level 1 - The Focus)
+        doc.setTextColor(navyColor);
+        doc.setFontSize(42);
+        doc.setFont("times", "bolditalic");
+        doc.text(formData.clientName.toUpperCase(), 25, 115);
+
+        // 5. PROJECT DESCRIPTION (Hierarchy Level 2)
         doc.setFont("helvetica", "normal");
         doc.setFontSize(11);
-        doc.setTextColor("#4b5563");
-        const description = `This document confirms that full commercial rights and legal ownership of the digital assets produced for "${formData.projectName.toUpperCase()}" have been officially transferred from Sulaiman Graphics to the assignee named above.`;
-        const splitDescription = doc.splitTextToSize(description, 180);
-        doc.text(splitDescription, pageWidth / 2, 115, { align: "center" });
+        doc.setTextColor("#334155");
+        const bodyText = `Is the sole legal owner and holder of all commercial usage rights for the digital masterpiece titled "${formData.projectName.toUpperCase()}." This license serves as an official transfer of Intellectual Property from Sulaiman Graphics.`;
+        const splitText = doc.splitTextToSize(bodyText, 140); // Kept to the left half
+        doc.text(splitText, 25, 130);
 
-        // 4. FOOTER LEFT: LICENSE ID
-        doc.setFontSize(8);
-        doc.setTextColor("#9ca3af");
-        doc.text("VERIFIED LICENSE ID", 45, 170);
+        // 6. METADATA FOOTER (Hierarchy Level 3 - Technical Data)
+        // License ID
+        doc.setFontSize(7);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor("#94a3b8");
+        doc.text("LICENSE SERIAL ID", 25, 175);
         doc.setTextColor(navyColor);
         doc.setFont("courier", "bold");
-        doc.setFontSize(12);
-        doc.text(formData.certNo, 45, 178);
+        doc.setFontSize(11);
+        doc.text(formData.certNo, 25, 182);
 
-        // 5. FOOTER RIGHT: DATE
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(8);
-        doc.setTextColor("#9ca3af");
-        doc.text("DATE OF ISSUANCE", pageWidth - 45, 170, { align: "right" });
-        doc.setTextColor(navyColor);
-        doc.setFontSize(12);
-        doc.text(new Date().toLocaleDateString('en-GB'), pageWidth - 45, 178, { align: "right" });
-
-        // 6. BOTTOM BRANDING
-        doc.setFontSize(10);
+        // Date
+        doc.setFontSize(7);
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(goldAccent);
-        doc.text("SULAIMAN GRAPHICS", pageWidth / 2, 190, { align: "center", charSpace: 1 });
+        doc.setTextColor("#94a3b8");
+        doc.text("ISSUANCE DATE", 90, 175);
+        doc.setTextColor(navyColor);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.text(new Date().toLocaleDateString('en-GB'), 90, 182);
 
-        // Save PDF
-        doc.save(`Certificate_${formData.clientName.replace(/\s+/g, '_')}.pdf`);
+        // Branding
+        doc.setTextColor(accentBlue);
+        doc.setFontSize(10);
+        doc.text("SULAIMAN.GRAPHICS", 25, 195);
+
+        doc.save(`SG_License_${formData.clientName.replace(/\s+/g, '_')}.pdf`);
         setIsGenerating(false);
       };
 
     } catch (err) {
-      console.error("Generation Error:", err);
+      console.error(err);
       alert("Failed to secure license record.");
       setIsGenerating(false);
     }
@@ -116,29 +124,29 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
     <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/95 backdrop-blur-2xl">
       <div className="bg-[#0a0f1d] border border-blue-500/20 rounded-[2.5rem] w-full max-w-lg shadow-[0_0_50px_rgba(37,99,235,0.1)]">
         <div className="p-6 border-b border-white/5 flex justify-between items-center bg-blue-500/5 rounded-t-[2.5rem]">
-          <h2 className="text-white font-bold flex items-center gap-3 italic tracking-tight">
-            <ShieldCheck className="text-blue-500" size={20} /> MINT PREMIUM LICENSE
+          <h2 className="text-white font-bold flex items-center gap-3 italic tracking-tight uppercase text-xs">
+            <ShieldCheck className="text-blue-500" size={18} /> Asset Minting Station
           </h2>
           <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors"><X /></button>
         </div>
 
         <div className="p-8 space-y-6">
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Assignee / Client Name</label>
+            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Client Identity</label>
             <input 
               type="text" 
               placeholder="Full Legal Name"
-              className="w-full bg-white/5 border border-white/10 p-4 rounded-2xl text-white outline-none focus:border-blue-500/50 transition-all"
+              className="w-full bg-white/5 border border-white/10 p-4 rounded-2xl text-white outline-none focus:border-blue-500/50 transition-all font-medium"
               onChange={(e) => setFormData({...formData, clientName: e.target.value})}
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Project Title</label>
+            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Asset Project Title</label>
             <input 
               type="text" 
-              placeholder="e.g. Brand Identity System"
-              className="w-full bg-white/5 border border-white/10 p-4 rounded-2xl text-white outline-none focus:border-blue-500/50 transition-all"
+              placeholder="e.g. Premium Brand Logo"
+              className="w-full bg-white/5 border border-white/10 p-4 rounded-2xl text-white outline-none focus:border-blue-500/50 transition-all font-medium"
               onChange={(e) => setFormData({...formData, projectName: e.target.value})}
             />
           </div>
@@ -147,11 +155,10 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
             <div className="flex items-center gap-3">
                <Cpu className="text-blue-500/50" size={18} />
                <div>
-                  <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">License Serial</p>
-                  <p className="text-blue-400 font-mono text-sm">{formData.certNo}</p>
+                  <p className="text-[9px] font-black text-blue-500 uppercase tracking-widest">Allocated ID</p>
+                  <p className="text-blue-400 font-mono text-xs">{formData.certNo}</p>
                </div>
             </div>
-            <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
           </div>
 
           <button 
@@ -159,17 +166,8 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
             disabled={!formData.clientName || !formData.projectName || isGenerating}
             className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-white/5 disabled:text-zinc-600 text-white py-5 rounded-2xl font-black mt-4 flex items-center justify-center gap-3 transition-all shadow-xl shadow-blue-600/20 uppercase tracking-[0.2em] text-[10px]"
           >
-            {isGenerating ? (
-              <>
-                <Loader2 className="animate-spin" size={18} />
-                SECURELY GENERATING...
-              </>
-            ) : (
-              <>
-                <Download size={18} /> 
-                GENERATE PREMIUM ASSET
-              </>
-            )}
+            {isGenerating ? <Loader2 className="animate-spin" size={18} /> : <Download size={18} />}
+            {isGenerating ? "Processing Asset..." : "Generate Official License"}
           </button>
         </div>
       </div>
