@@ -12,7 +12,7 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
 
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // Premium JPG background
+  // High-quality JPG background
   const BACKGROUND_URL = "https://lqdeybfkgcihcsticzes.supabase.co/storage/v1/object/public/certificates/20260419_093930.jpg";
 
   const generatePremiumAsset = async () => {
@@ -45,10 +45,10 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
       img.onload = () => {
         doc.addImage(img, 'JPEG', 0, 0, pageWidth, pageHeight);
 
-        // --- GLOBAL COLOR: ALL BLACK ---
+        // --- GLOBAL COLOR: PURE BLACK ---
         doc.setTextColor("#000000");
 
-        // 1. HEADER: SULAIMAN GRAPHICS
+        // 1. HEADER: SULAIMAN GRAPHICS (Top Left)
         doc.setFont("helvetica", "bold");
         doc.setFontSize(12);
         doc.text("SULAIMAN GRAPHICS", 25, 25, { charSpace: 1.5 });
@@ -59,7 +59,7 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
         doc.text("CERTIFICATE OF", 25, 55);
         doc.text("OWNERSHIP", 25, 67);
 
-        // 3. ASSIGNEE LABEL
+        // 3. ASSIGNEE LABEL (Tightened spacing)
         doc.setFont("helvetica", "bold");
         doc.setFontSize(11);
         doc.text("THIS IS TO CERTIFY THAT", 25, 82, { charSpace: 1 });
@@ -91,8 +91,8 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
         doc.setFont("helvetica", "normal");
         doc.text(textPart3, 25, 129);
 
-        // 6. BOTTOM SECTION (Raised Y-position to prevent overlap)
-        const footerY = 165; // Lifted from 172 to 165
+        // 6. BOTTOM SECTION (Adjusted Upward to avoid background overlap)
+        const footerY = 160; // Moved up from 165/172 to ensure total clearance
 
         // License ID
         doc.setFontSize(8);
@@ -110,9 +110,7 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
         doc.setFontSize(12);
         doc.text(new Date().toLocaleDateString('en-GB'), 95, footerY + 7);
 
-        // Footer Branding
-        doc.setFontSize(9);
-        doc.text("SULAIMAN.GRAPHICS", 25, 195);
+        // NOTE: Bottom Branding Removed as per request
 
         doc.save(`SG_License_${formData.clientName.replace(/\s+/g, '_')}.pdf`);
         setIsGenerating(false);
@@ -135,8 +133,8 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
           <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors focus:outline-none"><X /></button>
         </div>
 
-        <div className="p-8 space-y-6">
-          <div className="space-y-2 text-left">
+        <div className="p-8 space-y-6 text-left">
+          <div className="space-y-2">
             <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block pl-1">Client Identity</label>
             <input 
               type="text" 
@@ -146,7 +144,7 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
             />
           </div>
 
-          <div className="space-y-2 text-left">
+          <div className="space-y-2">
             <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block pl-1">Asset Project Title</label>
             <input 
               type="text" 
@@ -156,7 +154,7 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
             />
           </div>
 
-          {/* RESTORED LICENSE ID VISIBILITY SECTION */}
+          {/* PREVIEW OF ALLOCATED ID */}
           <div className="p-4 bg-blue-500/5 border border-blue-500/10 rounded-2xl flex items-center justify-between">
             <div className="flex items-center gap-3">
                <Cpu className="text-blue-500/50" size={18} />
