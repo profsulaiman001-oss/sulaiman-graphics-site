@@ -137,9 +137,6 @@ function Router() {
           <Route path="/agreement" component={Agreement} /> 
           <Route path="/verify" component={Verify} />
           
-          {/* ✅ NEW INVOICE ROUTE */}
-          <Route path="/invoice" component={Invoice} />
-          
           <Route path="/receipt" component={Receipt} />
           <Route path="/settings" component={Settings} />
 
@@ -153,6 +150,13 @@ function Router() {
             </ProtectedRoute>
           </Route>
           
+          {/* ✅ PROTECTED INVOICE ROUTE */}
+          <Route path="/invoice">
+            <ProtectedRoute>
+              <Invoice />
+            </ProtectedRoute>
+          </Route>
+
           {/* ✅ New Admin Command Center Route */}
           <Route path="/studio-insights">
             <ProtectedRoute>
