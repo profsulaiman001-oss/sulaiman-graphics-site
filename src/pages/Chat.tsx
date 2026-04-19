@@ -282,7 +282,7 @@ export default function Chat() {
   };
 
   return (
-    <div className="bg-[#0B0C10] min-h-screen text-gray-100 flex flex-col pt-20 relative">
+    <div className="bg-[#0B0C10] min-h-screen text-gray-100 flex flex-col pt-20 relative overflow-hidden">
       
       <input 
         type="file" 
@@ -336,7 +336,8 @@ export default function Chat() {
         </div>
       )}
 
-      <div className="flex-grow flex h-[calc(100vh-140px)] w-full max-w-[1600px] mx-auto p-4 md:p-6 gap-6 relative">
+      {/* 🛠️ FIX: Locked container height to prevent pushing footer */}
+      <div className="flex-grow flex h-[calc(100vh-120px)] w-full max-w-[1600px] mx-auto p-4 md:p-6 gap-6 relative">
         
         {isAdmin && (
           <div className={`${mobileSidebarOpen ? 'flex' : 'hidden md:flex'} absolute inset-y-0 left-0 z-30 md:relative w-full sm:w-80 md:w-1/4 flex-col bg-[#11141A] border border-gray-800 rounded-3xl overflow-hidden`}>
@@ -418,8 +419,9 @@ export default function Chat() {
           </div>
         )}
 
+        {/* 🛠️ FIX: Main box has backdrop-blur and absolute container limits */}
         <div className="flex-grow flex flex-col bg-[#11141A]/60 backdrop-blur-xl border border-gray-800 rounded-3xl overflow-hidden">
-          <div className="p-5 border-b border-gray-800 flex justify-between items-center bg-[#11141A]/80">
+          <div className="p-5 border-b border-gray-800 flex justify-between items-center bg-[#11141A]/80 z-10">
             <div className="flex items-center gap-3">
               {isAdmin && (
                 <button 
@@ -447,7 +449,8 @@ export default function Chat() {
             </button>
           </div>
 
-          <div className="flex-grow overflow-y-auto p-6 space-y-6">
+          {/* 🛠️ THE KEY FIX: ONLY this section scrolls internally */}
+          <div className="flex-grow overflow-y-auto p-6 space-y-6 scrollbar-hide">
             {chatMessages?.map((msg: any) => {
               const isMe = msg.sender_email === guestEmail;
               const formattedTime = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -456,7 +459,7 @@ export default function Chat() {
               return (
                 <div 
                   key={msg.id}
-                  className={`flex items-end gap-3 max-w-[75%] ${isMe ? 'ml-auto flex-row-reverse' : ''}`}
+                  className={`flex items-end gap-3 max-w-[85%] sm:max-w-[75%] ${isMe ? 'ml-auto flex-row-reverse' : ''}`}
                 >
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-semibold ${
                     isMe ? 'bg-gradient-to-br from-cyan-500 to-blue-600 text-black font-bold' : 'bg-gray-800 text-gray-400'
@@ -490,11 +493,12 @@ export default function Chat() {
             {chatMessages?.length === 0 && (
               <div className="text-center text-gray-600 mt-10">No messages yet. Send a greeting to start chatting!</div>
             )}
-            {/* 🛠️ SURGICAL UPDATE: Dummy div for auto-scrolling */}
-            <div ref={messagesEndRef} />
+            {/* 🛠️ Anchor for auto-scrolling */}
+            <div ref={messagesEndRef} className="h-1" />
           </div>
 
-          <div className="p-4 border-t border-gray-800 bg-[#11141A]/80">
+          {/* 🛠️ Input Area: Fixed at the bottom of the chat box */}
+          <div className="p-4 border-t border-gray-800 bg-[#11141A]/80 z-10">
             <div className="flex items-center gap-2 bg-[#1A1F29] border border-gray-800 rounded-xl px-3 py-2 focus-within:border-cyan-500/50 transition-colors">
               
               <button 
