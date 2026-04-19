@@ -34,6 +34,14 @@ export default function Chat() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
+  // 🛠️ SURGICAL UPDATE: Reference for auto-scrolling
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // 🛠️ SURGICAL UPDATE: Scroll to bottom function
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
   useEffect(() => {
     const savedEmail = sessionStorage.getItem("chat_email");
     const savedName = sessionStorage.getItem("chat_name");
@@ -161,7 +169,11 @@ export default function Chat() {
     enabled: !!activeClientEmail && !!guestEmail,
   });
 
-  // ── UPDATED REAL-TIME LISTENER ──
+  // 🛠️ SURGICAL UPDATE: Trigger auto-scroll whenever chatMessages changes
+  useEffect(() => {
+    scrollToBottom();
+  }, [chatMessages]);
+
   useEffect(() => {
     if (!guestEmail) return;
 
@@ -174,7 +186,6 @@ export default function Chat() {
       }, (payload) => {
         const newMessage = payload.new as any;
 
-        // If the message involves the current user, refresh all chat data instantly
         if (newMessage.receiver_email === guestEmail || newMessage.sender_email === guestEmail) {
           queryClient.invalidateQueries({ queryKey: ['messages', activeClientEmail] });
           queryClient.invalidateQueries({ queryKey: ['chatClients'] });
@@ -479,6 +490,8 @@ export default function Chat() {
             {chatMessages?.length === 0 && (
               <div className="text-center text-gray-600 mt-10">No messages yet. Send a greeting to start chatting!</div>
             )}
+            {/* 🛠️ SURGICAL UPDATE: Dummy div for auto-scrolling */}
+            <div ref={messagesEndRef} />
           </div>
 
           <div className="p-4 border-t border-gray-800 bg-[#11141A]/80">
