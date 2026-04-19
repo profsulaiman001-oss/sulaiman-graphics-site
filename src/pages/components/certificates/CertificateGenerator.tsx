@@ -12,7 +12,6 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
 
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // High-quality JPG background
   const BACKGROUND_URL = "https://lqdeybfkgcihcsticzes.supabase.co/storage/v1/object/public/certificates/20260419_093930.jpg";
 
   const generatePremiumAsset = async () => {
@@ -45,10 +44,9 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
       img.onload = () => {
         doc.addImage(img, 'JPEG', 0, 0, pageWidth, pageHeight);
 
-        // --- GLOBAL COLOR: PURE BLACK ---
         doc.setTextColor("#000000");
 
-        // 1. HEADER: SULAIMAN GRAPHICS (Top Left)
+        // 1. TOP HEADER
         doc.setFont("helvetica", "bold");
         doc.setFontSize(12);
         doc.text("SULAIMAN GRAPHICS", 25, 25, { charSpace: 1.5 });
@@ -59,12 +57,12 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
         doc.text("CERTIFICATE OF", 25, 55);
         doc.text("OWNERSHIP", 25, 67);
 
-        // 3. ASSIGNEE LABEL (Tightened spacing)
+        // 3. CERTIFY LABEL
         doc.setFont("helvetica", "bold");
         doc.setFontSize(11);
         doc.text("THIS IS TO CERTIFY THAT", 25, 82, { charSpace: 1 });
 
-        // 4. OWNER'S NAME (Normal style + Underline)
+        // 4. OWNER'S NAME
         doc.setFont("times", "bold");
         doc.setFontSize(44);
         doc.text(formData.clientName.toUpperCase(), 25, 105);
@@ -74,27 +72,31 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
         doc.setLineWidth(0.8);
         doc.line(25, 108, 25 + nameWidth, 108);
 
-        // 5. PARAGRAPH (Increased size + Bold Project Name)
+        // 5. THREE-LINE PARAGRAPH LOGIC
         doc.setFont("helvetica", "normal");
-        doc.setFontSize(13);
+        doc.setFontSize(12.5); // Slightly adjusted for better line-wrapping
         
-        const textPart1 = "Is the sole legal owner and holder of all commercial usage rights for the digital masterpiece titled ";
-        const textPart2 = `"${formData.projectName.toUpperCase()}." `;
-        const textPart3 = "This license serves as an official transfer of Intellectual Property from Sulaiman Graphics.";
+        const line1 = "Is the sole legal owner and holder of all commercial usage rights for the";
+        const line2Part1 = "digital masterpiece titled ";
+        const projectName = `"${formData.projectName.toUpperCase()}"`;
+        const line3 = "This license serves as an official transfer of Intellectual Property from Sulaiman Graphics.";
 
-        doc.text(textPart1, 25, 122);
-        const part1Width = doc.getTextWidth(textPart1);
+        // Render Line 1
+        doc.text(line1, 25, 122);
+
+        // Render Line 2 with Bold Project Name
+        doc.text(line2Part1, 25, 129);
+        const p1Width = doc.getTextWidth(line2Part1);
+        doc.setFont("helvetica", "bold");
+        doc.text(projectName, 25 + p1Width, 129);
         
-        doc.setFont("helvetica", "bold"); 
-        doc.text(textPart2, 25 + part1Width, 122);
-        
+        // Render Line 3 (Shifted down to ensure no overlap even with long titles)
         doc.setFont("helvetica", "normal");
-        doc.text(textPart3, 25, 129);
+        doc.text(line3, 25, 136);
 
-        // 6. BOTTOM SECTION (Adjusted Upward to avoid background overlap)
-        const footerY = 160; // Moved up from 165/172 to ensure total clearance
+        // 6. RAISED FOOTER SECTION
+        const footerY = 160; 
 
-        // License ID
         doc.setFontSize(8);
         doc.setFont("helvetica", "bold");
         doc.text("LICENSE SERIAL ID", 25, footerY);
@@ -102,15 +104,12 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
         doc.setFontSize(12);
         doc.text(formData.certNo, 25, footerY + 7);
 
-        // Issuance Date
         doc.setFontSize(8);
         doc.setFont("helvetica", "bold");
         doc.text("ISSUANCE DATE", 95, footerY);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(12);
         doc.text(new Date().toLocaleDateString('en-GB'), 95, footerY + 7);
-
-        // NOTE: Bottom Branding Removed as per request
 
         doc.save(`SG_License_${formData.clientName.replace(/\s+/g, '_')}.pdf`);
         setIsGenerating(false);
@@ -148,13 +147,12 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
             <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block pl-1">Asset Project Title</label>
             <input 
               type="text" 
-              placeholder="e.g. Premium Brand Logo"
+              placeholder="e.g. Social Media Design"
               className="w-full bg-white/5 border border-white/10 p-4 rounded-2xl text-white outline-none focus:border-blue-500/50 transition-all font-medium"
               onChange={(e) => setFormData({...formData, projectName: e.target.value})}
             />
           </div>
 
-          {/* PREVIEW OF ALLOCATED ID */}
           <div className="p-4 bg-blue-500/5 border border-blue-500/10 rounded-2xl flex items-center justify-between">
             <div className="flex items-center gap-3">
                <Cpu className="text-blue-500/50" size={18} />
