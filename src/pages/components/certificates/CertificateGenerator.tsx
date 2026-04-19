@@ -4,10 +4,20 @@ import { supabase } from "../../../lib/supabase";
 import { X, Download, Loader2, ShieldCheck, Cpu } from "lucide-react";
 
 export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
+  // Logic to create a highly secure, date-based License ID
+  const generateSecureID = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const random = Math.floor(1000 + Math.random() * 9000);
+    return `SG-${year}${month}${day}-${random}`;
+  };
+
   const [formData, setFormData] = useState({
     clientName: "",
     projectName: "",
-    certNo: `SG-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+    certNo: generateSecureID(), // Initialized with the new secure format
   });
 
   const [isGenerating, setIsGenerating] = useState(false);
@@ -23,10 +33,22 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
     setIsGenerating(true);
     
     try {
+      // Final collision safety check: Ensure ID doesn't already exist in Supabase
+      const { data: existing } = await supabase
+        .from('certificates')
+        .select('license_id')
+        .eq('license_id', formData.certNo)
+        .single();
+
+      let finalID = formData.certNo;
+      if (existing) {
+        finalID = generateSecureID(); // Regenerate if by some miracle it exists
+      }
+
       const { error } = await supabase
         .from('certificates')
         .insert([{ 
-            license_id: formData.certNo, 
+            license_id: finalID, 
             client_name: formData.clientName, 
             project_name: formData.projectName,
             issue_date: new Date().toISOString().split('T')[0] 
@@ -74,23 +96,19 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
 
         // 5. THREE-LINE PARAGRAPH LOGIC
         doc.setFont("helvetica", "normal");
-        doc.setFontSize(12.5); // Slightly adjusted for better line-wrapping
+        doc.setFontSize(12.5); 
         
         const line1 = "Is the sole legal owner and holder of all commercial usage rights for the";
         const line2Part1 = "digital masterpiece titled ";
         const projectName = `"${formData.projectName.toUpperCase()}"`;
         const line3 = "This license serves as an official transfer of Intellectual Property from Sulaiman Graphics.";
 
-        // Render Line 1
         doc.text(line1, 25, 122);
-
-        // Render Line 2 with Bold Project Name
         doc.text(line2Part1, 25, 129);
         const p1Width = doc.getTextWidth(line2Part1);
         doc.setFont("helvetica", "bold");
         doc.text(projectName, 25 + p1Width, 129);
         
-        // Render Line 3 (Shifted down to ensure no overlap even with long titles)
         doc.setFont("helvetica", "normal");
         doc.text(line3, 25, 136);
 
@@ -102,7 +120,7 @@ export const CertificateGenerator = ({ onClose }: { onClose: () => void }) => {
         doc.text("LICENSE SERIAL ID", 25, footerY);
         doc.setFont("courier", "bold");
         doc.setFontSize(12);
-        doc.text(formData.certNo, 25, footerY + 7);
+        doc.text(finalID, 25, footerY + 7);
 
         doc.setFontSize(8);
         doc.setFont("helvetica", "bold");
