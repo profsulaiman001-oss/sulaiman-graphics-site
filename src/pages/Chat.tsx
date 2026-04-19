@@ -14,7 +14,7 @@ import {
   ArrowRight,
   UserPlus,
   Loader2,
-  Trash2 // 🛠️ Surgical Update: Added Trash icon
+  Trash2 
 } from "lucide-react";
 
 export default function Chat() {
@@ -72,7 +72,6 @@ export default function Chat() {
     setShowIdentityPopup(false);
   };
 
-  // 1. Fetch clean list of clients from our NEW chat_clients table!
   const { data: clients } = useQuery({
     queryKey: ['chatClients'],
     queryFn: async () => {
@@ -93,14 +92,12 @@ export default function Chat() {
     }
   }, [clients, isAdmin]);
 
-  // Mutation to save a newly typed client to Supabase
   const addClientMutation = useMutation({
     mutationFn: async (email: string) => {
       const { error } = await supabase
         .from('chat_clients')
         .insert([{ email }]);
       
-      // If it fails because the email is already there, ignore the error
       if (error && error.code !== '23505') throw error;
     },
     onSuccess: () => {
@@ -108,10 +105,8 @@ export default function Chat() {
     }
   });
 
-  // 🛠️ Surgical Update: Locked delete function (only executes if you are the admin)
   const deleteClientMutation = useMutation({
     mutationFn: async (email: string) => {
-      // STRICT ADMIN CHECK
       const savedEmail = sessionStorage.getItem("chat_email");
       if (savedEmail !== "profsulaiman001@gmail.com") {
         throw new Error("Unauthorized: Only the admin can delete clients.");
@@ -126,8 +121,6 @@ export default function Chat() {
     },
     onSuccess: (_, deletedEmail) => {
       queryClient.invalidateQueries({ queryKey: ['chatClients'] });
-      
-      // Reset chat view if you deleted the active client
       if (activeClientEmail === deletedEmail) {
         setActiveClientEmail(null);
       }
@@ -142,13 +135,11 @@ export default function Chat() {
     const email = newClientEmail.trim().toLowerCase();
     if (!email) return;
     
-    // Instantly save to Supabase
     addClientMutation.mutate(email);
     setActiveClientEmail(email);
     setNewClientEmail("");
   };
 
-  // 2. Fetch clean messages between Admin and Active Client
   const { data: chatMessages } = useQuery({
     queryKey: ['messages', activeClientEmail],
     queryFn: async () => {
@@ -170,35 +161,29 @@ export default function Chat() {
     enabled: !!activeClientEmail && !!guestEmail,
   });
 
-  // 3. Real-time listener
+  // ── UPDATED REAL-TIME LISTENER ──
   useEffect(() => {
     if (!guestEmail) return;
 
     const channel = supabase
-      .channel(`realtime_chat_${guestEmail}`)
+      .channel('schema-db-changes')
       .on('postgres_changes', { 
         event: 'INSERT', 
         schema: 'public', 
-        table: 'chat_messages'
+        table: 'chat_messages' 
       }, (payload) => {
-        queryClient.invalidateQueries({ queryKey: ['messages', activeClientEmail] });
-        queryClient.invalidateQueries({ queryKey: ['chatClients'] });
+        const newMessage = payload.new as any;
 
-        const messageData = payload.new as any;
-        if (messageData && messageData.receiver_email === guestEmail) {
-          const audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
-          audio.play().catch(() => {});
+        // If the message involves the current user, refresh all chat data instantly
+        if (newMessage.receiver_email === guestEmail || newMessage.sender_email === guestEmail) {
+          queryClient.invalidateQueries({ queryKey: ['messages', activeClientEmail] });
+          queryClient.invalidateQueries({ queryKey: ['chatClients'] });
 
-          const originalTitle = document.title;
-          document.title = "🔴 New Message!";
-          
-          const resetTitle = () => {
-            document.title = originalTitle;
-            window.removeEventListener('mousemove', resetTitle);
-            window.removeEventListener('focus', resetTitle);
-          };
-          window.addEventListener('mousemove', resetTitle);
-          window.addEventListener('focus', resetTitle);
+          if (newMessage.receiver_email === guestEmail) {
+            const audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
+            audio.play().catch(() => {});
+            document.title = "🔴 New Message!";
+          }
         }
       })
       .subscribe();
@@ -208,7 +193,6 @@ export default function Chat() {
     };
   }, [guestEmail, activeClientEmail, queryClient]);
 
-  // 4. Function to send a message
   const sendMessageMutation = useMutation({
     mutationFn: async (messageText: string) => {
       const adminEmail = "profsulaiman001@gmail.com";
@@ -235,14 +219,12 @@ export default function Chat() {
     sendMessageMutation.mutate(message);
   };
 
-  // 5. Function to upload an Image
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !activeClientEmail) return;
 
     try {
       setUploading(true);
-      
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
@@ -284,7 +266,7 @@ export default function Chat() {
       text.endsWith(".jpeg") || 
       text.endsWith(".gif") || 
       text.endsWith(".webp") ||
-      text.includes("chat_attachments") 
+      text.includes("chat-attachments") 
     );
   };
 
@@ -378,7 +360,6 @@ export default function Chat() {
             <div className="flex-grow overflow-y-auto p-3 space-y-2">
               {filteredClients?.map((c: any) => {
                 const isActive = c.email === activeClientEmail;
-                
                 return (
                   <div 
                     key={c.email}
@@ -402,11 +383,10 @@ export default function Chat() {
                       </div>
                     </div>
                     
-                    {/* 🛠️ Surgical Update: Delete Button ONLY rendered if logged in as Admin */}
                     {isAdmin && (
                       <button 
                         onClick={(e) => {
-                          e.stopPropagation(); // Prevents selecting the chat row
+                          e.stopPropagation();
                           if (confirm(`Are you sure you want to remove ${c.email} from the sidebar?`)) {
                             deleteClientMutation.mutate(c.email);
                           }
@@ -538,4 +518,4 @@ export default function Chat() {
       </div>
     </div>
   );
-    }
+}
