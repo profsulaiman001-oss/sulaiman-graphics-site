@@ -8,8 +8,6 @@ import { useProject, useProjects } from "@/hooks/use-portfolio";
 
 /* ─── Helpers ────────────────────────────────────────────────── */
 function assetUrl(path: string) {
-  // Fix: If it's already a full Supabase/HTTP link, don't prepend the base URL 
-  if (path.startsWith('http')) return path;
   return `${import.meta.env.BASE_URL}${path.replace(/^\//, "")}`;
 }
 
@@ -19,7 +17,7 @@ function GalleryImage({
   alt,
   gradient,
   index,
-  isTallFormat, 
+  isTallFormat, // Renamed prop to stay consistent
 }: {
   src: string;
   alt: string;
@@ -28,12 +26,16 @@ function GalleryImage({
   isTallFormat: boolean;
 }) {
   const [failed, setFailed] = useState(false);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 28 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.5, delay: (index % 4) * 0.1 }}
+      /* Dynamic Aspect Ratio Check:
+        If it's a flyer or webinar, we use aspect-[4/5]. Otherwise, we keep your original aspect-square.
+      */
       className={`w-full ${
         isTallFormat ? "aspect-[4/5]" : "aspect-square"
       } rounded-2xl overflow-hidden relative group bg-card border border-border`}
@@ -63,7 +65,7 @@ function HeroBanner({
   gradient,
   category,
   title,
-  isTallFormat, 
+  isTallFormat, // Renamed prop here too
 }: {
   src?: string;
   gradient: string;
@@ -75,6 +77,10 @@ function HeroBanner({
   const showImage = !!src && !failed;
 
   return (
+    /* Dynamic Hero Banner Aspect Ratio:
+      If it's a flyer/webinar, making it aspect-[4/5] on mobile and aspect-[3/2] on desktop ensures the graphic is seen.
+      If it's not a flyer, we keep your banner cinematic aspect-[21/9].
+    */
     <AnimatedSection 
       className={`w-full ${
         isTallFormat ? "aspect-[4/5] md:aspect-[3/2]" : "aspect-[21/9]"
@@ -153,9 +159,16 @@ export default function ProjectDetail() {
       ? allProjects[(currentIndex + 1) % allProjects.length]
       : null;
 
+  /* Check if this project falls under Flyer Design or Webinar Design */
   const isTallFormat = project.category === "Flyer Design" || project.category === "Webinar Design";
+
+  /* Hero image: first in images[] or the card thumbnail */
   const heroSrc = project.images?.[0] ?? project.image;
+
+  /* All gallery images as a clean string[] */
   const galleryImages: string[] = project.images ?? (project.image ? [project.image] : []);
+
+  /* Is this a video project? */
   const hasVideo = !!project.video;
 
   return (
@@ -175,7 +188,7 @@ export default function ProjectDetail() {
           gradient={project.gradient}
           category={project.category}
           title={project.title}
-          isTallFormat={isTallFormat} 
+          isTallFormat={isTallFormat} // Passing it here
         />
 
         {/* ── Main content grid ── */}
@@ -199,18 +212,13 @@ export default function ProjectDetail() {
                 <h2 className="font-display font-bold text-3xl mb-6 text-foreground">
                   Watch the Ad
                 </h2>
-                <div className="rounded-2xl overflow-hidden border border-border bg-black aspect-video flex items-center justify-center">
+                <div className="rounded-2xl overflow-hidden border border-border bg-black">
                   <video
-                    key={project.video}
-                    src={assetUrl(project.video)}
+                    src={project.video.startsWith('http') ? project.video : assetUrl(project.video)}
                     controls
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    preload="auto"
+                    preload="none"
                     poster={project.image ? assetUrl(project.image) : undefined}
-                    className="w-full h-full object-contain"
+                    className="w-full max-h-[520px] object-contain"
                   >
                     Your browser does not support HTML5 video.
                   </video>
@@ -218,7 +226,7 @@ export default function ProjectDetail() {
               </AnimatedSection>
             )}
 
-            {/* ── Image gallery ── */}
+            {/* ── Image gallery — dynamic, no hard limit ── */}
             {galleryImages.length > 0 && (
               <AnimatedSection delay={0.3}>
                 <h2 className="font-display font-bold text-3xl mb-6 text-foreground">
@@ -232,7 +240,7 @@ export default function ProjectDetail() {
                       alt={`${project.title} — image ${i + 1}`}
                       gradient={project.gradient}
                       index={i}
-                      isTallFormat={isTallFormat} 
+                      isTallFormat={isTallFormat} // Passing it here
                     />
                   ))}
                 </div>
@@ -248,6 +256,7 @@ export default function ProjectDetail() {
               className="bg-card border border-border rounded-3xl p-8 sticky top-32"
             >
               <div className="space-y-8">
+
                 <div>
                   <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-2">
                     Client
@@ -285,6 +294,7 @@ export default function ProjectDetail() {
                     </Button>
                   </Link>
                 </div>
+
               </div>
             </AnimatedSection>
           </div>
