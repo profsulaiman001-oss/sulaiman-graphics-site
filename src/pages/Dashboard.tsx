@@ -7,7 +7,7 @@ import {
   Clock, Loader2, HardDrive, Download, Settings, X, UserCheck, MessageSquare, FileText
 } from "lucide-react";
 
-import { CertificateGenerator } from "../components/certificates/CertificateGenerator";
+import { CertificateGenerator } from "./components/certificates/CertificateGenerator";
 import { ProjectManagement } from "../components/dashboard/ProjectManagement";
 import { OnboardClient } from "../components/dashboard/OnboardClient";
 import { ProjectCard } from "../components/dashboard/ProjectCard";
