@@ -13,7 +13,7 @@ import { OnboardClient } from "../components/dashboard/OnboardClient";
 import { ProjectCard } from "../components/dashboard/ProjectCard";
 import { ProjectComments } from "../components/dashboard/ProjectComments";
 import { AnalyticsDashboard } from "../components/dashboard/AnalyticsDashboard";
-import { AdminNavbar } from "./components/dashboard/AdminNavbar";
+import { AdminNav as AdminNavbar } from "../components/dashboard/AdminNav";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
