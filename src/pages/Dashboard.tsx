@@ -12,13 +12,13 @@ import {
 // Component Imports
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import AccountSettings from "@/components/dashboard/AccountSettings";
-import AdminForms from "@/components/dashboard/AdminForms";
-import AdminNav from "@/components/dashboard/AdminNav";
-import AnalyticsDashboard from "@/components/dashboard/AnalyticsDashboard";
-import OnboardClient from "@/components/dashboard/OnboardClient";
-import ProjectCard from "@/components/dashboard/ProjectCard";
-import ProjectComments from "@/components/dashboard/ProjectComments";
-import ProjectManagement from "@/components/dashboard/ProjectManagement";
+import { AdminForms } from "@/components/dashboard/AdminForms";
+import { AdminNav } from "@/components/dashboard/AdminNav";
+import { AnalyticsDashboard } from "@/components/dashboard/AnalyticsDashboard";
+import { OnboardClient } from "@/components/dashboard/OnboardClient";
+import { ProjectCard } from "@/components/dashboard/ProjectCard";
+import { ProjectComments } from "@/components/dashboard/ProjectComments";
+import { ProjectManagement } from "@/components/dashboard/ProjectManagement";
 import WelcomeNameModal from "@/components/dashboard/WelcomeNameModal";
 import { CertificateGenerator } from "./components/certificates/CertificateGenerator";
 
