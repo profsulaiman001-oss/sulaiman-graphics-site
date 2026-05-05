@@ -12,7 +12,7 @@ import {
 // Component Imports
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import AccountSettings from "@/components/dashboard/AccountSettings";
-import AdminForms from "@/components/dashboard/AdminForms";
+import { AdminForms } from "@/components/dashboard/AdminForms";
 import { AdminNav } from "@/components/dashboard/AdminNav";
 import { AnalyticsDashboard } from "@/components/dashboard/AnalyticsDashboard";
 import { OnboardClient } from "@/components/dashboard/OnboardClient";
