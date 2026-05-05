@@ -53,8 +53,26 @@ export default function Dashboard() {
   const [newComment, setNewComment] = useState("");
   const [sendingComment, setSendingComment] = useState(false);
 
-  // Refs
-  const notificationRef = useRef<HTMLDivElement>(null);
+  // Compute metrics from fetched project list
+  const completedProjects = projects.filter((p) => p.status === "Completed");
+  const activeProjects = projects.filter((p) => p.status === "In Progress");
+  const pendingProjects = projects.filter((p) => p.status === "Pending");
+
+  const stats = {
+    total: projects.length,
+    completed: completedProjects.length,
+    active: activeProjects.length,
+    pending: pendingProjects.length,
+  };
+
+  const chartData = [
+    { name: "Jan", amount: 2 },
+    { name: "Feb", amount: 4 },
+    { name: "Mar", amount: 3 },
+    { name: "Apr", amount: stats.total || 1 },
+    { name: "May", amount: stats.active || 2 },
+  ];
+  const COLORS = ["#06b6d4", "#3b82f6", "#eab308"];
 
   useEffect(() => {
     const fetchUserAndData = async () => {
@@ -66,8 +84,7 @@ export default function Dashboard() {
         }
         setUser(user);
 
-        // Dynamic Admin Differentiation
-        // Automatically checks if it's the owner's specific email address
+        // Automatically sets admin rights if it's the owner's email address
         const emailLower = user.email?.toLowerCase() || "";
         const isOwnerAdmin = emailLower === "sulaimangraphics@gmail.com" || emailLower.endsWith("@sulaimangraphics.com.ng");
         setIsAdmin(isOwnerAdmin);
@@ -98,7 +115,6 @@ export default function Dashboard() {
       if (error) throw error;
       setProjects(data || []);
 
-      // Extract unique client emails for form states
       const emails = Array.from(new Set(data?.map((p: any) => p.client_email).filter(Boolean) as string[]));
       setClientEmails(emails);
     } catch (err) {
@@ -111,7 +127,6 @@ export default function Dashboard() {
     setLocation("/");
   };
 
-  // Add Project to Supabase
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
@@ -229,7 +244,6 @@ export default function Dashboard() {
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('project-assets')
         .getPublicUrl(filePath);
@@ -270,7 +284,6 @@ export default function Dashboard() {
         created_at: new Date().toISOString()
       };
 
-      // Connect with a `project_messages` or `comments` table
       const { data, error } = await supabase
         .from('project_messages')
         .insert([msg])
@@ -344,7 +357,11 @@ export default function Dashboard() {
       
         <div className="grid gap-6 md:grid-cols-3 my-6">
           <div className="md:col-span-2">
-            <AnalyticsDashboard />
+            <AnalyticsDashboard 
+              stats={stats}
+              chartData={chartData}
+              COLORS={COLORS}
+            />
           </div>
           <div>
             <ProjectManagement 
