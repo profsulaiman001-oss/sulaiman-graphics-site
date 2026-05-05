@@ -1,12 +1,11 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  Edit3, Trash2, Save, XCircle, Bell, LogOut, CheckCircle, 
-  Clock, Loader2, Plus, HardDrive, Download, Settings, X, Mail, 
-  UserCheck, MessageSquare, ShoppingBag, Send, FileText, 
-  ClipboardList, Receipt as ReceiptIcon, Award, BarChart3
+  Edit3, Trash2, Save, XCircle, LogOut, CheckCircle, 
+  Clock, Loader2, Plus, HardDrive, Download, Settings, X, 
+  MessageSquare, Send, ClipboardList, Award, BarChart3
 } from "lucide-react";
 
 // Component Imports
@@ -25,21 +24,66 @@ import { CertificateGenerator } from "./components/certificates/CertificateGener
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [user, setUser] = useState<any>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(true); // Set to true to test the full admin panel on mobile
   const [loading, setLoading] = useState(true);
   
   // App Data States
-  const [projects, setProjects] = useState<any[]>([]);
-  const [clientEmails, setClientEmails] = useState<string[]>([]);
-  
-  // Analytics & Additional State Management
+  const [projects, setProjects] = useState<any[]>([
+    { 
+      id: "1", 
+      title: "Brand Identity", 
+      client_email: "client@sulaimangraphics.com.ng", 
+      status: "In Progress", 
+      created_at: new Date().toISOString(), 
+      file_url: "" 
+    },
+    { 
+      id: "2", 
+      title: "Packaging Mockup", 
+      client_email: "info@sulaimangraphics.com.ng", 
+      status: "Completed", 
+      created_at: new Date(Date.now() - 86400000 * 2).toISOString(), 
+      file_url: "" 
+    }
+  ]);
+
+  const [clientEmails] = useState<string[]>([
+    "client@sulaimangraphics.com.ng",
+    "info@sulaimangraphics.com.ng",
+    "hello@example.com"
+  ]);
+
+  // Comment State Map for multi-project messaging
+  const [commentsMap, setCommentsMap] = useState<{ [key: string]: any[] }>({
+    "1": [
+      {
+        id: "m1",
+        project_id: "1",
+        is_admin: false,
+        message: "Hi, I have sent the brand assets. Let me know when you start.",
+        created_at: new Date(Date.now() - 3600000 * 4).toISOString()
+      },
+      {
+        id: "m2",
+        project_id: "1",
+        is_admin: true,
+        message: "Received! Working on the initial layout design now.",
+        created_at: new Date(Date.now() - 3600000 * 2).toISOString()
+      }
+    ]
+  });
+
+  // Search/Filter State
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  
+  // Chat States
   const [openCommentsId, setOpenCommentsId] = useState<string | null>(null);
-  const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
   const [sendingComment, setSendingComment] = useState(false);
-  const [unreadCounts, setUnreadCounts] = useState<{ [key: string]: number }>({});
+  const [unreadCounts, setUnreadCounts] = useState<{ [key: string]: number }>({
+    "1": 1
+  });
 
   // Admin & Editing States
   const [newTitle, setNewTitle] = useState("");
@@ -49,8 +93,11 @@ export default function Dashboard() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteLoading, setInviteLoading] = useState(false);
 
-  // UI & Notification States
-  const [notifications, setNotifications] = useState<string[]>([]);
+  // UI & Drawer States
+  const [notifications, setNotifications] = useState<string[]>([
+    "Project request received from dashboard portal.",
+    "System data initialized and ready."
+  ]);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isCertOpen, setIsCertOpen] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
@@ -62,7 +109,29 @@ export default function Dashboard() {
     'Completed': 'bg-green-500/10 border-green-500/20 text-green-500'
   };
 
-  // Derived stats
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        // Fallback for mock session
+        setUser({ email: "sulaimangraphics@gmail.com", id: "user-test" });
+        setIsAdmin(true);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  // Filtered projects
+  const filteredProjects = projects.filter((p) => {
+    const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          p.client_email?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === "all" || p.status.toLowerCase() === statusFilter.toLowerCase();
+    return matchesSearch && matchesStatus;
+  });
+
   const completedProjects = projects.filter((p) => p.status === "Completed");
   const activeProjects = projects.filter((p) => p.status === "In Progress");
   const pendingProjects = projects.filter((p) => p.status === "Pending");
@@ -75,50 +144,33 @@ export default function Dashboard() {
   };
 
   const chartData = [
-    { name: "Jan", amount: 0 },
-    { name: "Feb", amount: 0 },
-    { name: "Mar", amount: 0 },
-    { name: "Apr", amount: 0 },
-    { name: "May", amount: 0 },
+    { name: "Jan", amount: 2 },
+    { name: "Feb", amount: 4 },
+    { name: "Mar", amount: 3 },
+    { name: "Apr", amount: stats.total || 1 },
+    { name: "May", amount: stats.active || 2 },
   ];
-
   const COLORS = ["#06b6d4", "#3b82f6", "#eab308"];
 
-  useEffect(() => {
-    const fetchUserAndData = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          setLocation("/");
-          return;
-        }
-        setUser(user);
-        setIsAdmin(user.email?.toLowerCase().includes("admin") || true); 
-       
-        // Populate initial mock data
-        setProjects([]);
-        setNotifications([
-          "New project request received from design portal.",
-          "Database and Supabase connection verified successfully."
-        ]);
-      } catch (err) {
-        console.error("Error loading dashboard", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchUserAndData();
-  }, [setLocation]);
-
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
     setLocation("/");
   };
 
-  // Event Handlers for Management
-  const handleCreateProject = async (e: React.FormEvent) => {
+  // State Event Handlers
+  const handleCreateProject = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!newTitle.trim()) return;
+    
+    const createdProject = {
+      id: Date.now().toString(),
+      title: newTitle,
+      client_email: newClient || "info@sulaimangraphics.com.ng",
+      status: "Pending",
+      created_at: new Date().toISOString(),
+      file_url: ""
+    };
+
+    setProjects([...projects, createdProject]);
     setNewTitle("");
     setNewClient("");
   };
@@ -128,39 +180,76 @@ export default function Dashboard() {
     setEditTitle(project.title);
   };
 
-  const saveEdit = async () => {
+  const saveEdit = () => {
+    if (!editingId) return;
+    setProjects(
+      projects.map((p) => (p.id === editingId ? { ...p, title: editTitle } : p))
+    );
     setEditingId(null);
+    setEditTitle("");
   };
 
-  const updateStatus = async (id: string, status: string) => {
-    // Update state operations
+  const updateStatus = (id: string, status: string) => {
+    setProjects(
+      projects.map((p) => (p.id === id ? { ...p, status } : p))
+    );
   };
 
-  const assignUser = async (id: string, email: string) => {
-    // Assign user operations
+  const assignUser = (id: string, email: string) => {
+    setProjects(
+      projects.map((p) => (p.id === id ? { ...p, client_email: email } : p))
+    );
   };
 
-  const handleDelete = async (id: string) => {
-    // Delete operation logic
+  const handleDelete = (id: string) => {
+    setProjects(projects.filter((p) => p.id !== id));
   };
 
-  const handleFileUpload = async (id: string, file: File) => {
-    // File upload logic
+  const handleFileUpload = (id: string, file: File) => {
+    const fakeUrl = URL.createObjectURL(file);
+    setProjects(
+      projects.map((p) => (p.id === id ? { ...p, file_url: fakeUrl, status: "Completed" } : p))
+    );
   };
 
   const toggleComments = (id: string) => {
-    setOpenCommentsId(openCommentsId === id ? null : id);
+    if (openCommentsId === id) {
+      setOpenCommentsId(null);
+      setUnreadCounts({ ...unreadCounts, [id]: 0 });
+    } else {
+      setOpenCommentsId(id);
+      setUnreadCounts({ ...unreadCounts, [id]: 0 });
+    }
   };
 
-  const sendComment = async (id: string) => {
+  const sendComment = (projectId: string) => {
+    if (!newComment.trim()) return;
     setSendingComment(true);
-    // Send comment logic
+
+    const msg = {
+      id: Date.now().toString(),
+      project_id: projectId,
+      is_admin: isAdmin,
+      message: newComment,
+      created_at: new Date().toISOString()
+    };
+
+    setCommentsMap({
+      ...commentsMap,
+      [projectId]: [...(commentsMap[projectId] || []), msg]
+    });
+
     setNewComment("");
     setSendingComment(false);
   };
 
   const downloadFile = (url: string, filename: string) => {
-    // Downloading assets logic
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   if (loading) {
@@ -175,7 +264,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <DashboardHeader 
-        userEmail={user?.email}
+        userEmail={user?.email || "sulaimangraphics@gmail.com"}
         notificationsCount={notifications.length}
         isSettingsOpen={isSettingsOpen}
         setIsSettingsOpen={setIsSettingsOpen}
@@ -186,14 +275,14 @@ export default function Dashboard() {
         {showWelcome && (
           <WelcomeNameModal 
             onClose={() => setShowWelcome(false)} 
-            userName={user?.email || 'Designer'} 
+            userName="Sulaiman" 
           />
         )}
         
         {isSettingsOpen && (
           <AccountSettings 
             onClose={() => setIsSettingsOpen(false)} 
-            userEmail={user?.email} 
+            userEmail={user?.email || "sulaimangraphics@gmail.com"} 
           />
         )}
 
@@ -223,6 +312,8 @@ export default function Dashboard() {
               setNewTitle={setNewTitle}
               newClient={newClient}
               setNewClient={setNewClient}
+              handleCreateProjectHandler={handleCreateProject}
+              handleCreateProjectWrapper={(e: React.FormEvent) => handleCreateProject(e)}
               handleCreateProject={handleCreateProject}
               isAdmin={isAdmin}
             />
@@ -260,7 +351,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {projects.length === 0 ? (
+        {filteredProjects.length === 0 ? (
           <div className="text-center py-16 border border-dashed border-border rounded-2xl bg-card/40">
             <ClipboardList className="mx-auto text-muted-foreground mb-4" size={32} />
             <h3 className="text-sm font-bold text-foreground">No Projects Found</h3>
@@ -270,7 +361,7 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {projects.map((project: any) => (
+            {filteredProjects.map((project: any) => (
               <div key={project.id} className="flex flex-col gap-3">
                 <ProjectCard 
                   project={project}
@@ -287,7 +378,7 @@ export default function Dashboard() {
                   handleFileUpload={handleFileUpload}
                   toggleComments={toggleComments}
                   openCommentsId={openCommentsId}
-                  comments={comments}
+                  comments={commentsMap[project.id] || []}
                   newComment={newComment}
                   setNewComment={setNewComment}
                   sendingComment={sendingComment}
@@ -297,7 +388,9 @@ export default function Dashboard() {
                   downloadFile={downloadFile}
                   statusColors={statusColors}
                 />
-                <ProjectComments projectId={project.id} />
+                {openCommentsId === project.id && (
+                  <ProjectComments projectId={project.id} />
+                )}
               </div>
             ))}
           </div>
