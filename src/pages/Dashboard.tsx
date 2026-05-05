@@ -32,14 +32,16 @@ export default function Dashboard() {
   const [projects, setProjects] = useState<any[]>([]);
   const [clientEmails, setClientEmails] = useState<string[]>([]);
   
-  // UI & Notification States
-  const [notifications, setNotifications] = useState<string[]>([]);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isCertOpen, setIsCertOpen] = useState(false);
-  const [showWelcome, setShowWelcome] = useState(false);
-  const [showOnboard, setShowOnboard] = useState(false);
-  
-  // Admin & Form States
+  // Analytics & Additional State Management
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [openCommentsId, setOpenCommentsId] = useState<string | null>(null);
+  const [comments, setComments] = useState<any[]>([]);
+  const [newComment, setNewComment] = useState("");
+  const [sendingComment, setSendingComment] = useState(false);
+  const [unreadCounts, setUnreadCounts] = useState<{ [key: string]: number }>({});
+
+  // Admin & Editing States
   const [newTitle, setNewTitle] = useState("");
   const [newClient, setNewClient] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -47,8 +49,40 @@ export default function Dashboard() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteLoading, setInviteLoading] = useState(false);
 
-  // Refs
-  const notificationRef = useRef<HTMLDivElement>(null);
+  // UI & Notification States
+  const [notifications, setNotifications] = useState<string[]>([]);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isCertOpen, setIsCertOpen] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [showOnboard, setShowOnboard] = useState(false);
+
+  const statusColors: { [key: string]: string } = {
+    'Pending': 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500',
+    'In Progress': 'bg-blue-500/10 border-blue-500/20 text-blue-500',
+    'Completed': 'bg-green-500/10 border-green-500/20 text-green-500'
+  };
+
+  // Derived stats
+  const completedProjects = projects.filter((p) => p.status === "Completed");
+  const activeProjects = projects.filter((p) => p.status === "In Progress");
+  const pendingProjects = projects.filter((p) => p.status === "Pending");
+
+  const stats = {
+    total: projects.length,
+    completed: completedProjects.length,
+    active: activeProjects.length,
+    pending: pendingProjects.length,
+  };
+
+  const chartData = [
+    { name: "Jan", amount: 0 },
+    { name: "Feb", amount: 0 },
+    { name: "Mar", amount: 0 },
+    { name: "Apr", amount: 0 },
+    { name: "May", amount: 0 },
+  ];
+
+  const COLORS = ["#06b6d4", "#3b82f6", "#eab308"];
 
   useEffect(() => {
     const fetchUserAndData = async () => {
@@ -60,7 +94,7 @@ export default function Dashboard() {
         }
         setUser(user);
         setIsAdmin(user.email?.toLowerCase().includes("admin") || true); 
-        
+       
         // Populate initial mock data
         setProjects([]);
         setNotifications([
@@ -80,6 +114,53 @@ export default function Dashboard() {
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     setLocation("/");
+  };
+
+  // Event Handlers for Management
+  const handleCreateProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setNewTitle("");
+    setNewClient("");
+  };
+
+  const startEdit = (project: any) => {
+    setEditingId(project.id);
+    setEditTitle(project.title);
+  };
+
+  const saveEdit = async () => {
+    setEditingId(null);
+  };
+
+  const updateStatus = async (id: string, status: string) => {
+    // Update state operations
+  };
+
+  const assignUser = async (id: string, email: string) => {
+    // Assign user operations
+  };
+
+  const handleDelete = async (id: string) => {
+    // Delete operation logic
+  };
+
+  const handleFileUpload = async (id: string, file: File) => {
+    // File upload logic
+  };
+
+  const toggleComments = (id: string) => {
+    setOpenCommentsId(openCommentsId === id ? null : id);
+  };
+
+  const sendComment = async (id: string) => {
+    setSendingComment(true);
+    // Send comment logic
+    setNewComment("");
+    setSendingComment(false);
+  };
+
+  const downloadFile = (url: string, filename: string) => {
+    // Downloading assets logic
   };
 
   if (loading) {
@@ -122,15 +203,29 @@ export default function Dashboard() {
           />
         )}
 
-        {/* Navigation and Analytics Section */}
         <AdminNav />
-        
+      
         <div className="grid gap-6 md:grid-cols-3 my-6">
           <div className="md:col-span-2">
-            <AnalyticsDashboard />
+            <AnalyticsDashboard 
+              stats={stats}
+              chartData={chartData}
+              COLORS={COLORS}
+            />
           </div>
           <div>
-            <ProjectManagement />
+            <ProjectManagement 
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              statusFilter={statusFilter}
+              setStatusFilter={setStatusFilter}
+              newTitle={newTitle}
+              setNewTitle={setNewTitle}
+              newClient={newClient}
+              setNewClient={setNewClient}
+              handleCreateProject={handleCreateProject}
+              isAdmin={isAdmin}
+            />
           </div>
         </div>
 
@@ -165,7 +260,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Project View List */}
         {projects.length === 0 ? (
           <div className="text-center py-16 border border-dashed border-border rounded-2xl bg-card/40">
             <ClipboardList className="mx-auto text-muted-foreground mb-4" size={32} />
@@ -180,6 +274,28 @@ export default function Dashboard() {
               <div key={project.id} className="flex flex-col gap-3">
                 <ProjectCard 
                   project={project}
+                  isAdmin={isAdmin}
+                  editingId={editingId}
+                  editTitle={editTitle}
+                  setEditTitle={setEditTitle}
+                  startEdit={startEdit}
+                  saveEdit={saveEdit}
+                  setEditingId={setEditingId}
+                  updateStatus={updateStatus}
+                  assignUser={assignUser}
+                  handleDelete={handleDelete}
+                  handleFileUpload={handleFileUpload}
+                  toggleComments={toggleComments}
+                  openCommentsId={openCommentsId}
+                  comments={comments}
+                  newComment={newComment}
+                  setNewComment={setNewComment}
+                  sendingComment={sendingComment}
+                  sendComment={sendComment}
+                  unreadCounts={unreadCounts}
+                  clientEmails={clientEmails}
+                  downloadFile={downloadFile}
+                  statusColors={statusColors}
                 />
                 <ProjectComments projectId={project.id} />
               </div>
