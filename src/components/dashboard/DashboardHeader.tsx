@@ -1,5 +1,6 @@
 import React from 'react';
 import { Bell, Settings, LogOut } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface DashboardHeaderProps {
   userEmail: string | undefined;
@@ -7,6 +8,12 @@ interface DashboardHeaderProps {
   isSettingsOpen: boolean;
   setIsSettingsOpen: (open: boolean) => void;
   SignOutHandler: () => void;
+  // Added notification props
+  notifications: string[];
+  clearNotifications: () => void;
+  showNotificationDropdown: boolean;
+  setShowNotificationDropdown: (open: boolean) => void;
+  notificationRef: React.RefObject<HTMLDivElement>;
 }
 
 export function DashboardHeader({
@@ -15,6 +22,11 @@ export function DashboardHeader({
   isSettingsOpen,
   setIsSettingsOpen,
   SignOutHandler,
+  notifications = [],
+  clearNotifications,
+  showNotificationDropdown,
+  setShowNotificationDropdown,
+  notificationRef,
 }: DashboardHeaderProps) {
   return (
     <header className="border-b border-border bg-background/95 backdrop-blur sticky top-0 z-50 w-full">
@@ -39,13 +51,59 @@ export function DashboardHeader({
             <span className="text-xs font-medium text-foreground">{userEmail || 'Admin'}</span>
           </div>
 
-          <div className="relative">
-            <button className="p-2 rounded-lg border border-border/50 text-muted-foreground hover:text-cyan-400 hover:border-cyan-500/30 transition-all duration-200">
+          <div className="relative" ref={notificationRef}>
+            <button 
+              onClick={() => setShowNotificationDropdown(!showNotificationDropdown)}
+              className="p-2 rounded-lg border border-border/50 text-muted-foreground hover:text-cyan-400 hover:border-cyan-500/30 transition-all duration-200"
+            >
               <Bell size={18} />
               {notificationsCount > 0 && (
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-cyan-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(6,182,212,0.5)]" />
               )}
             </button>
+
+            <AnimatePresence>
+              {showNotificationDropdown && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 5 }}
+                  className="absolute right-0 mt-2 w-72 bg-card border border-border rounded-2xl shadow-xl z-50 p-4 flex flex-col gap-3"
+                >
+                  <div className="flex justify-between items-center pb-2 border-b border-border">
+                    <span className="text-xs font-semibold text-foreground flex items-center gap-2">
+                      <Bell size={14} className="text-primary" /> Notifications
+                    </span>
+                    {notifications.length > 0 && (
+                      <button 
+                        onClick={clearNotifications}
+                        className="text-[10px] text-muted-foreground hover:text-primary transition"
+                      >
+                        Clear all
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="max-h-60 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                    {notifications.length > 0 ? (
+                      notifications.map((notification, index) => (
+                        <div 
+                          key={index} 
+                          className="p-2.5 bg-muted/30 border border-border/50 rounded-xl text-[10px] text-foreground leading-snug flex items-start gap-2"
+                        >
+                          <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1 flex-shrink-0" />
+                          <span>{notification}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center text-muted-foreground text-[10px] italic py-6">
+                        No new notifications
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           <button 
