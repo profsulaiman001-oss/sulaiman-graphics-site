@@ -1,128 +1,95 @@
-import React from 'react';
-import { 
-  BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, 
-  PieChart, Pie, Cell 
-} from "recharts";
-import { Clock, CheckCircle, Loader2 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from "recharts";
+import { CheckCircle2, Clock, AlertCircle, BarChart2 } from "lucide-react";
 
-interface AnalyticsDashboardProps {
-  stats?: {
-    total?: number;
-    completed?: number;
-    active?: number;
-    pending?: number;
-    [key: string]: number | undefined;
-  };
-  chartData?: any[];
-  COLORS?: string[];
-}
-
-export function AnalyticsDashboard({ 
-  stats, 
-  chartData = [], 
-  COLORS = ["#06b6d4", "#3b82f6", "#eab308"] 
-}: AnalyticsDashboardProps) {
-  
-  // Safely extract properties with fallback values
+export function AnalyticsDashboard({ stats, chartData, COLORS }: { stats: any; chartData: any[]; COLORS: string[] }) {
+  // Safely read properties to prevent "Cannot read properties of undefined" errors
+  const completed = stats?.["Completed"] ?? 0;
+  const inProgress = stats?.["In Progress"] ?? 0;
+  const pending = stats?.["Pending"] ?? 0;
   const total = stats?.total ?? 0;
-  const completed = stats?.["Completed"] ?? stats?.completed ?? 0;
-  const active = stats?.["In Progress"] ?? stats?.active ?? 0;
-  const pending = stats?.["Pending"] ?? stats?.pending ?? 0;
-
-  const pieData = [
-    { name: "Completed", value: completed },
-    { name: "Active", value: active },
-    { name: "Pending", value: pending },
-  ];
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-      <div className="lg:col-span-2 bg-card/50 border border-border/50 rounded-2xl p-6">
-        <h3 className="text-sm font-semibold mb-6 flex items-center gap-2">
-          <div className="w-1 h-4 bg-cyan-500 rounded-full" />
-          Revenue Insights
-        </h3>
-        <div className="h-[240px] w-full">
+    <div className="grid gap-6">
+      {/* Metrics Cards */}
+      <div className="grid gap-4 md:grid-cols-4">
+        
+        <Card className="border border-border/50 bg-card/50 backdrop-blur-sm rounded-2xl p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Total Projects</p>
+              <h3 className="text-2xl font-bold mt-2">{total}</h3>
+            </div>
+            <div className="p-3 bg-cyan-500/10 text-cyan-400 rounded-xl">
+              <BarChart2 size={20} />
+            </div>
+          </div>
+        </Card>
+
+        <Card className="border border-border/50 bg-card/50 backdrop-blur-sm rounded-2xl p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Completed</p>
+              <h3 className="text-2xl font-bold mt-2 text-emerald-400">{completed}</h3>
+            </div>
+            <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl">
+              <CheckCircle2 size={20} />
+            </div>
+          </div>
+        </Card>
+
+        <Card className="border border-border/50 bg-card/50 backdrop-blur-sm rounded-2xl p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">In Progress</p>
+              <h3 className="text-2xl font-bold mt-2 text-blue-400">{inProgress}</h3>
+            </div>
+            <div className="p-3 bg-blue-500/10 text-blue-400 rounded-xl">
+              <Clock size={20} />
+            </div>
+          </div>
+        </Card>
+
+        <Card className="border border-border/50 bg-card/50 backdrop-blur-sm rounded-2xl p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Pending</p>
+              <h3 className="text-2xl font-bold mt-2 text-amber-400">{pending}</h3>
+            </div>
+            <div className="p-3 bg-amber-500/10 text-amber-400 rounded-xl">
+              <AlertCircle size={20} />
+            </div>
+          </div>
+        </Card>
+
+      </div>
+
+      {/* Chart Section */}
+      <div className="border border-border/50 bg-card/50 backdrop-blur-sm rounded-2xl p-6">
+        <h4 className="text-sm font-bold mb-4 tracking-tight">Project Pipeline</h4>
+        <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData}>
-              <XAxis 
-                dataKey="name" 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{fill: '#888', fontSize: 10}} 
-              />
-              <Tooltip 
-                cursor={{fill: 'rgba(255,255,255,0.05)'}}
+              <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+              <Tooltip
                 contentStyle={{
-                  backgroundColor: '#111',
-                  border: '1px solid #333',
-                  borderRadius: '8px',
-                  fontSize: '12px'
+                  backgroundColor: "hsl(var(--card))",
+                  borderColor: "hsl(var(--border))",
+                  borderRadius: "12px",
                 }}
+                labelStyle={{ color: "hsl(var(--foreground))", fontWeight: "bold" }}
               />
-              <Bar dataKey="amount" fill="#06b6d4" radius={[4, 4, 0, 0]} barSize={30} />
+              <Bar dataKey="amount" radius={[8, 8, 0, 0]}>
+                {chartData?.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      <div className="space-y-6">
-        <div className="bg-card/50 border border-border/50 rounded-2xl p-6">
-          <h3 className="text-sm font-semibold mb-4">Project Status</h3>
-          <div className="h-[140px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  innerRadius={45}
-                  outerRadius={60}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="grid grid-cols-3 gap-2 mt-4">
-            <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-cyan-500" />
-              <span className="text-[9px] text-muted-foreground uppercase font-bold truncate">Done</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-blue-500" />
-              <span className="text-[9px] text-muted-foreground uppercase font-bold truncate">Active</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-yellow-500" />
-              <span className="text-[9px] text-muted-foreground uppercase font-bold truncate">Pending</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-3 gap-2">
-          <div className="bg-cyan-500/5 border border-cyan-500/20 rounded-xl p-3 text-center">
-            <CheckCircle className="text-cyan-500 mx-auto mb-1.5" size={16} />
-            <div className="text-xl font-bold text-foreground">{completed}</div>
-            <div className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider truncate">Finished</div>
-          </div>
-          
-          <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-3 text-center">
-            <Loader2 className="text-blue-500 mx-auto mb-1.5 animate-spin" size={16} />
-            <div className="text-xl font-bold text-foreground">{active}</div>
-            <div className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider truncate">Active</div>
-          </div>
-
-          <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-3 text-center">
-            <Clock className="text-yellow-500 mx-auto mb-1.5" size={16} />
-            <div className="text-xl font-bold text-foreground">{pending}</div>
-            <div className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider truncate">Queue</div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
