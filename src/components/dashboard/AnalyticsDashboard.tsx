@@ -11,19 +11,23 @@ interface AnalyticsDashboardProps {
     completed?: number;
     active?: number;
     pending?: number;
+    [key: string]: number | undefined;
   };
   chartData?: any[];
   COLORS?: string[];
 }
 
-export function AnalyticsDashboard({ stats, chartData = [], COLORS = ["#06b6d4", "#3b82f6", "#eab308"] }: AnalyticsDashboardProps) {
-  // Safely extract properties with fallback values when stats is loading or undefined
-  const { 
-    total = 0, 
-    completed = 0, 
-    active = 0, 
-    pending = 0 
-  } = stats || {};
+export function AnalyticsDashboard({ 
+  stats, 
+  chartData = [], 
+  COLORS = ["#06b6d4", "#3b82f6", "#eab308"] 
+}: AnalyticsDashboardProps) {
+  
+  // Safely extract properties with fallback values
+  const total = stats?.total ?? 0;
+  const completed = stats?.["Completed"] ?? stats?.completed ?? 0;
+  const active = stats?.["In Progress"] ?? stats?.active ?? 0;
+  const pending = stats?.["Pending"] ?? stats?.pending ?? 0;
 
   const pieData = [
     { name: "Completed", value: completed },
