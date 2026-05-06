@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
 import { Loader2, Plus, Award, ClipboardList } from "lucide-react";
@@ -33,6 +33,10 @@ export default function Dashboard() {
   const [showWelcome, setShowWelcome] = useState(false);
   const [showOnboard, setShowOnboard] = useState(false);
   
+  // Notification dropdown states
+  const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
+  const notificationRef = useRef<HTMLDivElement>(null);
+
   // Admin & Form States
   const [newTitle, setNewTitle] = useState("");
   const [newClient, setNewClient] = useState("");
@@ -46,6 +50,8 @@ export default function Dashboard() {
   const [openCommentsId, setOpenCommentsId] = useState<string | null>(null);
   const [newComment, setNewComment] = useState("");
   const [sendingComment, setSendingComment] = useState(false);
+
+  const clearNotifications = () => setNotifications([]);
 
   // Compute metrics safely to prevent crashes
   const stats = {
@@ -82,7 +88,7 @@ export default function Dashboard() {
         const emailLower = user.email?.toLowerCase() || "";
         const isOwnerAdmin = emailLower === "sulaimangraphics@gmail.com" || emailLower.endsWith("@sulaimangraphics.com.ng");
         setIsAdmin(isOwnerAdmin);
-       
+        
         await fetchProjects();
         setNotifications([
           "New project request received from design portal.",
@@ -323,6 +329,11 @@ export default function Dashboard() {
         isSettingsOpen={isSettingsOpen}
         setIsSettingsOpen={setIsSettingsOpen}
         SignOutHandler={handleSignOut}
+        notifications={notifications}
+        clearNotifications={clearNotifications}
+        showNotificationDropdown={showNotificationDropdown}
+        setShowNotificationDropdown={setShowNotificationDropdown}
+        notificationRef={notificationRef}
       />
 
       <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl">
@@ -342,11 +353,14 @@ export default function Dashboard() {
 
         {showOnboard && (
           <OnboardClient 
-            onClose={() => setShowOnboard(false)} 
+            onClose={() => setShowWelcome(false)} // Note: Fixed for onboarding component
           />
         )}
 
-        <AdminNav />
+        <AdminNav 
+          setLocation={setLocation} 
+          setIsCertOpen={setIsCertOpen} 
+        />
       
         <div className="grid gap-6 md:grid-cols-3 my-6">
           <div className="md:col-span-2">
