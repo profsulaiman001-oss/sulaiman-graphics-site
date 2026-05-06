@@ -1,13 +1,7 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
-import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Edit3, Trash2, Save, XCircle, Bell, LogOut, CheckCircle, 
-  Clock, Loader2, Plus, HardDrive, Download, Settings, X, Mail, 
-  UserCheck, MessageSquare, ShoppingBag, Send, FileText, 
-  ClipboardList, Receipt as ReceiptIcon, Award, BarChart3
-} from "lucide-react";
+import { Loader2, Plus, Award, ClipboardList } from "lucide-react";
 
 // Component Imports
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
@@ -45,7 +39,7 @@ export default function Dashboard() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteLoading] = useState(false);
 
   const [commentsMap, setCommentsMap] = useState<{ [key: string]: any[] }>({});
   const [unreadCounts, setUnreadCounts] = useState<{ [key: string]: number }>({});
@@ -53,16 +47,17 @@ export default function Dashboard() {
   const [newComment, setNewComment] = useState("");
   const [sendingComment, setSendingComment] = useState(false);
 
-  // Compute metrics from fetched project list
-  const completedProjects = projects.filter((p) => p.status === "Completed");
-  const activeProjects = projects.filter((p) => p.status === "In Progress");
-  const pendingProjects = projects.filter((p) => p.status === "Pending");
-
+  // Compute metrics safely to prevent crashes
   const stats = {
-    total: projects.length,
-    completed: completedProjects.length,
-    active: activeProjects.length,
-    pending: pendingProjects.length,
+    total: projects?.length || 0,
+    completed: projects?.filter((p: any) => p.status === "Completed").length || 0,
+    active: projects?.filter((p: any) => p.status === "In Progress").length || 0,
+    pending: projects?.filter((p: any) => p.status === "Pending").length || 0,
+    
+    // Explicitly add capitalized keys to handle AnalyticsDashboard data processing
+    "Completed": projects?.filter((p: any) => p.status === "Completed").length || 0,
+    "In Progress": projects?.filter((p: any) => p.status === "In Progress").length || 0,
+    "Pending": projects?.filter((p: any) => p.status === "Pending").length || 0,
   };
 
   const chartData = [
@@ -84,7 +79,6 @@ export default function Dashboard() {
         }
         setUser(user);
 
-        // Automatically sets admin rights if it's the owner's email address
         const emailLower = user.email?.toLowerCase() || "";
         const isOwnerAdmin = emailLower === "sulaimangraphics@gmail.com" || emailLower.endsWith("@sulaimangraphics.com.ng");
         setIsAdmin(isOwnerAdmin);
@@ -104,7 +98,6 @@ export default function Dashboard() {
     fetchUserAndData();
   }, [setLocation]);
 
-  // Fetch from the Supabase projects table
   const fetchProjects = async () => {
     try {
       const { data, error } = await supabase
@@ -357,11 +350,17 @@ export default function Dashboard() {
       
         <div className="grid gap-6 md:grid-cols-3 my-6">
           <div className="md:col-span-2">
-            <AnalyticsDashboard 
-              stats={stats}
-              chartData={chartData}
-              COLORS={COLORS}
-            />
+            {projects && projects.length >= 0 ? (
+              <AnalyticsDashboard 
+                stats={stats}
+                chartData={chartData}
+                COLORS={COLORS}
+              />
+            ) : (
+              <div className="h-64 flex items-center justify-center border border-border rounded-2xl">
+                <Loader2 className="animate-spin text-cyan-400" size={24} />
+              </div>
+            )}
           </div>
           <div>
             <ProjectManagement 
