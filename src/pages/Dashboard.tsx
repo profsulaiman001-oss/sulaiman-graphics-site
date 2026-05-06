@@ -1,7 +1,13 @@
 import { useEffect, useState, useRef } from "react";
 import { useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
-import { Loader2, Plus, Award, ClipboardList } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  Edit3, Trash2, Save, XCircle, Bell, LogOut, CheckCircle, 
+  Clock, Loader2, Plus, HardDrive, Download, Settings, X, Mail, 
+  UserCheck, MessageSquare, ShoppingBag, Send, FileText, 
+  ClipboardList, Receipt as ReceiptIcon, Award, BarChart3
+} from "lucide-react";
 
 // Component Imports
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
@@ -33,17 +39,13 @@ export default function Dashboard() {
   const [showWelcome, setShowWelcome] = useState(false);
   const [showOnboard, setShowOnboard] = useState(false);
   
-  // Notification dropdown states
-  const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
-  const notificationRef = useRef<HTMLDivElement>(null);
-
   // Admin & Form States
   const [newTitle, setNewTitle] = useState("");
   const [newClient, setNewClient] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteLoading] = useState(false);
+  const [inviteLoading, setInviteLoading] = useState(false);
 
   const [commentsMap, setCommentsMap] = useState<{ [key: string]: any[] }>({});
   const [unreadCounts, setUnreadCounts] = useState<{ [key: string]: number }>({});
@@ -51,29 +53,8 @@ export default function Dashboard() {
   const [newComment, setNewComment] = useState("");
   const [sendingComment, setSendingComment] = useState(false);
 
-  const clearNotifications = () => setNotifications([]);
-
-  // Compute metrics safely to prevent crashes
-  const stats = {
-    total: projects?.length || 0,
-    completed: projects?.filter((p: any) => p.status === "Completed").length || 0,
-    active: projects?.filter((p: any) => p.status === "In Progress").length || 0,
-    pending: projects?.filter((p: any) => p.status === "Pending").length || 0,
-    
-    // Explicitly add capitalized keys to handle AnalyticsDashboard data processing
-    "Completed": projects?.filter((p: any) => p.status === "Completed").length || 0,
-    "In Progress": projects?.filter((p: any) => p.status === "In Progress").length || 0,
-    "Pending": projects?.filter((p: any) => p.status === "Pending").length || 0,
-  };
-
-  const chartData = [
-    { name: "Jan", amount: 2 },
-    { name: "Feb", amount: 4 },
-    { name: "Mar", amount: 3 },
-    { name: "Apr", amount: stats.total || 1 },
-    { name: "May", amount: stats.active || 2 },
-  ];
-  const COLORS = ["#06b6d4", "#3b82f6", "#eab308"];
+  // Refs
+  const notificationRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchUserAndData = async () => {
@@ -85,10 +66,12 @@ export default function Dashboard() {
         }
         setUser(user);
 
+        // Dynamic Admin Differentiation
+        // Automatically checks if it's the owner's specific email address
         const emailLower = user.email?.toLowerCase() || "";
         const isOwnerAdmin = emailLower === "sulaimangraphics@gmail.com" || emailLower.endsWith("@sulaimangraphics.com.ng");
         setIsAdmin(isOwnerAdmin);
-        
+       
         await fetchProjects();
         setNotifications([
           "New project request received from design portal.",
@@ -104,6 +87,7 @@ export default function Dashboard() {
     fetchUserAndData();
   }, [setLocation]);
 
+  // Fetch from the Supabase projects table
   const fetchProjects = async () => {
     try {
       const { data, error } = await supabase
@@ -114,6 +98,7 @@ export default function Dashboard() {
       if (error) throw error;
       setProjects(data || []);
 
+      // Extract unique client emails for form states
       const emails = Array.from(new Set(data?.map((p: any) => p.client_email).filter(Boolean) as string[]));
       setClientEmails(emails);
     } catch (err) {
@@ -126,6 +111,7 @@ export default function Dashboard() {
     setLocation("/");
   };
 
+  // Add Project to Supabase
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
@@ -243,6 +229,7 @@ export default function Dashboard() {
 
       if (uploadError) throw uploadError;
 
+      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('project-assets')
         .getPublicUrl(filePath);
@@ -283,6 +270,7 @@ export default function Dashboard() {
         created_at: new Date().toISOString()
       };
 
+      // Connect with a `project_messages` or `comments` table
       const { data, error } = await supabase
         .from('project_messages')
         .insert([msg])
@@ -329,11 +317,6 @@ export default function Dashboard() {
         isSettingsOpen={isSettingsOpen}
         setIsSettingsOpen={setIsSettingsOpen}
         SignOutHandler={handleSignOut}
-        notifications={notifications}
-        clearNotifications={clearNotifications}
-        showNotificationDropdown={showNotificationDropdown}
-        setShowNotificationDropdown={setShowNotificationDropdown}
-        notificationRef={notificationRef}
       />
 
       <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl">
@@ -357,24 +340,11 @@ export default function Dashboard() {
           />
         )}
 
-        <AdminNav 
-          setLocation={setLocation} 
-          setIsCertOpen={setIsCertOpen} 
-        />
+        <AdminNav />
       
         <div className="grid gap-6 md:grid-cols-3 my-6">
           <div className="md:col-span-2">
-            {!loading ? (
-              <AnalyticsDashboard 
-                stats={stats}
-                chartData={chartData}
-                COLORS={COLORS}
-              />
-            ) : (
-              <div className="h-64 flex items-center justify-center border border-border rounded-2xl">
-                <Loader2 className="animate-spin text-cyan-400" size={24} />
-              </div>
-            )}
+            <AnalyticsDashboard />
           </div>
           <div>
             <ProjectManagement 
