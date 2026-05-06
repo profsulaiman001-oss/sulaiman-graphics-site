@@ -93,7 +93,6 @@ export default function Dashboard() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isCertOpen, setIsCertOpen] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
-  const [showOnboard, setShowOnboard] = useState(false);
 
   const statusColors: { [key: string]: string } = {
     'Pending': 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500',
@@ -154,6 +153,26 @@ export default function Dashboard() {
     setProjects([...projects, createdProject]);
     setNewTitle("");
     setNewClient("");
+  };
+
+  const handleInviteClient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteEmail.trim()) return;
+    
+    setInviteLoading(true);
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      console.log("Onboarding client:", inviteEmail);
+      
+      // Success logic
+      setInviteEmail("");
+      // You can add a toast notification here later
+    } catch (error) {
+      console.error("Onboarding failed:", error);
+    } finally {
+      setInviteLoading(false);
+    }
   };
 
   const startEdit = (project: any) => { setEditingId(project.id); setEditTitle(project.title); };
@@ -227,16 +246,17 @@ export default function Dashboard() {
       <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl">
         {showWelcome && <WelcomeNameModal onClose={() => setShowWelcome(false)} userName="Sulaiman" />}
         {isSettingsOpen && <AccountSettings onClose={() => setIsSettingsOpen(false)} userEmail={user?.email} />}
-        {showOnboard && <OnboardClient onClose={() => setShowOnboard(false)} />}
 
         {/* 1, 2, 3: STATS & CHARTS */}
         <div className="mb-8">
            <AnalyticsDashboard stats={stats} chartData={chartData} COLORS={COLORS} />
         </div>
 
-        {/* 4 & 5: SEARCH & ADD NEW PROJECT */}
-        <div className="mb-8">
-           <ProjectManagement 
+        <div className="grid gap-6 md:grid-cols-3">
+          {/* Left Column: Management Tools */}
+          <div className="md:col-span-2 space-y-6">
+            {/* 4 & 5: SEARCH & ADD NEW PROJECT */}
+            <ProjectManagement 
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
               statusFilter={statusFilter}
@@ -246,42 +266,47 @@ export default function Dashboard() {
               newClient={newClient}
               setNewClient={setNewClient}
               handleCreateProject={handleCreateProject}
-              handleCreateProjectHandler={handleCreateProject}
-              handleCreateProjectWrapper={(e: React.FormEvent) => handleCreateProject(e)}
               isAdmin={isAdmin}
-           />
-        </div>
+            />
 
-        {/* 6: ONBOARDING & CERTIFICATES */}
-        <div className="flex justify-between items-center mb-6 mt-6 border-b border-border pb-6">
-          <h2 className="text-lg font-bold tracking-tight">Client Management</h2>
-          <div className="flex gap-2">
-            <button onClick={() => setShowOnboard(true)} className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border bg-card text-xs font-semibold hover:bg-accent transition">
-              <Plus size={14} /> <span>Onboard Client</span>
-            </button>
-            <button onClick={() => setIsCertOpen(true)} className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-cyan-500/20 text-cyan-400 bg-cyan-950/20 hover:bg-cyan-950/40 text-xs font-semibold transition">
-              <Award size={14} /> <span>Generate Certificate</span>
-            </button>
-          </div>
-        </div>
-
-        {/* 7: ADMIN BUTTONS (AdminNav) */}
-        <div className="mb-10">
-          <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-4 font-bold">Studio Tools</p>
-          <AdminNav />
-          {/* AdminForms contains the actual inputs for creating posts/questionnaires if needed */}
-          <div className="mt-4 opacity-0 pointer-events-none h-0">
-             <AdminForms 
-              newTitle={newTitle} setNewTitle={setNewTitle}
-              newClient={newClient} setNewClient={setNewClient}
-              clientEmails={clientEmails} inviteEmail={inviteEmail}
-              setInviteEmail={setInviteEmail} inviteLoading={inviteLoading}
+            {/* NEW ONBOARD CLIENT BOX POSITION */}
+            <OnboardClient 
+              inviteEmail={inviteEmail}
+              setInviteEmail={setInviteEmail}
+              handleInviteClient={handleInviteClient}
+              loading={inviteLoading}
             />
           </div>
+
+          {/* Right Column: Quick Buttons & Navigation */}
+          <div>
+            <div className="bg-card/30 border border-border/50 p-4 rounded-2xl">
+              <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Quick Actions</h2>
+              <button 
+                onClick={() => setIsCertOpen(true)} 
+                className="w-full flex items-center justify-center gap-2 px-3 py-3 rounded-xl border border-cyan-500/20 text-cyan-400 bg-cyan-950/20 hover:bg-cyan-950/40 text-xs font-bold transition mb-6"
+              >
+                <Award size={16} /> <span>Generate Certificate</span>
+              </button>
+
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-4 font-bold border-t border-border pt-4">Studio Tools</p>
+              <AdminNav />
+            </div>
+          </div>
+        </div>
+
+        {/* Hidden Admin Forms logic */}
+        <div className="mt-4 opacity-0 pointer-events-none h-0">
+            <AdminForms 
+            newTitle={newTitle} setNewTitle={setNewTitle}
+            newClient={newClient} setNewClient={setNewClient}
+            clientEmails={clientEmails} inviteEmail={inviteEmail}
+            setInviteEmail={setInviteEmail} inviteLoading={inviteLoading}
+          />
         </div>
 
         {/* 8: PROJECT CARDS FOR CLIENTS */}
-        <div className="mt-6">
+        <div className="mt-12">
           <h2 className="text-xl font-bold tracking-tight mb-6">Project Status Workspace</h2>
           {filteredProjects.length === 0 ? (
             <div className="text-center py-16 border border-dashed border-border rounded-2xl bg-card/40">
