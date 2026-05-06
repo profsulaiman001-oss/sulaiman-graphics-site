@@ -353,7 +353,7 @@ export default function Dashboard() {
 
         {showOnboard && (
           <OnboardClient 
-            onClose={() => setShowWelcome(false)} // Note: Fixed for onboarding component
+            onClose={() => setShowOnboard(false)} 
           />
         )}
 
@@ -364,7 +364,7 @@ export default function Dashboard() {
       
         <div className="grid gap-6 md:grid-cols-3 my-6">
           <div className="md:col-span-2">
-            {projects && projects.length >= 0 ? (
+            {!loading ? (
               <AnalyticsDashboard 
                 stats={stats}
                 chartData={chartData}
