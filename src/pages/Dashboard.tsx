@@ -24,7 +24,7 @@ import { CertificateGenerator } from "./components/certificates/CertificateGener
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [user, setUser] = useState<any>(null);
-  const [isAdmin, setIsAdmin] = useState(true); // Set to true to test the full admin panel on mobile
+  const [isAdmin, setIsAdmin] = useState(true); 
   const [loading, setLoading] = useState(true);
   
   // App Data States
@@ -53,7 +53,6 @@ export default function Dashboard() {
     "hello@example.com"
   ]);
 
-  // Comment State Map for multi-project messaging
   const [commentsMap, setCommentsMap] = useState<{ [key: string]: any[] }>({
     "1": [
       {
@@ -73,19 +72,13 @@ export default function Dashboard() {
     ]
   });
 
-  // Search/Filter State
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  
-  // Chat States
   const [openCommentsId, setOpenCommentsId] = useState<string | null>(null);
   const [newComment, setNewComment] = useState("");
   const [sendingComment, setSendingComment] = useState(false);
-  const [unreadCounts, setUnreadCounts] = useState<{ [key: string]: number }>({
-    "1": 1
-  });
+  const [unreadCounts, setUnreadCounts] = useState<{ [key: string]: number }>({ "1": 1 });
 
-  // Admin & Editing States
   const [newTitle, setNewTitle] = useState("");
   const [newClient, setNewClient] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -93,8 +86,7 @@ export default function Dashboard() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteLoading, setInviteLoading] = useState(false);
 
-  // UI & Drawer States
-  const [notifications, setNotifications] = useState<string[]>([
+  const [notifications] = useState<string[]>([
     "Project request received from dashboard portal.",
     "System data initialized and ready."
   ]);
@@ -112,7 +104,6 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        // Fallback for mock session
         setUser({ email: "sulaimangraphics@gmail.com", id: "user-test" });
         setIsAdmin(true);
       } catch (e) {
@@ -124,7 +115,6 @@ export default function Dashboard() {
     fetchUser();
   }, []);
 
-  // Filtered projects
   const filteredProjects = projects.filter((p) => {
     const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           p.client_email?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -132,15 +122,11 @@ export default function Dashboard() {
     return matchesSearch && matchesStatus;
   });
 
-  const completedProjects = projects.filter((p) => p.status === "Completed");
-  const activeProjects = projects.filter((p) => p.status === "In Progress");
-  const pendingProjects = projects.filter((p) => p.status === "Pending");
-
   const stats = {
     total: projects.length,
-    completed: completedProjects.length,
-    active: activeProjects.length,
-    pending: pendingProjects.length,
+    completed: projects.filter((p) => p.status === "Completed").length,
+    active: projects.filter((p) => p.status === "In Progress").length,
+    pending: projects.filter((p) => p.status === "Pending").length,
   };
 
   const chartData = [
@@ -152,15 +138,11 @@ export default function Dashboard() {
   ];
   const COLORS = ["#06b6d4", "#3b82f6", "#eab308"];
 
-  const handleSignOut = async () => {
-    setLocation("/");
-  };
+  const handleSignOut = async () => setLocation("/");
 
-  // State Event Handlers
   const handleCreateProject = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
-    
     const createdProject = {
       id: Date.now().toString(),
       title: newTitle,
@@ -169,63 +151,42 @@ export default function Dashboard() {
       created_at: new Date().toISOString(),
       file_url: ""
     };
-
     setProjects([...projects, createdProject]);
     setNewTitle("");
     setNewClient("");
   };
 
-  const startEdit = (project: any) => {
-    setEditingId(project.id);
-    setEditTitle(project.title);
-  };
-
+  const startEdit = (project: any) => { setEditingId(project.id); setEditTitle(project.title); };
   const saveEdit = () => {
     if (!editingId) return;
-    setProjects(
-      projects.map((p) => (p.id === editingId ? { ...p, title: editTitle } : p))
-    );
+    setProjects(projects.map((p) => (p.id === editingId ? { ...p, title: editTitle } : p)));
     setEditingId(null);
     setEditTitle("");
   };
 
   const updateStatus = (id: string, status: string) => {
-    setProjects(
-      projects.map((p) => (p.id === id ? { ...p, status } : p))
-    );
+    setProjects(projects.map((p) => (p.id === id ? { ...p, status } : p)));
   };
 
   const assignUser = (id: string, email: string) => {
-    setProjects(
-      projects.map((p) => (p.id === id ? { ...p, client_email: email } : p))
-    );
+    setProjects(projects.map((p) => (p.id === id ? { ...p, client_email: email } : p)));
   };
 
-  const handleDelete = (id: string) => {
-    setProjects(projects.filter((p) => p.id !== id));
-  };
+  const handleDelete = (id: string) => setProjects(projects.filter((p) => p.id !== id));
 
   const handleFileUpload = (id: string, file: File) => {
     const fakeUrl = URL.createObjectURL(file);
-    setProjects(
-      projects.map((p) => (p.id === id ? { ...p, file_url: fakeUrl, status: "Completed" } : p))
-    );
+    setProjects(projects.map((p) => (p.id === id ? { ...p, file_url: fakeUrl, status: "Completed" } : p)));
   };
 
   const toggleComments = (id: string) => {
-    if (openCommentsId === id) {
-      setOpenCommentsId(null);
-      setUnreadCounts({ ...unreadCounts, [id]: 0 });
-    } else {
-      setOpenCommentsId(id);
-      setUnreadCounts({ ...unreadCounts, [id]: 0 });
-    }
+    setOpenCommentsId(openCommentsId === id ? null : id);
+    setUnreadCounts({ ...unreadCounts, [id]: 0 });
   };
 
   const sendComment = (projectId: string) => {
     if (!newComment.trim()) return;
     setSendingComment(true);
-
     const msg = {
       id: Date.now().toString(),
       project_id: projectId,
@@ -233,23 +194,15 @@ export default function Dashboard() {
       message: newComment,
       created_at: new Date().toISOString()
     };
-
-    setCommentsMap({
-      ...commentsMap,
-      [projectId]: [...(commentsMap[projectId] || []), msg]
-    });
-
+    setCommentsMap({ ...commentsMap, [projectId]: [...(commentsMap[projectId] || []), msg] });
     setNewComment("");
     setSendingComment(false);
   };
 
   const downloadFile = (url: string, filename: string) => {
     const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    link.href = url; link.download = filename;
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
   };
 
   if (loading) {
@@ -272,38 +225,18 @@ export default function Dashboard() {
       />
 
       <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl">
-        {showWelcome && (
-          <WelcomeNameModal 
-            onClose={() => setShowWelcome(false)} 
-            userName="Sulaiman" 
-          />
-        )}
-        
-        {isSettingsOpen && (
-          <AccountSettings 
-            onClose={() => setIsSettingsOpen(false)} 
-            userEmail={user?.email || "sulaimangraphics@gmail.com"} 
-          />
-        )}
+        {showWelcome && <WelcomeNameModal onClose={() => setShowWelcome(false)} userName="Sulaiman" />}
+        {isSettingsOpen && <AccountSettings onClose={() => setIsSettingsOpen(false)} userEmail={user?.email} />}
+        {showOnboard && <OnboardClient onClose={() => setShowOnboard(false)} />}
 
-        {showOnboard && (
-          <OnboardClient 
-            onClose={() => setShowOnboard(false)} 
-          />
-        )}
+        {/* 1, 2, 3: STATS & CHARTS */}
+        <div className="mb-8">
+           <AnalyticsDashboard stats={stats} chartData={chartData} COLORS={COLORS} />
+        </div>
 
-        <AdminNav />
-      
-        <div className="grid gap-6 md:grid-cols-3 my-6">
-          <div className="md:col-span-2">
-            <AnalyticsDashboard 
-              stats={stats}
-              chartData={chartData}
-              COLORS={COLORS}
-            />
-          </div>
-          <div>
-            <ProjectManagement 
+        {/* 4 & 5: SEARCH & ADD NEW PROJECT */}
+        <div className="mb-8">
+           <ProjectManagement 
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
               statusFilter={statusFilter}
@@ -312,89 +245,86 @@ export default function Dashboard() {
               setNewTitle={setNewTitle}
               newClient={newClient}
               setNewClient={setNewClient}
+              handleCreateProject={handleCreateProject}
               handleCreateProjectHandler={handleCreateProject}
               handleCreateProjectWrapper={(e: React.FormEvent) => handleCreateProject(e)}
-              handleCreateProject={handleCreateProject}
               isAdmin={isAdmin}
+           />
+        </div>
+
+        {/* 6: ONBOARDING & CERTIFICATES */}
+        <div className="flex justify-between items-center mb-6 mt-6 border-b border-border pb-6">
+          <h2 className="text-lg font-bold tracking-tight">Client Management</h2>
+          <div className="flex gap-2">
+            <button onClick={() => setShowOnboard(true)} className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border bg-card text-xs font-semibold hover:bg-accent transition">
+              <Plus size={14} /> <span>Onboard Client</span>
+            </button>
+            <button onClick={() => setIsCertOpen(true)} className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-cyan-500/20 text-cyan-400 bg-cyan-950/20 hover:bg-cyan-950/40 text-xs font-semibold transition">
+              <Award size={14} /> <span>Generate Certificate</span>
+            </button>
+          </div>
+        </div>
+
+        {/* 7: ADMIN BUTTONS (AdminNav) */}
+        <div className="mb-10">
+          <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-4 font-bold">Studio Tools</p>
+          <AdminNav />
+          {/* AdminForms contains the actual inputs for creating posts/questionnaires if needed */}
+          <div className="mt-4 opacity-0 pointer-events-none h-0">
+             <AdminForms 
+              newTitle={newTitle} setNewTitle={setNewTitle}
+              newClient={newClient} setNewClient={setNewClient}
+              clientEmails={clientEmails} inviteEmail={inviteEmail}
+              setInviteEmail={setInviteEmail} inviteLoading={inviteLoading}
             />
           </div>
         </div>
 
-        <AdminForms 
-          newTitle={newTitle}
-          setNewTitle={setNewTitle}
-          newClient={newClient}
-          setNewClient={setNewClient}
-          clientEmails={clientEmails}
-          inviteEmail={inviteEmail}
-          setInviteEmail={setInviteEmail}
-          inviteLoading={inviteLoading}
-        />
-
-        <div className="flex justify-between items-center mb-6 mt-6">
-          <h2 className="text-lg font-bold tracking-tight">Project Status Workspace</h2>
-          <div className="flex gap-2">
-            <button 
-              onClick={() => setShowOnboard(true)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border bg-card text-xs font-semibold hover:bg-accent transition"
-            >
-              <Plus size={14} />
-              <span>Onboard Client</span>
-            </button>
-            <button 
-              onClick={() => setIsCertOpen(true)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-cyan-500/20 text-cyan-400 bg-cyan-950/20 hover:bg-cyan-950/40 text-xs font-semibold transition"
-            >
-              <Award size={14} />
-              <span>Generate Certificate</span>
-            </button>
-          </div>
+        {/* 8: PROJECT CARDS FOR CLIENTS */}
+        <div className="mt-6">
+          <h2 className="text-xl font-bold tracking-tight mb-6">Project Status Workspace</h2>
+          {filteredProjects.length === 0 ? (
+            <div className="text-center py-16 border border-dashed border-border rounded-2xl bg-card/40">
+              <ClipboardList className="mx-auto text-muted-foreground mb-4" size={32} />
+              <h3 className="text-sm font-bold text-foreground">No Projects Found</h3>
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {filteredProjects.map((project: any) => (
+                <div key={project.id} className="flex flex-col gap-3">
+                  <ProjectCard 
+                    project={project}
+                    isAdmin={isAdmin}
+                    editingId={editingId}
+                    editTitle={editTitle}
+                    setEditTitle={setEditTitle}
+                    startEdit={startEdit}
+                    saveEdit={saveEdit}
+                    setEditingId={setEditingId}
+                    updateStatus={updateStatus}
+                    assignUser={assignUser}
+                    handleDelete={handleDelete}
+                    handleFileUpload={handleFileUpload}
+                    toggleComments={toggleComments}
+                    openCommentsId={openCommentsId}
+                    comments={commentsMap[project.id] || []}
+                    newComment={newComment}
+                    setNewComment={setNewComment}
+                    sendingComment={sendingComment}
+                    sendComment={sendComment}
+                    unreadCounts={unreadCounts}
+                    clientEmails={clientEmails}
+                    downloadFile={downloadFile}
+                    statusColors={statusColors}
+                  />
+                  {openCommentsId === project.id && (
+                    <ProjectComments projectId={project.id} />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-
-        {filteredProjects.length === 0 ? (
-          <div className="text-center py-16 border border-dashed border-border rounded-2xl bg-card/40">
-            <ClipboardList className="mx-auto text-muted-foreground mb-4" size={32} />
-            <h3 className="text-sm font-bold text-foreground">No Projects Found</h3>
-            <p className="text-xs text-muted-foreground mt-1 max-w-xs mx-auto">
-              Create a new project or onboard a client to get started.
-            </p>
-          </div>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredProjects.map((project: any) => (
-              <div key={project.id} className="flex flex-col gap-3">
-                <ProjectCard 
-                  project={project}
-                  isAdmin={isAdmin}
-                  editingId={editingId}
-                  editTitle={editTitle}
-                  setEditTitle={setEditTitle}
-                  startEdit={startEdit}
-                  saveEdit={saveEdit}
-                  setEditingId={setEditingId}
-                  updateStatus={updateStatus}
-                  assignUser={assignUser}
-                  handleDelete={handleDelete}
-                  handleFileUpload={handleFileUpload}
-                  toggleComments={toggleComments}
-                  openCommentsId={openCommentsId}
-                  comments={commentsMap[project.id] || []}
-                  newComment={newComment}
-                  setNewComment={setNewComment}
-                  sendingComment={sendingComment}
-                  sendComment={sendComment}
-                  unreadCounts={unreadCounts}
-                  clientEmails={clientEmails}
-                  downloadFile={downloadFile}
-                  statusColors={statusColors}
-                />
-                {openCommentsId === project.id && (
-                  <ProjectComments projectId={project.id} />
-                )}
-              </div>
-            ))}
-          </div>
-        )}
       </main>
 
       <footer className="border-t border-border py-6 mt-auto">
