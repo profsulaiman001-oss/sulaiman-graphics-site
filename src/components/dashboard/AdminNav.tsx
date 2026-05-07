@@ -6,18 +6,22 @@ import {
 interface AdminNavProps {
   setLocation: (loc: string) => void;
   setIsCertOpen: (open: boolean) => void;
+  setActiveOverlay: (view: string | null) => void;
 }
 
-export function AdminNav({ setLocation, setIsCertOpen }: AdminNavProps) {
+export function AdminNav({ setLocation, setIsCertOpen, setActiveOverlay }: AdminNavProps) {
   const adminItems = [
+    // NAVIGATE TO NEW PAGE
     { label: 'Create New Post', icon: Send, path: '/create-post' },
-    { label: 'View Questionnaires', icon: ClipboardList, path: '/questionnaires' },
-    { label: 'Generate Receipt', icon: ReceiptIcon, path: '/receipt' },
-    { label: 'Ownership Certificate', icon: Award, action: () => setIsCertOpen(true) },
     { label: 'View Agreements', icon: FileText, path: '/agreements' },
     { label: 'Studio Insights', icon: BarChart3, path: '/studio-insights' },
-    { label: 'Generate Invoice', icon: FileText, path: '/invoice' },
     { label: 'Manage Storefront', icon: ShoppingBag, path: '/admin/manage-shop' },
+
+    // SHOW OVERLAY ON DASHBOARD
+    { label: 'Generate Receipt', icon: ReceiptIcon, action: () => setActiveOverlay('receipt') },
+    { label: 'Generate Invoice', icon: FileText, action: () => setActiveOverlay('invoice') },
+    { label: 'View Questionnaires', icon: ClipboardList, action: () => setActiveOverlay('questionnaires') },
+    { label: 'Ownership Certificate', icon: Award, action: () => setIsCertOpen(true) },
   ];
 
   return (
@@ -26,7 +30,7 @@ export function AdminNav({ setLocation, setIsCertOpen }: AdminNavProps) {
         <button
           key={index}
           onClick={() => {
-            if ('action' in item && typeof item.action === 'function') {
+            if (item.action) {
               item.action();
             } else if (item.path) {
               setLocation(item.path);
