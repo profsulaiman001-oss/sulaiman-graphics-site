@@ -21,10 +21,11 @@ import { ProjectManagement } from "@/components/dashboard/ProjectManagement";
 import WelcomeNameModal from "@/components/dashboard/WelcomeNameModal";
 import { CertificateGenerator } from "./components/certificates/CertificateGenerator";
 
-// FIXED: Matching your specific file naming (Singular Questionnaire)
+// FIXED IMPORTS
 import Receipt from "./Receipt";
 import Invoice from "./Invoice";
-import ViewQuestionnaires from "./ViewQuestionnaire";
+// We now import the VIEW component specifically to see client answers
+import ViewQuestionnaires from "./ViewQuestionnaires"; 
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
@@ -368,7 +369,8 @@ export default function Dashboard() {
               <div className="mt-4">
                 {activeOverlay === 'receipt' && <Receipt />}
                 {activeOverlay === 'invoice' && <Invoice />}
-                {activeOverlay === 'questionnaires' && <Questionnaires />}
+                {/* Now using ViewQuestionnaires to display client data */}
+                {activeOverlay === 'questionnaires' && <ViewQuestionnaires />}
               </div>
             </motion.div>
           </motion.div>
