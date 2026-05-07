@@ -24,60 +24,22 @@ import { CertificateGenerator } from "./components/certificates/CertificateGener
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [user, setUser] = useState<any>(null);
-  const [isAdmin, setIsAdmin] = useState(true); 
+  const [isAdmin, setIsAdmin] = useState(false); 
   const [loading, setLoading] = useState(true);
   
   // App Data States
-  const [projects, setProjects] = useState<any[]>([
-    { 
-      id: "1", 
-      title: "Brand Identity", 
-      client_email: "client@sulaimangraphics.com.ng", 
-      status: "In Progress", 
-      created_at: new Date().toISOString(), 
-      file_url: "" 
-    },
-    { 
-      id: "2", 
-      title: "Packaging Mockup", 
-      client_email: "info@sulaimangraphics.com.ng", 
-      status: "Completed", 
-      created_at: new Date(Date.now() - 86400000 * 2).toISOString(), 
-      file_url: "" 
-    }
-  ]);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [clientEmails, setClientEmails] = useState<string[]>([]);
+  const [commentsMap, setCommentsMap] = useState<{ [key: string]: any[] }>({});
+  const [notifications, setNotifications] = useState<string[]>([]);
 
-  const [clientEmails] = useState<string[]>([
-    "client@sulaimangraphics.com.ng",
-    "info@sulaimangraphics.com.ng",
-    "hello@example.com"
-  ]);
-
-  const [commentsMap, setCommentsMap] = useState<{ [key: string]: any[] }>({
-    "1": [
-      {
-        id: "m1",
-        project_id: "1",
-        is_admin: false,
-        message: "Hi, I have sent the brand assets. Let me know when you start.",
-        created_at: new Date(Date.now() - 3600000 * 4).toISOString()
-      },
-      {
-        id: "m2",
-        project_id: "1",
-        is_admin: true,
-        message: "Received! Working on the initial layout design now.",
-        created_at: new Date(Date.now() - 3600000 * 2).toISOString()
-      }
-    ]
-  });
-
+  // UI States
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [openCommentsId, setOpenCommentsId] = useState<string | null>(null);
   const [newComment, setNewComment] = useState("");
   const [sendingComment, setSendingComment] = useState(false);
-  const [unreadCounts, setUnreadCounts] = useState<{ [key: string]: number }>({ "1": 1 });
+  const [unreadCounts, setUnreadCounts] = useState<{ [key: string]: number }>({});
 
   const [newTitle, setNewTitle] = useState("");
   const [newClient, setNewClient] = useState("");
@@ -86,10 +48,6 @@ export default function Dashboard() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteLoading, setInviteLoading] = useState(false);
 
-  const [notifications, setNotifications] = useState<string[]>([
-    "Project request received from dashboard portal.",
-    "System data initialized and ready."
-  ]);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isCertOpen, setIsCertOpen] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
@@ -100,23 +58,176 @@ export default function Dashboard() {
     'Completed': 'bg-green-500/10 border-green-500/20 text-green-500'
   };
 
+  // 1. Initialize Auth and Fetch Data
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        setUser({ email: "sulaimangraphics@gmail.com", id: "user-test" });
-        setIsAdmin(true);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
+    const initializeDashboard = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setLocation("/login");
+        return;
       }
+      setUser(user);
+      
+      // Admin Check: Set this to your actual admin email
+      const adminStatus = user.email === "profsulaiman001@gmail.com";
+      setIsAdmin(adminStatus);
+      
+      fetchProjects(user, adminStatus);
+      fetchClientEmails();
     };
-    fetchUser();
+    initializeDashboard();
   }, []);
+
+  // 2. Fetch Projects from Supabase
+  const fetchProjects = async (currentUser: any, admin: boolean) => {
+    setLoading(true);
+    try {
+      let query = supabase.from("projects").select("*").order("created_at", { ascending: false });
+      
+      // LOGIC: If NOT admin, only show projects assigned to this email 
+      if (!admin) {
+        query = query.eq("client_email", currentUser.email);
+      }
+      
+      const { data, error } = await query;
+      if (error) throw error;
+      setProjects(data || []);
+    } catch (err: any) {
+      console.error("Fetch projects error:", err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 3. Fetch list of potential clients for the dropdown 
+  const fetchClientEmails = async () => {
+    try {
+      // Fetch unique emails from the profiles table (synced with users)
+      const { data, error } = await supabase.from("profiles").select("email");
+      if (error) throw error;
+      
+      const emails = data.map(p => p.email).filter(Boolean);
+      setClientEmails(Array.from(new Set(emails)));
+    } catch (err) {
+      console.error("Could not fetch client list:", err);
+    }
+  };
+
+  const handleCreateProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTitle.trim()) return;
+    
+    try {
+      const { error } = await supabase.from("projects").insert([{
+        title: newTitle.trim(),
+        client_email: newClient || null,
+        status: "Pending",
+        user_id: user.id
+      }]);
+
+      if (error) throw error;
+      setNewTitle("");
+      setNewClient("");
+      fetchProjects(user, isAdmin);
+    } catch (err: any) {
+      alert("Error: " + err.message);
+    }
+  };
+
+  const handleInviteClient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteEmail.trim()) return;
+
+    setInviteLoading(true);
+    try {
+      const response = await fetch('/api/onboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: inviteEmail }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || "Invite failed.");
+
+      setNotifications(prev => [result.message, ...prev]);
+      
+      // LOGIC: Immediately update the dropdown list so the new client appears 
+      setClientEmails(prev => Array.from(new Set([...prev, inviteEmail])));
+      
+      setInviteEmail(""); 
+      alert(`Invitation sent! ${inviteEmail} can now be assigned to projects.`);
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setInviteLoading(false);
+    }
+  };
+
+  const startEdit = (project: any) => { setEditingId(project.id); setEditTitle(project.title); };
+  const saveEdit = async () => {
+    if (!editingId) return;
+    const { error } = await supabase.from("projects").update({ title: editTitle }).eq("id", editingId);
+    if (!error) { setEditingId(null); fetchProjects(user, isAdmin); }
+  };
+
+  const updateStatus = async (id: string, status: string) => {
+    const { error } = await supabase.from("projects").update({ status }).eq("id", id);
+    if (!error) fetchProjects(user, isAdmin);
+  };
+
+  const assignUser = async (id: string, email: string) => {
+    const { error } = await supabase.from("projects").update({ client_email: email }).eq("id", id);
+    if (!error) fetchProjects(user, isAdmin);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete project?")) return;
+    const { error } = await supabase.from("projects").delete().eq("id", id);
+    if (!error) fetchProjects(user, isAdmin);
+  };
+
+  const handleFileUpload = async (id: string, file: File) => {
+    // Implement your storage upload logic here
+    const fakeUrl = URL.createObjectURL(file);
+    const { error } = await supabase.from("projects").update({ file_url: fakeUrl, status: "Completed" }).eq("id", id);
+    if (!error) fetchProjects(user, isAdmin);
+  };
+
+  const toggleComments = (id: string) => {
+    setOpenCommentsId(openCommentsId === id ? null : id);
+    setUnreadCounts({ ...unreadCounts, [id]: 0 });
+  };
+
+  const sendComment = async (projectId: string) => {
+    if (!newComment.trim()) return;
+    setSendingComment(true);
+    const { error } = await supabase.from("comments").insert([{
+      project_id: projectId,
+      is_admin: isAdmin,
+      message: newComment,
+      user_id: user.id
+    }]);
+    if (!error) {
+      setNewComment("");
+      // Refresh logic for comments here
+    }
+    setSendingComment(false);
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    setLocation("/login");
+  };
+
+  const downloadFile = (url: string, filename: string) => {
+    const link = document.createElement('a');
+    link.href = url; link.download = filename;
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+  };
 
   const filteredProjects = projects.filter((p) => {
     const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          p.client_email?.toLowerCase().includes(searchQuery.toLowerCase());
+                          (p.client_email && p.client_email.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesStatus = statusFilter === "all" || p.status.toLowerCase() === statusFilter.toLowerCase();
     return matchesSearch && matchesStatus;
   });
@@ -137,107 +248,7 @@ export default function Dashboard() {
   ];
   const COLORS = ["#06b6d4", "#3b82f6", "#eab308"];
 
-  const handleSignOut = async () => setLocation("/");
-
-  const handleCreateProject = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTitle.trim()) return;
-    const createdProject = {
-      id: Date.now().toString(),
-      title: newTitle,
-      client_email: newClient || "info@sulaimangraphics.com.ng",
-      status: "Pending",
-      created_at: new Date().toISOString(),
-      file_url: ""
-    };
-    setProjects([...projects, createdProject]);
-    setNewTitle("");
-    setNewClient("");
-  };
-
-  // RESTORED: Functional onboarding logic using your original /api/onboard endpoint
-  const handleInviteClient = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inviteEmail.trim()) return;
-
-    setInviteLoading(true);
-    try {
-      const response = await fetch('/api/onboard', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: inviteEmail }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || "Failed to send portal invite.");
-      }
-
-      setNotifications(prev => [result.message, ...prev]);
-      setInviteEmail(""); 
-      alert(`Invitation successfully sent to ${inviteEmail}`);
-
-    } catch (err: any) {
-      console.error("Onboarding error:", err);
-      alert(err.message || "An error occurred while sending the invite.");
-    } finally {
-      setInviteLoading(false);
-    }
-  };
-
-  const startEdit = (project: any) => { setEditingId(project.id); setEditTitle(project.title); };
-  const saveEdit = () => {
-    if (!editingId) return;
-    setProjects(projects.map((p) => (p.id === editingId ? { ...p, title: editTitle } : p)));
-    setEditingId(null);
-    setEditTitle("");
-  };
-
-  const updateStatus = (id: string, status: string) => {
-    setProjects(projects.map((p) => (p.id === id ? { ...p, status } : p)));
-  };
-
-  const assignUser = (id: string, email: string) => {
-    setProjects(projects.map((p) => (p.id === id ? { ...p, client_email: email } : p)));
-  };
-
-  const handleDelete = (id: string) => setProjects(projects.filter((p) => p.id !== id));
-
-  const handleFileUpload = (id: string, file: File) => {
-    const fakeUrl = URL.createObjectURL(file);
-    setProjects(projects.map((p) => (p.id === id ? { ...p, file_url: fakeUrl, status: "Completed" } : p)));
-  };
-
-  const toggleComments = (id: string) => {
-    setOpenCommentsId(openCommentsId === id ? null : id);
-    setUnreadCounts({ ...unreadCounts, [id]: 0 });
-  };
-
-  const sendComment = (projectId: string) => {
-    if (!newComment.trim()) return;
-    setSendingComment(true);
-    const msg = {
-      id: Date.now().toString(),
-      project_id: projectId,
-      is_admin: isAdmin,
-      message: newComment,
-      created_at: new Date().toISOString()
-    };
-    setCommentsMap({ ...commentsMap, [projectId]: [...(commentsMap[projectId] || []), msg] });
-    setNewComment("");
-    setSendingComment(false);
-  };
-
-  const downloadFile = (url: string, filename: string) => {
-    const link = document.createElement('a');
-    link.href = url; link.download = filename;
-    document.body.appendChild(link); link.click(); document.body.removeChild(link);
-  };
-
-  if (loading) {
+  if (loading && projects.length === 0) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center text-muted-foreground">
         <Loader2 className="animate-spin text-cyan-400 mb-2" size={24} />
@@ -260,15 +271,12 @@ export default function Dashboard() {
         {showWelcome && <WelcomeNameModal onClose={() => setShowWelcome(false)} userName="Sulaiman" />}
         {isSettingsOpen && <AccountSettings onClose={() => setIsSettingsOpen(false)} userEmail={user?.email} />}
 
-        {/* 1, 2, 3: STATS & CHARTS */}
         <div className="mb-8">
            <AnalyticsDashboard stats={stats} chartData={chartData} COLORS={COLORS} />
         </div>
 
         <div className="grid gap-6 md:grid-cols-3">
-          {/* Left Column: Management Tools */}
           <div className="md:col-span-2 space-y-6">
-            {/* 4 & 5: SEARCH & ADD NEW PROJECT */}
             <ProjectManagement 
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
@@ -282,7 +290,6 @@ export default function Dashboard() {
               isAdmin={isAdmin}
             />
 
-            {/* Layout Preserved: Onboard Client box positioned directly below Project Management */}
             <OnboardClient 
               inviteEmail={inviteEmail}
               setInviteEmail={setInviteEmail}
@@ -291,7 +298,6 @@ export default function Dashboard() {
             />
           </div>
 
-          {/* Right Column: Quick Buttons & Navigation */}
           <div>
             <div className="bg-card/30 border border-border/50 p-4 rounded-2xl">
               <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Quick Actions</h2>
@@ -308,7 +314,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Hidden Admin Forms logic */}
         <div className="mt-4 opacity-0 pointer-events-none h-0">
             <AdminForms 
             newTitle={newTitle} setNewTitle={setNewTitle}
@@ -318,7 +323,6 @@ export default function Dashboard() {
           />
         </div>
 
-        {/* 8: PROJECT CARDS FOR CLIENTS */}
         <div className="mt-12">
           <h2 className="text-xl font-bold tracking-tight mb-6">Project Status Workspace</h2>
           {filteredProjects.length === 0 ? (
