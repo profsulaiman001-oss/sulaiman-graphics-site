@@ -6,7 +6,7 @@ import {
   Edit3, Trash2, Save, XCircle, LogOut, CheckCircle, 
   Clock, Loader2, Plus, HardDrive, Download, Settings, X, 
   MessageSquare, Send, ClipboardList, Award, BarChart3
-} from "lucide-react";
+} from "lucide-center";
 
 // Component Imports
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
@@ -57,7 +57,6 @@ export default function Dashboard() {
   const [isCertOpen, setIsCertOpen] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
   
-  // Overlay state
   const [activeOverlay, setActiveOverlay] = useState<string | null>(null);
 
   const statusColors: { [key: string]: string } = {
@@ -75,11 +74,12 @@ export default function Dashboard() {
       }
       setUser(user);
       
+      // ADMIN CHECK LOGIC
       const adminStatus = user.email === "profsulaiman001@gmail.com";
       setIsAdmin(adminStatus);
       
       fetchProjects(user, adminStatus);
-      fetchClientEmails();
+      if (adminStatus) fetchClientEmails();
     };
     initializeDashboard();
   }, []);
@@ -88,7 +88,12 @@ export default function Dashboard() {
     setLoading(true);
     try {
       let query = supabase.from("projects").select("*").order("created_at", { ascending: false });
-      if (!admin) query = query.eq("client_email", currentUser.email);
+      
+      // CLIENT DATA FILTERING: Only see projects where client_email matches their login email
+      if (!admin) {
+        query = query.eq("client_email", currentUser.email);
+      }
+      
       const { data, error } = await query;
       if (error) throw error;
       setProjects(data || []);
@@ -109,13 +114,13 @@ export default function Dashboard() {
       ])).filter(Boolean) as string[];
       setClientEmails(combined);
     } catch (err) {
-      console.error("Could not fetch permanent client list:", err);
+      console.error("Could not fetch client list:", err);
     }
   };
 
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTitle.trim()) return;
+    if (!newTitle.trim() || !isAdmin) return;
     try {
       const { error } = await supabase.from("projects").insert([{
         title: newTitle.trim(),
@@ -134,7 +139,7 @@ export default function Dashboard() {
 
   const handleInviteClient = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inviteEmail.trim()) return;
+    if (!inviteEmail.trim() || !isAdmin) return;
     setInviteLoading(true);
     try {
       const response = await fetch('/api/onboard', {
@@ -154,30 +159,34 @@ export default function Dashboard() {
     }
   };
 
-  const startEdit = (project: any) => { setEditingId(project.id); setEditTitle(project.title); };
+  // Helper functions for project management (only allowed if isAdmin)
+  const startEdit = (project: any) => { if(isAdmin) { setEditingId(project.id); setEditTitle(project.title); } };
   const saveEdit = async () => {
-    if (!editingId) return;
+    if (!editingId || !isAdmin) return;
     const { error } = await supabase.from("projects").update({ title: editTitle }).eq("id", editingId);
     if (!error) { setEditingId(null); fetchProjects(user, isAdmin); }
   };
 
   const updateStatus = async (id: string, status: string) => {
+    if (!isAdmin) return;
     const { error } = await supabase.from("projects").update({ status }).eq("id", id);
     if (!error) fetchProjects(user, isAdmin);
   };
 
   const assignUser = async (id: string, email: string) => {
+    if (!isAdmin) return;
     const { error } = await supabase.from("projects").update({ client_email: email }).eq("id", id);
     if (!error) fetchProjects(user, isAdmin);
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete project?")) return;
+    if (!isAdmin || !confirm("Delete project?")) return;
     const { error } = await supabase.from("projects").delete().eq("id", id);
     if (!error) fetchProjects(user, isAdmin);
   };
 
   const handleFileUpload = async (id: string, file: File) => {
+    if (!isAdmin) return;
     const fakeUrl = URL.createObjectURL(file);
     const { error } = await supabase.from("projects").update({ file_url: fakeUrl, status: "Completed" }).eq("id", id);
     if (!error) fetchProjects(user, isAdmin);
@@ -226,13 +235,6 @@ export default function Dashboard() {
     pending: projects.filter((p) => p.status === "Pending").length,
   };
 
-  const chartData = [
-    { name: "Jan", amount: 2 },
-    { name: "Feb", amount: 4 },
-    { name: "Mar", amount: 3 },
-    { name: "Apr", amount: stats.total || 1 },
-    { name: "May", amount: stats.active || 2 },
-  ];
   const COLORS = ["#06b6d4", "#3b82f6", "#eab308"];
 
   if (loading && projects.length === 0) {
@@ -247,7 +249,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <DashboardHeader 
-        userEmail={user?.email || "sulaimangraphics@gmail.com"}
+        userEmail={user?.email || "User"}
         notificationsCount={notifications.length}
         isSettingsOpen={isSettingsOpen}
         setIsSettingsOpen={setIsSettingsOpen}
@@ -255,15 +257,17 @@ export default function Dashboard() {
       />
 
       <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl">
-        {showWelcome && <WelcomeNameModal onClose={() => setShowWelcome(false)} userName="Sulaiman" />}
+        {showWelcome && <WelcomeNameModal onClose={() => setShowWelcome(false)} userName={isAdmin ? "Sulaiman" : "Client"} />}
         {isSettingsOpen && <AccountSettings onClose={() => setIsSettingsOpen(false)} userEmail={user?.email} />}
 
+        {/* ALWAYS SHOW ANALYTICS (Charts/Boxes) */}
         <div className="mb-8">
-           <AnalyticsDashboard stats={stats} chartData={chartData} COLORS={COLORS} />
+           <AnalyticsDashboard stats={stats} COLORS={COLORS} />
         </div>
 
         <div className="grid gap-6 md:grid-cols-3">
           <div className="md:col-span-2 space-y-6">
+            {/* ONLY ADMIN CAN CREATE PROJECTS */}
             <ProjectManagement 
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
@@ -274,31 +278,40 @@ export default function Dashboard() {
               newClient={newClient}
               setNewClient={setNewClient}
               handleCreateProject={handleCreateProject}
-              isAdmin={isAdmin}
+              isAdmin={isAdmin} 
             />
 
-            <OnboardClient 
-              inviteEmail={inviteEmail}
-              setInviteEmail={setInviteEmail}
-              handleInviteClient={handleInviteClient}
-              loading={inviteLoading}
-            />
-          </div>
-
-          <div>
-            <div className="bg-card/30 border border-border/50 p-4 rounded-2xl">
-              <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Quick Actions</h2>
-              <AdminNav 
-                setLocation={setLocation} 
-                setIsCertOpen={setIsCertOpen} 
-                setActiveOverlay={setActiveOverlay} 
+            {/* ONLY ADMIN CAN ONBOARD CLIENTS */}
+            {isAdmin && (
+              <OnboardClient 
+                inviteEmail={inviteEmail}
+                setInviteEmail={setInviteEmail}
+                handleInviteClient={handleInviteClient}
+                loading={inviteLoading}
               />
-            </div>
+            )}
           </div>
+
+          {/* QUICK ACTIONS SIDEBAR: ONLY SHOW TO ADMIN */}
+          {isAdmin && (
+            <div>
+              <div className="bg-card/30 border border-border/50 p-4 rounded-2xl">
+                <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Quick Actions</h2>
+                <AdminNav 
+                  setLocation={setLocation} 
+                  setIsCertOpen={setIsCertOpen} 
+                  setActiveOverlay={setActiveOverlay} 
+                />
+              </div>
+            </div>
+          )}
         </div>
 
+        {/* PROJECT WORKSPACE: Shared by both, but logic inside ProjectCard handles button visibility */}
         <div className="mt-12">
-          <h2 className="text-xl font-bold tracking-tight mb-6">Project Status Workspace</h2>
+          <h2 className="text-xl font-bold tracking-tight mb-6">
+            {isAdmin ? "Project Status Workspace" : "Your Active Projects"}
+          </h2>
           {filteredProjects.length === 0 ? (
             <div className="text-center py-16 border border-dashed border-border rounded-2xl bg-card/40">
               <ClipboardList className="mx-auto text-muted-foreground mb-4" size={32} />
@@ -343,7 +356,7 @@ export default function Dashboard() {
         </div>
       </main>
 
-      {/* FIXED Overlay System - Added full height and internal scrolling */}
+      {/* Overlay System for Admin Forms */}
       <AnimatePresence>
         {activeOverlay && (
           <motion.div 
@@ -358,7 +371,6 @@ export default function Dashboard() {
               exit={{ opacity: 0, y: 20 }}
               className="bg-card border-x border-border/50 w-full h-full max-w-7xl relative shadow-2xl flex flex-col"
             >
-              {/* Header with Close Button */}
               <div className="p-6 border-b border-border flex items-center justify-between sticky top-0 bg-card z-50">
                 <h2 className="text-lg font-bold capitalize tracking-tight">{activeOverlay} Details</h2>
                 <button 
@@ -368,8 +380,6 @@ export default function Dashboard() {
                   <X size={20} />
                 </button>
               </div>
-              
-              {/* Scrollable Content Area */}
               <div className="flex-1 overflow-y-auto p-4 md:p-10 custom-scrollbar">
                 <div className="mx-auto max-w-4xl">
                   {activeOverlay === 'receipt' && <Receipt />}
