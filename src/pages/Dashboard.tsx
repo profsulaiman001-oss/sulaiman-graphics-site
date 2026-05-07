@@ -21,6 +21,11 @@ import { ProjectManagement } from "@/components/dashboard/ProjectManagement";
 import WelcomeNameModal from "@/components/dashboard/WelcomeNameModal";
 import { CertificateGenerator } from "./components/certificates/CertificateGenerator";
 
+// NEW: Imports for Overlay components
+import Receipt from "@/pages/receipt";
+import Invoice from "@/pages/invoice";
+import Questionnaires from "@/pages/questionnaires";
+
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [user, setUser] = useState<any>(null);
@@ -51,6 +56,9 @@ export default function Dashboard() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isCertOpen, setIsCertOpen] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
+  
+  // NEW: State for active overlay
+  const [activeOverlay, setActiveOverlay] = useState<string | null>(null);
 
   const statusColors: { [key: string]: string } = {
     'Pending': 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500',
@@ -58,7 +66,6 @@ export default function Dashboard() {
     'Completed': 'bg-green-500/10 border-green-500/20 text-green-500'
   };
 
-  // 1. Initialize Auth and Fetch Data
   useEffect(() => {
     const initializeDashboard = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -72,21 +79,16 @@ export default function Dashboard() {
       setIsAdmin(adminStatus);
       
       fetchProjects(user, adminStatus);
-      fetchClientEmails(); // Modified to fetch permanent data
+      fetchClientEmails();
     };
     initializeDashboard();
   }, []);
 
-  // 2. Fetch Projects from Supabase
   const fetchProjects = async (currentUser: any, admin: boolean) => {
     setLoading(true);
     try {
       let query = supabase.from("projects").select("*").order("created_at", { ascending: false });
-      
-      if (!admin) {
-        query = query.eq("client_email", currentUser.email);
-      }
-      
+      if (!admin) query = query.eq("client_email", currentUser.email);
       const { data, error } = await query;
       if (error) throw error;
       setProjects(data || []);
@@ -97,21 +99,15 @@ export default function Dashboard() {
     }
   };
 
-  // 3. SURGICAL FIX: Fetch list from both tables to ensure persistence
   const fetchClientEmails = async () => {
     try {
-      // Get emails from registered profiles
       const { data: profileData } = await supabase.from("profiles").select("email");
-      
-      // Get emails from projects (catches emails assigned but not yet registered)
       const { data: projectData } = await supabase.from("projects").select("client_email");
-      
-      const profileEmails = profileData?.map(p => p.email) || [];
-      const projectEmails = projectData?.map(p => p.client_email) || [];
-      
-      // Combine, filter out nulls, and remove duplicates
-      const allEmails = Array.from(new Set([...profileEmails, ...projectEmails])).filter(Boolean) as string[];
-      setClientEmails(allEmails);
+      const combined = Array.from(new Set([
+        ...(profileData?.map(p => p.email) || []),
+        ...(projectData?.map(p => p.client_email) || [])
+      ])).filter(Boolean) as string[];
+      setClientEmails(combined);
     } catch (err) {
       console.error("Could not fetch permanent client list:", err);
     }
@@ -120,7 +116,6 @@ export default function Dashboard() {
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
-    
     try {
       const { error } = await supabase.from("projects").insert([{
         title: newTitle.trim(),
@@ -128,7 +123,6 @@ export default function Dashboard() {
         status: "Pending",
         user_id: user.id
       }]);
-
       if (error) throw error;
       setNewTitle("");
       setNewClient("");
@@ -141,7 +135,6 @@ export default function Dashboard() {
   const handleInviteClient = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteEmail.trim()) return;
-
     setInviteLoading(true);
     try {
       const response = await fetch('/api/onboard', {
@@ -149,17 +142,11 @@ export default function Dashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: inviteEmail }),
       });
-
       const result = await response.json();
       if (!response.ok) throw new Error(result.message || "Invite failed.");
-
-      setNotifications(prev => [result.message, ...prev]);
-      
-      // Immediately update local state for smooth UX
       setClientEmails(prev => Array.from(new Set([...prev, inviteEmail])));
-      
       setInviteEmail(""); 
-      alert(`Invitation sent! ${inviteEmail} can now be assigned to projects.`);
+      alert(`Invitation sent!`);
     } catch (err: any) {
       alert(err.message);
     } finally {
@@ -210,9 +197,7 @@ export default function Dashboard() {
       message: newComment,
       user_id: user.id
     }]);
-    if (!error) {
-      setNewComment("");
-    }
+    if (!error) setNewComment("");
     setSendingComment(false);
   };
 
@@ -302,27 +287,15 @@ export default function Dashboard() {
 
           <div>
             <div className="bg-card/30 border border-border/50 p-4 rounded-2xl">
-              <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Quick Actions</h2>
-              <button 
-                onClick={() => setIsCertOpen(true)} 
-                className="w-full flex items-center justify-center gap-2 px-3 py-3 rounded-xl border border-cyan-500/20 text-cyan-400 bg-cyan-950/20 hover:bg-cyan-950/40 text-xs font-bold transition mb-6"
-              >
-                <Award size={16} /> <span>Generate Certificate</span>
-              </button>
-
-              <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-4 font-bold border-t border-border pt-4">Studio Tools</p>
-              <AdminNav />
+              <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4 font-bold border-b border-border/20 pb-2">Admin Tools</h2>
+              {/* SURGICAL FIX: AdminNav now receives the setActiveOverlay prop */}
+              <AdminNav 
+                setLocation={setLocation} 
+                setIsCertOpen={setIsCertOpen} 
+                setActiveOverlay={setActiveOverlay} 
+              />
             </div>
           </div>
-        </div>
-
-        <div className="mt-4 opacity-0 pointer-events-none h-0">
-            <AdminForms 
-            newTitle={newTitle} setNewTitle={setNewTitle}
-            newClient={newClient} setNewClient={setNewClient}
-            clientEmails={clientEmails} inviteEmail={inviteEmail}
-            setInviteEmail={setInviteEmail} inviteLoading={inviteLoading}
-          />
         </div>
 
         <div className="mt-12">
@@ -370,6 +343,38 @@ export default function Dashboard() {
           )}
         </div>
       </main>
+
+      {/* OVERLAY SYSTEM: Renders Invoices, Receipts, and Questionnaires */}
+      <AnimatePresence>
+        {activeOverlay && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-background/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-card border border-border w-full max-w-5xl rounded-3xl p-4 md:p-8 relative shadow-2xl"
+            >
+              <button 
+                onClick={() => setActiveOverlay(null)} 
+                className="absolute top-6 right-6 p-2 bg-muted/50 hover:bg-red-500/20 hover:text-red-500 rounded-full transition-colors z-50"
+              >
+                <X size={24} />
+              </button>
+              
+              <div className="mt-4">
+                {activeOverlay === 'receipt' && <Receipt />}
+                {activeOverlay === 'invoice' && <Invoice />}
+                {activeOverlay === 'questionnaires' && <Questionnaires />}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <footer className="border-t border-border py-6 mt-auto">
         <div className="container mx-auto px-4 text-center text-xs text-muted-foreground">
