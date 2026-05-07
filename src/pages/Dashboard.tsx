@@ -6,7 +6,7 @@ import {
   Edit3, Trash2, Save, XCircle, LogOut, CheckCircle, 
   Clock, Loader2, Plus, HardDrive, Download, Settings, X, 
   MessageSquare, Send, ClipboardList, Award, BarChart3
-} from "lucide-center";
+} from "lucide-react";
 
 // Component Imports
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
