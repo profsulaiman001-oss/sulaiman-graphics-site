@@ -21,10 +21,9 @@ import { ProjectManagement } from "@/components/dashboard/ProjectManagement";
 import WelcomeNameModal from "@/components/dashboard/WelcomeNameModal";
 import { CertificateGenerator } from "./components/certificates/CertificateGenerator";
 
-// FIXED IMPORTS
+// Fixed imports for Admin usage
 import Receipt from "./Receipt";
 import Invoice from "./Invoice";
-// We now import the VIEW component specifically to see client answers
 import ViewQuestionnaires from "./ViewQuestionnaires"; 
 
 export default function Dashboard() {
@@ -344,33 +343,39 @@ export default function Dashboard() {
         </div>
       </main>
 
-      {/* Overlay System */}
+      {/* FIXED Overlay System - Added full height and internal scrolling */}
       <AnimatePresence>
         {activeOverlay && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-background/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto"
+            className="fixed inset-0 z-50 bg-background/95 backdrop-blur-xl flex items-center justify-center overflow-hidden"
           >
             <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-card border border-border w-full max-w-5xl rounded-3xl p-4 md:p-8 relative shadow-2xl"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              className="bg-card border-x border-border/50 w-full h-full max-w-7xl relative shadow-2xl flex flex-col"
             >
-              <button 
-                onClick={() => setActiveOverlay(null)} 
-                className="absolute top-6 right-6 p-2 bg-muted/50 hover:bg-red-500/20 hover:text-red-500 rounded-full transition-colors z-50"
-              >
-                <X size={24} />
-              </button>
+              {/* Header with Close Button */}
+              <div className="p-6 border-b border-border flex items-center justify-between sticky top-0 bg-card z-50">
+                <h2 className="text-lg font-bold capitalize tracking-tight">{activeOverlay} Details</h2>
+                <button 
+                  onClick={() => setActiveOverlay(null)} 
+                  className="p-2 bg-muted/50 hover:bg-red-500/20 hover:text-red-500 rounded-full transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
               
-              <div className="mt-4">
-                {activeOverlay === 'receipt' && <Receipt />}
-                {activeOverlay === 'invoice' && <Invoice />}
-                {/* Now using ViewQuestionnaires to display client data */}
-                {activeOverlay === 'questionnaires' && <ViewQuestionnaires />}
+              {/* Scrollable Content Area */}
+              <div className="flex-1 overflow-y-auto p-4 md:p-10 custom-scrollbar">
+                <div className="mx-auto max-w-4xl">
+                  {activeOverlay === 'receipt' && <Receipt />}
+                  {activeOverlay === 'invoice' && <Invoice />}
+                  {activeOverlay === 'questionnaires' && <ViewQuestionnaires />}
+                </div>
               </div>
             </motion.div>
           </motion.div>
