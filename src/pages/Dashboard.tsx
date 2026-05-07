@@ -74,7 +74,6 @@ export default function Dashboard() {
       }
       setUser(user);
       
-      // ADMIN CHECK LOGIC
       const adminStatus = user.email === "profsulaiman001@gmail.com";
       setIsAdmin(adminStatus);
       
@@ -88,11 +87,7 @@ export default function Dashboard() {
     setLoading(true);
     try {
       let query = supabase.from("projects").select("*").order("created_at", { ascending: false });
-      
-      // CLIENT DATA FILTERING: Only see projects where client_email matches their login email
-      if (!admin) {
-        query = query.eq("client_email", currentUser.email);
-      }
+      if (!admin) query = query.eq("client_email", currentUser.email);
       
       const { data, error } = await query;
       if (error) throw error;
@@ -159,7 +154,6 @@ export default function Dashboard() {
     }
   };
 
-  // Helper functions for project management (only allowed if isAdmin)
   const startEdit = (project: any) => { if(isAdmin) { setEditingId(project.id); setEditTitle(project.title); } };
   const saveEdit = async () => {
     if (!editingId || !isAdmin) return;
@@ -197,17 +191,33 @@ export default function Dashboard() {
     setUnreadCounts({ ...unreadCounts, [id]: 0 });
   };
 
+  // FIXED: Updated to refresh UI instantly upon sending
   const sendComment = async (projectId: string) => {
     if (!newComment.trim()) return;
     setSendingComment(true);
-    const { error } = await supabase.from("comments").insert([{
-      project_id: projectId,
-      is_admin: isAdmin,
-      message: newComment,
-      user_id: user.id
-    }]);
-    if (!error) setNewComment("");
-    setSendingComment(false);
+    
+    try {
+      const { data, error } = await supabase.from("comments").insert([{
+        project_id: projectId,
+        is_admin: isAdmin,
+        message: newComment,
+        user_id: user.id
+      }]).select();
+
+      if (error) throw error;
+
+      // Update local state instantly
+      setCommentsMap(prev => ({
+        ...prev,
+        [projectId]: [...(prev[projectId] || []), data[0]]
+      }));
+      
+      setNewComment("");
+    } catch (err: any) {
+      console.error("Comment error:", err.message);
+    } finally {
+      setSendingComment(false);
+    }
   };
 
   const handleSignOut = async () => {
@@ -260,14 +270,12 @@ export default function Dashboard() {
         {showWelcome && <WelcomeNameModal onClose={() => setShowWelcome(false)} userName={isAdmin ? "Sulaiman" : "Client"} />}
         {isSettingsOpen && <AccountSettings onClose={() => setIsSettingsOpen(false)} userEmail={user?.email} />}
 
-        {/* ALWAYS SHOW ANALYTICS (Charts/Boxes) */}
         <div className="mb-8">
            <AnalyticsDashboard stats={stats} COLORS={COLORS} />
         </div>
 
         <div className="grid gap-6 md:grid-cols-3">
           <div className="md:col-span-2 space-y-6">
-            {/* ONLY ADMIN CAN CREATE PROJECTS */}
             <ProjectManagement 
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
@@ -281,7 +289,6 @@ export default function Dashboard() {
               isAdmin={isAdmin} 
             />
 
-            {/* ONLY ADMIN CAN ONBOARD CLIENTS */}
             {isAdmin && (
               <OnboardClient 
                 inviteEmail={inviteEmail}
@@ -292,7 +299,6 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* QUICK ACTIONS SIDEBAR: ONLY SHOW TO ADMIN */}
           {isAdmin && (
             <div>
               <div className="bg-card/30 border border-border/50 p-4 rounded-2xl">
@@ -307,7 +313,6 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* PROJECT WORKSPACE: Shared by both, but logic inside ProjectCard handles button visibility */}
         <div className="mt-12">
           <h2 className="text-xl font-bold tracking-tight mb-6">
             {isAdmin ? "Project Status Workspace" : "Your Active Projects"}
@@ -320,43 +325,38 @@ export default function Dashboard() {
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {filteredProjects.map((project: any) => (
-                <div key={project.id} className="flex flex-col gap-3">
-                  <ProjectCard 
-                    project={project}
-                    isAdmin={isAdmin}
-                    editingId={editingId}
-                    editTitle={editTitle}
-                    setEditTitle={setEditTitle}
-                    startEdit={startEdit}
-                    saveEdit={saveEdit}
-                    setEditingId={setEditingId}
-                    updateStatus={updateStatus}
-                    assignUser={assignUser}
-                    handleDelete={handleDelete}
-                    handleFileUpload={handleFileUpload}
-                    toggleComments={toggleComments}
-                    openCommentsId={openCommentsId}
-                    comments={commentsMap[project.id] || []}
-                    newComment={newComment}
-                    setNewComment={setNewComment}
-                    sendingComment={sendingComment}
-                    sendComment={sendComment}
-                    unreadCounts={unreadCounts}
-                    clientEmails={clientEmails}
-                    downloadFile={downloadFile}
-                    statusColors={statusColors}
-                  />
-                  {openCommentsId === project.id && (
-                    <ProjectComments projectId={project.id} />
-                  )}
-                </div>
+                <ProjectCard 
+                  key={project.id}
+                  project={project}
+                  isAdmin={isAdmin}
+                  editingId={editingId}
+                  editTitle={editTitle}
+                  setEditTitle={setEditTitle}
+                  startEdit={startEdit}
+                  saveEdit={saveEdit}
+                  setEditingId={setEditingId}
+                  updateStatus={updateStatus}
+                  assignUser={assignUser}
+                  handleDelete={handleDelete}
+                  handleFileUpload={handleFileUpload}
+                  toggleComments={toggleComments}
+                  openCommentsId={openCommentsId}
+                  comments={commentsMap[project.id] || []}
+                  newComment={newComment}
+                  setNewComment={setNewComment}
+                  sendingComment={sendingComment}
+                  sendComment={sendComment}
+                  unreadCounts={unreadCounts}
+                  clientEmails={clientEmails}
+                  downloadFile={downloadFile}
+                  statusColors={statusColors}
+                />
               ))}
             </div>
           )}
         </div>
       </main>
 
-      {/* Overlay System for Admin Forms */}
       <AnimatePresence>
         {activeOverlay && (
           <motion.div 
