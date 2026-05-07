@@ -11,13 +11,13 @@ interface AdminNavProps {
 
 export function AdminNav({ setLocation, setIsCertOpen, setActiveOverlay }: AdminNavProps) {
   const adminItems = [
-    // NAVIGATE TO NEW PAGE
+    // These use 'path' to navigate to a new page
     { label: 'Create New Post', icon: Send, path: '/create-post' },
     { label: 'View Agreements', icon: FileText, path: '/agreements' },
     { label: 'Studio Insights', icon: BarChart3, path: '/studio-insights' },
     { label: 'Manage Storefront', icon: ShoppingBag, path: '/admin/manage-shop' },
 
-    // SHOW OVERLAY ON DASHBOARD
+    // These use 'action' to open an overlay on the current page
     { label: 'Generate Receipt', icon: ReceiptIcon, action: () => setActiveOverlay('receipt') },
     { label: 'Generate Invoice', icon: FileText, action: () => setActiveOverlay('invoice') },
     { label: 'View Questionnaires', icon: ClipboardList, action: () => setActiveOverlay('questionnaires') },
