@@ -86,7 +86,7 @@ export default function Dashboard() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteLoading, setInviteLoading] = useState(false);
 
-  const [notifications] = useState<string[]>([
+  const [notifications, setNotifications] = useState<string[]>([
     "Project request received from dashboard portal.",
     "System data initialized and ready."
   ]);
@@ -155,21 +155,34 @@ export default function Dashboard() {
     setNewClient("");
   };
 
+  // RESTORED: Functional onboarding logic using your original /api/onboard endpoint
   const handleInviteClient = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteEmail.trim()) return;
-    
+
     setInviteLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      console.log("Onboarding client:", inviteEmail);
-      
-      // Success logic
-      setInviteEmail("");
-      // You can add a toast notification here later
-    } catch (error) {
-      console.error("Onboarding failed:", error);
+      const response = await fetch('/api/onboard', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: inviteEmail }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to send portal invite.");
+      }
+
+      setNotifications(prev => [result.message, ...prev]);
+      setInviteEmail(""); 
+      alert(`Invitation successfully sent to ${inviteEmail}`);
+
+    } catch (err: any) {
+      console.error("Onboarding error:", err);
+      alert(err.message || "An error occurred while sending the invite.");
     } finally {
       setInviteLoading(false);
     }
@@ -269,7 +282,7 @@ export default function Dashboard() {
               isAdmin={isAdmin}
             />
 
-            {/* NEW ONBOARD CLIENT BOX POSITION */}
+            {/* Layout Preserved: Onboard Client box positioned directly below Project Management */}
             <OnboardClient 
               inviteEmail={inviteEmail}
               setInviteEmail={setInviteEmail}
