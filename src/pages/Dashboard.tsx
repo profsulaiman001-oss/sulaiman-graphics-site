@@ -21,10 +21,10 @@ import { ProjectManagement } from "@/components/dashboard/ProjectManagement";
 import WelcomeNameModal from "@/components/dashboard/WelcomeNameModal";
 import { CertificateGenerator } from "./components/certificates/CertificateGenerator";
 
-// NEW: Imports for Overlay components
-import Receipt from "@/pages/receipt";
-import Invoice from "@/pages/invoice";
-import Questionnaires from "@/pages/questionnaires";
+// FIXED: Exact match for your capitalized filenames
+import Receipt from "@/pages/Receipt";
+import Invoice from "@/pages/Invoice";
+import Questionnaires from "@/pages/Questionnaires";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
@@ -57,7 +57,7 @@ export default function Dashboard() {
   const [isCertOpen, setIsCertOpen] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
   
-  // NEW: State for active overlay
+  // Overlay state
   const [activeOverlay, setActiveOverlay] = useState<string | null>(null);
 
   const statusColors: { [key: string]: string } = {
@@ -287,8 +287,7 @@ export default function Dashboard() {
 
           <div>
             <div className="bg-card/30 border border-border/50 p-4 rounded-2xl">
-              <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4 font-bold border-b border-border/20 pb-2">Admin Tools</h2>
-              {/* SURGICAL FIX: AdminNav now receives the setActiveOverlay prop */}
+              <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Quick Actions</h2>
               <AdminNav 
                 setLocation={setLocation} 
                 setIsCertOpen={setIsCertOpen} 
@@ -344,7 +343,7 @@ export default function Dashboard() {
         </div>
       </main>
 
-      {/* OVERLAY SYSTEM: Renders Invoices, Receipts, and Questionnaires */}
+      {/* Overlay System */}
       <AnimatePresence>
         {activeOverlay && (
           <motion.div 
