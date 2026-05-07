@@ -21,10 +21,10 @@ import { ProjectManagement } from "@/components/dashboard/ProjectManagement";
 import WelcomeNameModal from "@/components/dashboard/WelcomeNameModal";
 import { CertificateGenerator } from "./components/certificates/CertificateGenerator";
 
-// FIXED: Exact match for your capitalized filenames
+// FIXED: Matching your specific file naming (Singular Questionnaire)
 import Receipt from "./Receipt";
 import Invoice from "./Invoice";
-import Questionnaires from "./Questionnaires";
+import Questionnaires from "./Questionnaire";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
