@@ -22,9 +22,9 @@ import WelcomeNameModal from "@/components/dashboard/WelcomeNameModal";
 import { CertificateGenerator } from "./components/certificates/CertificateGenerator";
 
 // FIXED: Exact match for your capitalized filenames
-import Receipt from "@/pages/Receipt";
-import Invoice from "@/pages/Invoice";
-import Questionnaires from "@/pages/Questionnaires";
+import Receipt from "@/pages/Receipt.tsx";
+import Invoice from "@/pages/Invoice.tsx";
+import Questionnaires from "@/pages/Questionnaires.tsx";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
