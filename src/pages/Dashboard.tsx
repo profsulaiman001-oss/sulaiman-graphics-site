@@ -68,12 +68,11 @@ export default function Dashboard() {
       }
       setUser(user);
       
-      // Admin Check: Set this to your actual admin email
       const adminStatus = user.email === "profsulaiman001@gmail.com";
       setIsAdmin(adminStatus);
       
       fetchProjects(user, adminStatus);
-      fetchClientEmails();
+      fetchClientEmails(); // Modified to fetch permanent data
     };
     initializeDashboard();
   }, []);
@@ -84,7 +83,6 @@ export default function Dashboard() {
     try {
       let query = supabase.from("projects").select("*").order("created_at", { ascending: false });
       
-      // LOGIC: If NOT admin, only show projects assigned to this email 
       if (!admin) {
         query = query.eq("client_email", currentUser.email);
       }
@@ -99,17 +97,23 @@ export default function Dashboard() {
     }
   };
 
-  // 3. Fetch list of potential clients for the dropdown 
+  // 3. SURGICAL FIX: Fetch list from both tables to ensure persistence
   const fetchClientEmails = async () => {
     try {
-      // Fetch unique emails from the profiles table (synced with users)
-      const { data, error } = await supabase.from("profiles").select("email");
-      if (error) throw error;
+      // Get emails from registered profiles
+      const { data: profileData } = await supabase.from("profiles").select("email");
       
-      const emails = data.map(p => p.email).filter(Boolean);
-      setClientEmails(Array.from(new Set(emails)));
+      // Get emails from projects (catches emails assigned but not yet registered)
+      const { data: projectData } = await supabase.from("projects").select("client_email");
+      
+      const profileEmails = profileData?.map(p => p.email) || [];
+      const projectEmails = projectData?.map(p => p.client_email) || [];
+      
+      // Combine, filter out nulls, and remove duplicates
+      const allEmails = Array.from(new Set([...profileEmails, ...projectEmails])).filter(Boolean) as string[];
+      setClientEmails(allEmails);
     } catch (err) {
-      console.error("Could not fetch client list:", err);
+      console.error("Could not fetch permanent client list:", err);
     }
   };
 
@@ -151,7 +155,7 @@ export default function Dashboard() {
 
       setNotifications(prev => [result.message, ...prev]);
       
-      // LOGIC: Immediately update the dropdown list so the new client appears 
+      // Immediately update local state for smooth UX
       setClientEmails(prev => Array.from(new Set([...prev, inviteEmail])));
       
       setInviteEmail(""); 
@@ -187,7 +191,6 @@ export default function Dashboard() {
   };
 
   const handleFileUpload = async (id: string, file: File) => {
-    // Implement your storage upload logic here
     const fakeUrl = URL.createObjectURL(file);
     const { error } = await supabase.from("projects").update({ file_url: fakeUrl, status: "Completed" }).eq("id", id);
     if (!error) fetchProjects(user, isAdmin);
@@ -209,7 +212,6 @@ export default function Dashboard() {
     }]);
     if (!error) {
       setNewComment("");
-      // Refresh logic for comments here
     }
     setSendingComment(false);
   };
