@@ -65,7 +65,6 @@ export function ProjectCard({
 
   return (
     <motion.div 
-      key={project.id}
       className="bg-card border border-border/60 rounded-3xl overflow-hidden flex flex-col shadow-sm hover:shadow-md transition-all duration-300"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
@@ -80,7 +79,7 @@ export function ProjectCard({
                 autoFocus
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
-                className="bg-background border border-border rounded-md px-2 py-1 text-xs focus:border-primary outline-none text-foreground w-full max-w-[150px]"
+                className="bg-background border border-border rounded-md px-2 py-1 text-xs focus:border-primary outline-none text-white w-full max-w-[150px]"
               />
               <button onClick={saveEdit} className="text-primary hover:text-primary/80 transition-colors"><Save size={14} /></button>
               <button onClick={() => setEditingId(null)} className="text-red-500"><XCircle size={14} /></button>
@@ -109,6 +108,7 @@ export function ProjectCard({
               <div className="flex-1 overflow-y-auto space-y-3 mb-2 pr-1 custom-scrollbar text-left">
                 {comments.length > 0 ? (
                   comments.map((msg: any) => (
+                    /* FIXED: Logic to check if the current message belongs to the active session user */
                     <div key={msg.id} className={`flex flex-col ${msg.is_admin === isAdmin ? 'items-end' : 'items-start'}`}>
                       <span className="text-[7px] font-bold text-muted-foreground mb-0.5 uppercase tracking-tighter">
                         {msg.is_admin ? "Sulaiman Graphics" : "Client"}
@@ -141,7 +141,8 @@ export function ProjectCard({
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && sendComment(project.id)}
-                  className="flex-1 bg-muted/50 border border-border rounded-lg px-3 text-[10px] outline-none focus:border-primary transition-all"
+                  /* FIXED: Added bg-background and text-white for "Studio" theme compatibility */
+                  className="flex-1 bg-background border border-border rounded-lg px-3 text-[10px] text-white outline-none focus:border-primary transition-all"
                 />
                 <button onClick={() => sendComment(project.id)} disabled={sendingComment || !newComment.trim()} className="bg-primary text-white w-7 h-7 rounded-lg flex items-center justify-center disabled:opacity-50">
                   {sendingComment ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
@@ -159,13 +160,11 @@ export function ProjectCard({
                 </div>
               ) : (
                 <>
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-3 shadow-inner ${
-                    project.status === "Completed" ? "bg-green-500/10 text-green-500" : "bg-primary/10 text-primary"
-                  }`}>
-                    {project.status === "Completed" ? <CheckCircle size={28} /> : <Clock size={28} className="animate-pulse" />}
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-3 shadow-inner bg-primary/10 text-primary`}>
+                    <Clock size={28} className="animate-pulse" />
                   </div>
                   <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">
-                    {project.status === "Completed" ? "Files Ready" : "Production"}
+                    Production
                   </div>
                 </>
               )}
@@ -174,7 +173,7 @@ export function ProjectCard({
         </AnimatePresence>
       </div>
 
-      {/* PROGRESS BAR (The Premium Touch) */}
+      {/* PROGRESS BAR */}
       <div className="px-4 py-2">
         <div className="flex justify-between items-center mb-1">
           <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-tighter">Project Status</span>
@@ -226,7 +225,7 @@ export function ProjectCard({
                   <select 
                     value={project.client_email || ""} 
                     onChange={(e) => assignUser(project.id, e.target.value)}
-                    className="bg-background border border-border rounded-lg px-2 py-1 text-[10px] outline-none max-w-[100px] text-muted-foreground"
+                    className="bg-background border border-border rounded-lg px-2 py-1 text-[10px] text-white outline-none max-w-[100px]"
                   >
                     <option value="">Assign</option>
                     {clientEmails.map(email => <option key={email} value={email}>{email}</option>)}
@@ -234,7 +233,7 @@ export function ProjectCard({
                   <select 
                     value={project.status} 
                     onChange={(e) => updateStatus(project.id, e.target.value)}
-                    className="bg-background border border-border rounded-lg px-2 py-1 text-[10px] outline-none text-muted-foreground"
+                    className="bg-background border border-border rounded-lg px-2 py-1 text-[10px] text-white outline-none"
                   >
                     <option value="Pending">Pending</option>
                     <option value="In Progress">Active</option>
