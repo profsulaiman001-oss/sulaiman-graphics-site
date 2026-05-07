@@ -24,7 +24,7 @@ import { CertificateGenerator } from "./components/certificates/CertificateGener
 // FIXED: Matching your specific file naming (Singular Questionnaire)
 import Receipt from "./Receipt";
 import Invoice from "./Invoice";
-import Questionnaires from "./Questionnaire";
+import ViewQuestionnaires from "./ViewQuestionnaire";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
