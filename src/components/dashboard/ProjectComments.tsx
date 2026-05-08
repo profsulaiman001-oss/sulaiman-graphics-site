@@ -41,14 +41,18 @@ export function ProjectComments({
         </button>
       </div>
       
-      <div className="flex-1 overflow-y-auto space-y-3 mb-3 pr-1 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto space-y-4 mb-3 pr-1 custom-scrollbar">
         {comments.length > 0 ? (
           comments.map((msg: any) => (
             <div key={msg.id} className={`flex flex-col ${msg.is_admin === isAdmin ? 'items-end' : 'items-start'}`}>
-              <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-[11px] shadow-sm ${
+              <span className="text-[7px] font-bold text-muted-foreground mb-1 uppercase tracking-tighter">
+                {msg.is_admin ? "Sulaiman Graphics" : "Client"}
+              </span>
+              {/* UPDATED: Rectangular with Fillets (rounded-xl) */}
+              <div className={`max-w-[85%] rounded-xl px-3 py-2.5 text-[11px] leading-relaxed shadow-sm ${
                 msg.is_admin === isAdmin 
-                  ? 'bg-cyan-600 text-white border-none' 
-                  : 'bg-muted border border-border/50 text-foreground'
+                  ? 'bg-cyan-600 text-white rounded-tr-none' 
+                  : 'bg-muted border border-border/50 text-foreground rounded-tl-none'
               }`}>
                 {msg.message}
               </div>
@@ -69,6 +73,7 @@ export function ProjectComments({
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && sendComment(projectId)}
+          /* FIXED: Studio Dark Input Style */
           className="flex-1 px-4 py-2 text-[11px] bg-[#0d0d0d] border border-border/40 rounded-xl text-white focus:outline-none focus:border-cyan-500/50"
         />
         <button 
