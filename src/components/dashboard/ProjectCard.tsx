@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Edit3, Trash2, Save, XCircle, CheckCircle, Clock, Loader2, Download, 
-  MessageSquare, HardDrive, Send, thumbsUp, RotateCcw
+  MessageSquare, HardDrive, Send 
 } from "lucide-react";
 
 interface ProjectCardProps {
@@ -56,17 +56,14 @@ export function ProjectCard({
   statusColors,
 }: ProjectCardProps) {
 
-  // Updated Progress Logic to include "Awaiting Review"
   const getProgress = (status: string) => {
     if (status === "Completed") return 100;
-    if (status === "Awaiting Review") return 85;
     if (status === "In Progress") return 65;
     return 25;
   };
 
   return (
     <motion.div 
-      key={project.id}
       className="bg-card border border-border/60 rounded-3xl overflow-hidden flex flex-col shadow-sm hover:shadow-md transition-all duration-300"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
@@ -81,7 +78,7 @@ export function ProjectCard({
                 autoFocus
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
-                className="bg-background border border-border rounded-md px-2 py-1 text-xs focus:border-primary outline-none text-foreground w-full max-w-[150px]"
+                className="bg-background border border-border rounded-md px-2 py-1 text-xs focus:border-primary outline-none text-white w-full max-w-[150px]"
               />
               <button onClick={saveEdit} className="text-primary hover:text-primary/80 transition-colors"><Save size={14} /></button>
               <button onClick={() => setEditingId(null)} className="text-red-500"><XCircle size={14} /></button>
@@ -93,14 +90,13 @@ export function ProjectCard({
             </div>
           )}
         </div>
-
         <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${statusColors[project.status] || "bg-card"}`}>
           {project.status}
         </span>
       </div>
 
-      {/* CENTER WORKSPACE */}
-      <div className="flex-1 min-h-[180px] flex flex-col items-center justify-center relative overflow-hidden bg-muted/5">
+      {/* CENTER WORKSPACE (Preview or Messages) */}
+      <div className="flex-1 min-h-[220px] flex flex-col items-center justify-center relative overflow-hidden bg-muted/5">
         <AnimatePresence mode="wait">
           {openCommentsId === project.id ? (
             <motion.div 
@@ -119,6 +115,9 @@ export function ProjectCard({
                       }`}>
                         {msg.message}
                       </div>
+                      <span className="text-[7px] text-muted-foreground mt-0.5 opacity-60">
+                        {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
                     </div>
                   ))
                 ) : (
@@ -139,7 +138,7 @@ export function ProjectCard({
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && sendComment(project.id)}
-                  className="flex-1 bg-muted/50 border border-border rounded-lg px-3 text-[10px] outline-none focus:border-primary transition-all"
+                  className="flex-1 bg-background border border-border rounded-lg px-3 text-[10px] text-white outline-none focus:border-primary transition-all"
                 />
                 <button onClick={() => sendComment(project.id)} disabled={sendingComment || !newComment.trim()} className="bg-primary text-white w-7 h-7 rounded-lg flex items-center justify-center disabled:opacity-50">
                   {sendingComment ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
@@ -149,21 +148,29 @@ export function ProjectCard({
           ) : (
             <motion.div className="flex flex-col items-center justify-center p-4 w-full h-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               {project.file_url ? (
-                <div className="relative group w-full h-full flex items-center justify-center p-2">
-                  <img src={project.file_url} className="max-h-full max-w-full object-contain rounded-lg shadow-xl" alt="Preview" />
-                  <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center pointer-events-none">
-                    <CheckCircle className="text-primary" size={30} />
-                  </div>
+                <div className="relative group w-full h-full flex items-center justify-center overflow-hidden rounded-xl">
+                  {/* Fixed object-contain to support 4:5 aspect ratio */}
+                  <img 
+                    src={project.file_url} 
+                    className="max-h-[200px] w-auto object-contain rounded-lg shadow-xl transition-transform duration-500 group-hover:scale-105" 
+                    alt="Preview" 
+                  />
+                  {isAdmin && (
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                       <label className="cursor-pointer p-2 bg-primary text-white rounded-full">
+                          <HardDrive size={16} />
+                          <input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files && handleFileUpload(project.id, e.target.files[0])} />
+                       </label>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <>
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-3 shadow-inner ${
-                    project.status === "Completed" ? "bg-green-500/10 text-green-500" : "bg-primary/10 text-primary"
-                  }`}>
-                    {project.status === "Completed" ? <CheckCircle size={28} /> : <Clock size={28} className="animate-pulse" />}
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-3 shadow-inner bg-primary/10 text-primary`}>
+                    <Clock size={28} className="animate-pulse" />
                   </div>
                   <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">
-                    {project.status === "Completed" ? "Approved" : "In Production"}
+                    Production
                   </div>
                 </>
               )}
@@ -191,27 +198,7 @@ export function ProjectCard({
       {/* FOOTER ACTIONS */}
       <div className="p-4 bg-muted/5 border-t border-border">
         <div className="flex flex-col gap-3">
-          
-          {/* CLIENT APPROVAL VIEW */}
-          {!isAdmin && project.status === "Awaiting Review" ? (
-            <div className="flex flex-col gap-2">
-              <span className="text-[8px] font-bold text-center text-purple-500 uppercase tracking-widest">Design Awaiting Approval</span>
-              <div className="grid grid-cols-2 gap-2">
-                <button 
-                  onClick={() => updateStatus(project.id, "Completed")}
-                  className="h-8 flex items-center justify-center gap-2 rounded-xl bg-green-600 hover:bg-green-500 text-white font-bold text-[10px] transition-all shadow-md active:scale-95"
-                >
-                  <CheckCircle size={12} /> Approve
-                </button>
-                <button 
-                  onClick={() => toggleComments(project.id)}
-                  className="h-8 flex items-center justify-center gap-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 font-bold text-[10px] transition-all active:scale-95"
-                >
-                  <RotateCcw size={12} /> Revision
-                </button>
-              </div>
-            </div>
-          ) : project.file_url ? (
+          {project.file_url ? (
             <button 
               onClick={() => downloadFile(project.file_url, `${project.title}-design`)}
               className="w-full h-8 flex items-center justify-center gap-2 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-[10px] shadow-lg shadow-primary/20 transition-all active:scale-95"
@@ -244,7 +231,7 @@ export function ProjectCard({
                   <select 
                     value={project.client_email || ""} 
                     onChange={(e) => assignUser(project.id, e.target.value)}
-                    className="bg-background border border-border rounded-lg px-2 py-1 text-[10px] outline-none max-w-[80px] text-muted-foreground"
+                    className="bg-background border border-border rounded-lg px-2 py-1 text-[10px] text-white outline-none max-w-[100px]"
                   >
                     <option value="">Assign</option>
                     {clientEmails.map(email => <option key={email} value={email}>{email}</option>)}
@@ -252,13 +239,13 @@ export function ProjectCard({
                   <select 
                     value={project.status} 
                     onChange={(e) => updateStatus(project.id, e.target.value)}
-                    className="bg-background border border-border rounded-lg px-2 py-1 text-[10px] outline-none text-muted-foreground"
+                    className="bg-background border border-border rounded-lg px-2 py-1 text-[10px] text-white outline-none"
                   >
                     <option value="Pending">Pending</option>
                     <option value="In Progress">Active</option>
-                    <option value="Awaiting Review">Review</option>
                     <option value="Completed">Done</option>
                   </select>
+                  <button onClick={() => startEdit(project)} className="p-1.5 rounded-lg border border-border text-yellow-500 hover:bg-yellow-500/10 transition-colors"><Edit3 size={12}/></button>
                   <button onClick={() => handleDelete(project.id)} className="p-1.5 rounded-lg border border-border text-red-500 hover:bg-red-500/10 transition-colors"><Trash2 size={12}/></button>
                 </>
               )}
