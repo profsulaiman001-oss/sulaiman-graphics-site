@@ -185,21 +185,21 @@ export default function Dashboard() {
     try {
       setLoading(true);
       
-      // 1. Create a unique file path for the 'designs' bucket
+      // 1. Create a unique file path for the 'project-files' bucket
       const fileExt = file.name.split('.').pop();
       const fileName = `${id}-${Date.now()}.${fileExt}`;
       const filePath = `previews/${fileName}`;
 
-      // 2. Upload file to Supabase Storage
+      // 2. Upload file to Supabase Storage using 'project-files' bucket
       const { error: uploadError } = await supabase.storage
-        .from('designs')
+        .from('project-files')
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
       // 3. Get the Public URL
       const { data: { publicUrl } } = supabase.storage
-        .from('designs')
+        .from('project-files')
         .getPublicUrl(filePath);
 
       // 4. Update project in database with the permanent URL
@@ -213,7 +213,7 @@ export default function Dashboard() {
 
       if (dbError) throw dbError;
 
-      // 5. Refresh projects list to show the new visible preview
+      // 5. Refresh projects list
       fetchProjects(user, isAdmin);
     } catch (err: any) {
       console.error("Upload failed:", err.message);
