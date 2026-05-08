@@ -99,19 +99,6 @@ export default function Dashboard() {
     }
   };
 
-  // --- NEW: FETCH COMMENTS FOR PERSISTENCE ---
-  const fetchComments = async (projectId: string) => {
-    const { data, error } = await supabase
-      .from("comments")
-      .select("*")
-      .eq("project_id", projectId)
-      .order("created_at", { ascending: true });
-
-    if (!error && data) {
-      setCommentsMap(prev => ({ ...prev, [projectId]: data }));
-    }
-  };
-
   const fetchClientEmails = async () => {
     try {
       const { data: profileData } = await supabase.from("profiles").select("email");
@@ -194,50 +181,64 @@ export default function Dashboard() {
 
   const handleFileUpload = async (id: string, file: File) => {
     if (!isAdmin) return;
-    const fakeUrl = URL.createObjectURL(file);
-    const { error } = await supabase.from("projects").update({ file_url: fakeUrl, status: "Completed" }).eq("id", id);
-    if (!error) fetchProjects(user, isAdmin);
+    
+    try {
+      setLoading(true);
+      
+      // 1. Create a unique file path for the 'designs' bucket
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${id}-${Date.now()}.${fileExt}`;
+      const filePath = `previews/${fileName}`;
+
+      // 2. Upload file to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('designs')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // 3. Get the Public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('designs')
+        .getPublicUrl(filePath);
+
+      // 4. Update project in database with the permanent URL
+      const { error: dbError } = await supabase
+        .from("projects")
+        .update({ 
+          file_url: publicUrl, 
+          status: "Completed" 
+        })
+        .eq("id", id);
+
+      if (dbError) throw dbError;
+
+      // 5. Refresh projects list to show the new visible preview
+      fetchProjects(user, isAdmin);
+    } catch (err: any) {
+      console.error("Upload failed:", err.message);
+      alert("Error uploading file: " + err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // --- UPDATED: TOGGLE COMMENTS WITH FETCH ---
   const toggleComments = (id: string) => {
-    const isOpening = openCommentsId !== id;
-    setOpenCommentsId(isOpening ? id : null);
-    
-    if (isOpening) {
-      fetchComments(id); // Fetch persistence data from Supabase
-    }
+    setOpenCommentsId(openCommentsId === id ? null : id);
     setUnreadCounts({ ...unreadCounts, [id]: 0 });
   };
 
-  // --- UPDATED: SEND COMMENT WITH SYNC ---
   const sendComment = async (projectId: string) => {
     if (!newComment.trim()) return;
     setSendingComment(true);
-    
-    try {
-      const { data, error } = await supabase.from("comments").insert([{
-        project_id: projectId,
-        is_admin: isAdmin,
-        message: newComment,
-        user_id: user.id
-      }]).select(); // Important to get the returned record with timestamp
-
-      if (error) throw error;
-
-      if (data) {
-        // Update local state instantly so it stays in the box
-        setCommentsMap(prev => ({
-          ...prev,
-          [projectId]: [...(prev[projectId] || []), data[0]]
-        }));
-        setNewComment("");
-      }
-    } catch (err: any) {
-      console.error("Comment delivery failed:", err.message);
-    } finally {
-      setSendingComment(false);
-    }
+    const { error } = await supabase.from("comments").insert([{
+      project_id: projectId,
+      is_admin: isAdmin,
+      message: newComment,
+      user_id: user.id
+    }]);
+    if (!error) setNewComment("");
+    setSendingComment(false);
   };
 
   const handleSignOut = async () => {
@@ -345,32 +346,36 @@ export default function Dashboard() {
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {filteredProjects.map((project: any) => (
-                <ProjectCard 
-                  key={project.id}
-                  project={project}
-                  isAdmin={isAdmin}
-                  editingId={editingId}
-                  editTitle={editTitle}
-                  setEditTitle={setEditTitle}
-                  startEdit={startEdit}
-                  saveEdit={saveEdit}
-                  setEditingId={setEditingId}
-                  updateStatus={updateStatus}
-                  assignUser={assignUser}
-                  handleDelete={handleDelete}
-                  handleFileUpload={handleFileUpload}
-                  toggleComments={toggleComments}
-                  openCommentsId={openCommentsId}
-                  comments={commentsMap[project.id] || []}
-                  newComment={newComment}
-                  setNewComment={setNewComment}
-                  sendingComment={sendingComment}
-                  sendComment={sendComment}
-                  unreadCounts={unreadCounts}
-                  clientEmails={clientEmails}
-                  downloadFile={downloadFile}
-                  statusColors={statusColors}
-                />
+                <div key={project.id} className="flex flex-col gap-3">
+                  <ProjectCard 
+                    project={project}
+                    isAdmin={isAdmin}
+                    editingId={editingId}
+                    editTitle={editTitle}
+                    setEditTitle={setEditTitle}
+                    startEdit={startEdit}
+                    saveEdit={saveEdit}
+                    setEditingId={setEditingId}
+                    updateStatus={updateStatus}
+                    assignUser={assignUser}
+                    handleDelete={handleDelete}
+                    handleFileUpload={handleFileUpload}
+                    toggleComments={toggleComments}
+                    openCommentsId={openCommentsId}
+                    comments={commentsMap[project.id] || []}
+                    newComment={newComment}
+                    setNewComment={setNewComment}
+                    sendingComment={sendingComment}
+                    sendComment={sendComment}
+                    unreadCounts={unreadCounts}
+                    clientEmails={clientEmails}
+                    downloadFile={downloadFile}
+                    statusColors={statusColors}
+                  />
+                  {openCommentsId === project.id && (
+                    <ProjectComments projectId={project.id} />
+                  )}
+                </div>
               ))}
             </div>
           )}
