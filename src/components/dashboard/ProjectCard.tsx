@@ -56,7 +56,6 @@ export function ProjectCard({
   statusColors,
 }: ProjectCardProps) {
 
-  // Premium Progress Logic
   const getProgress = (status: string) => {
     if (status === "Completed") return 100;
     if (status === "In Progress") return 65;
@@ -91,14 +90,13 @@ export function ProjectCard({
             </div>
           )}
         </div>
-
         <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${statusColors[project.status] || "bg-card"}`}>
           {project.status}
         </span>
       </div>
 
       {/* CENTER WORKSPACE (Preview or Messages) */}
-      <div className="flex-1 min-h-[180px] flex flex-col items-center justify-center relative overflow-hidden bg-muted/5">
+      <div className="flex-1 min-h-[220px] flex flex-col items-center justify-center relative overflow-hidden bg-muted/5">
         <AnimatePresence mode="wait">
           {openCommentsId === project.id ? (
             <motion.div 
@@ -108,7 +106,6 @@ export function ProjectCard({
               <div className="flex-1 overflow-y-auto space-y-3 mb-2 pr-1 custom-scrollbar text-left">
                 {comments.length > 0 ? (
                   comments.map((msg: any) => (
-                    /* FIXED: Logic to check if the current message belongs to the active session user */
                     <div key={msg.id} className={`flex flex-col ${msg.is_admin === isAdmin ? 'items-end' : 'items-start'}`}>
                       <span className="text-[7px] font-bold text-muted-foreground mb-0.5 uppercase tracking-tighter">
                         {msg.is_admin ? "Sulaiman Graphics" : "Client"}
@@ -141,7 +138,6 @@ export function ProjectCard({
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && sendComment(project.id)}
-                  /* FIXED: Added bg-background and text-white for "Studio" theme compatibility */
                   className="flex-1 bg-background border border-border rounded-lg px-3 text-[10px] text-white outline-none focus:border-primary transition-all"
                 />
                 <button onClick={() => sendComment(project.id)} disabled={sendingComment || !newComment.trim()} className="bg-primary text-white w-7 h-7 rounded-lg flex items-center justify-center disabled:opacity-50">
@@ -152,11 +148,21 @@ export function ProjectCard({
           ) : (
             <motion.div className="flex flex-col items-center justify-center p-4 w-full h-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               {project.file_url ? (
-                <div className="relative group w-full h-full flex items-center justify-center p-2">
-                  <img src={project.file_url} className="max-h-full max-w-full object-contain rounded-lg shadow-xl" alt="Preview" />
-                  <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center pointer-events-none">
-                    <CheckCircle className="text-primary" size={30} />
-                  </div>
+                <div className="relative group w-full h-full flex items-center justify-center overflow-hidden rounded-xl">
+                  {/* Fixed object-contain to support 4:5 aspect ratio */}
+                  <img 
+                    src={project.file_url} 
+                    className="max-h-[200px] w-auto object-contain rounded-lg shadow-xl transition-transform duration-500 group-hover:scale-105" 
+                    alt="Preview" 
+                  />
+                  {isAdmin && (
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                       <label className="cursor-pointer p-2 bg-primary text-white rounded-full">
+                          <HardDrive size={16} />
+                          <input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files && handleFileUpload(project.id, e.target.files[0])} />
+                       </label>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <>
