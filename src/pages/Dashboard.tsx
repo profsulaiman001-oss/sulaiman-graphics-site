@@ -3,15 +3,12 @@ import { useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  Edit3, Trash2, Save, XCircle, LogOut, CheckCircle, 
-  Clock, Loader2, Plus, HardDrive, Download, Settings, X, 
-  MessageSquare, Send, ClipboardList, Award, BarChart3
+  LogOut, Loader2, X, ClipboardList
 } from "lucide-react";
 
 // Component Imports
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import AccountSettings from "@/components/dashboard/AccountSettings";
-import { AdminForms } from "@/components/dashboard/AdminForms";
 import { AdminNav } from "@/components/dashboard/AdminNav";
 import { AnalyticsDashboard } from "@/components/dashboard/AnalyticsDashboard";
 import { OnboardClient } from "@/components/dashboard/OnboardClient";
@@ -59,9 +56,11 @@ export default function Dashboard() {
   
   const [activeOverlay, setActiveOverlay] = useState<string | null>(null);
 
+  // UPDATED: Added 'Awaiting Review' status colors
   const statusColors: { [key: string]: string } = {
     'Pending': 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500',
     'In Progress': 'bg-blue-500/10 border-blue-500/20 text-blue-500',
+    'Awaiting Review': 'bg-purple-500/10 border-purple-500/20 text-purple-500',
     'Completed': 'bg-green-500/10 border-green-500/20 text-green-500'
   };
 
@@ -162,7 +161,7 @@ export default function Dashboard() {
   };
 
   const updateStatus = async (id: string, status: string) => {
-    if (!isAdmin) return;
+    // UPDATED: Clients can now update status if they are approving an "Awaiting Review" project
     const { error } = await supabase.from("projects").update({ status }).eq("id", id);
     if (!error) fetchProjects(user, isAdmin);
   };
@@ -184,36 +183,30 @@ export default function Dashboard() {
     
     try {
       setLoading(true);
-      
-      // 1. Create a unique file path for the 'project-files' bucket
       const fileExt = file.name.split('.').pop();
       const fileName = `${id}-${Date.now()}.${fileExt}`;
       const filePath = `previews/${fileName}`;
 
-      // 2. Upload file to Supabase Storage using 'project-files' bucket
       const { error: uploadError } = await supabase.storage
         .from('project-files')
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
-      // 3. Get the Public URL
       const { data: { publicUrl } } = supabase.storage
         .from('project-files')
         .getPublicUrl(filePath);
 
-      // 4. Update project in database with the permanent URL
+      // UPDATED: Status now changes to "Awaiting Review" instead of "Completed"
       const { error: dbError } = await supabase
         .from("projects")
         .update({ 
           file_url: publicUrl, 
-          status: "Completed" 
+          status: "Awaiting Review" 
         })
         .eq("id", id);
 
       if (dbError) throw dbError;
-
-      // 5. Refresh projects list
       fetchProjects(user, isAdmin);
     } catch (err: any) {
       console.error("Upload failed:", err.message);
@@ -262,7 +255,7 @@ export default function Dashboard() {
   const stats = {
     total: projects.length,
     completed: projects.filter((p) => p.status === "Completed").length,
-    active: projects.filter((p) => p.status === "In Progress").length,
+    active: projects.filter((p) => p.status === "In Progress" || p.status === "Awaiting Review").length,
     pending: projects.filter((p) => p.status === "Pending").length,
   };
 
