@@ -99,6 +99,19 @@ export default function Dashboard() {
     }
   };
 
+  // --- NEW: FETCH COMMENTS FOR PERSISTENCE ---
+  const fetchComments = async (projectId: string) => {
+    const { data, error } = await supabase
+      .from("comments")
+      .select("*")
+      .eq("project_id", projectId)
+      .order("created_at", { ascending: true });
+
+    if (!error && data) {
+      setCommentsMap(prev => ({ ...prev, [projectId]: data }));
+    }
+  };
+
   const fetchClientEmails = async () => {
     try {
       const { data: profileData } = await supabase.from("profiles").select("email");
@@ -186,12 +199,18 @@ export default function Dashboard() {
     if (!error) fetchProjects(user, isAdmin);
   };
 
+  // --- UPDATED: TOGGLE COMMENTS WITH FETCH ---
   const toggleComments = (id: string) => {
-    setOpenCommentsId(openCommentsId === id ? null : id);
+    const isOpening = openCommentsId !== id;
+    setOpenCommentsId(isOpening ? id : null);
+    
+    if (isOpening) {
+      fetchComments(id); // Fetch persistence data from Supabase
+    }
     setUnreadCounts({ ...unreadCounts, [id]: 0 });
   };
 
-  // FIXED: Updated to refresh UI instantly upon sending
+  // --- UPDATED: SEND COMMENT WITH SYNC ---
   const sendComment = async (projectId: string) => {
     if (!newComment.trim()) return;
     setSendingComment(true);
@@ -202,19 +221,20 @@ export default function Dashboard() {
         is_admin: isAdmin,
         message: newComment,
         user_id: user.id
-      }]).select();
+      }]).select(); // Important to get the returned record with timestamp
 
       if (error) throw error;
 
-      // Update local state instantly
-      setCommentsMap(prev => ({
-        ...prev,
-        [projectId]: [...(prev[projectId] || []), data[0]]
-      }));
-      
-      setNewComment("");
+      if (data) {
+        // Update local state instantly so it stays in the box
+        setCommentsMap(prev => ({
+          ...prev,
+          [projectId]: [...(prev[projectId] || []), data[0]]
+        }));
+        setNewComment("");
+      }
     } catch (err: any) {
-      console.error("Comment error:", err.message);
+      console.error("Comment delivery failed:", err.message);
     } finally {
       setSendingComment(false);
     }
