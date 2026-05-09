@@ -70,6 +70,7 @@ export function ProjectCard({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
     >
+      {/* HEADER SECTION */}
       <div className="p-4 border-b border-border flex justify-between items-center bg-muted/10">
         <div className="flex-1 min-w-0">
           {editingId === project.id ? (
@@ -96,6 +97,7 @@ export function ProjectCard({
         </span>
       </div>
 
+      {/* CENTER WORKSPACE */}
       <div className="flex-1 min-h-[220px] flex flex-col items-center justify-center relative overflow-hidden bg-muted/5">
         <AnimatePresence mode="wait">
           {openCommentsId === project.id ? (
@@ -164,6 +166,7 @@ export function ProjectCard({
         </AnimatePresence>
       </div>
 
+      {/* PROGRESS & REVISIONS */}
       <div className="px-4 py-2">
         <div className="flex justify-between items-center mb-1">
           <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-tighter">Project Status</span>
@@ -205,8 +208,23 @@ export function ProjectCard({
         )}
       </div>
 
+      {/* FOOTER ACTIONS */}
       <div className="p-4 bg-muted/5 border-t border-border">
         <div className="flex flex-col gap-3">
+          {/* Main Download Button: Opens and Downloads latest version */}
+          {versions && versions.length > 0 ? (
+            <button 
+              onClick={() => downloadFile(versions[0].file_url, `${project.title}-latest`)}
+              className="w-full h-8 flex items-center justify-center gap-2 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-[10px] shadow-lg shadow-primary/20 transition-all active:scale-95"
+            >
+              <Download size={12} /> Open & Download Latest Assets
+            </button>
+          ) : !isAdmin && (
+            <div className="w-full text-center text-muted-foreground text-[9px] py-2 border border-dashed border-border rounded-xl font-medium uppercase tracking-tight">
+              Design production in progress...
+            </div>
+          )}
+
           {isAdmin && (
             <label className="w-full h-8 flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border/60 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer text-[10px] font-bold text-muted-foreground hover:text-primary">
               <Plus size={14} /> Upload New Version
