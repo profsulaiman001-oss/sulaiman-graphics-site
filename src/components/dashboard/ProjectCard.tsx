@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Edit3, Trash2, Save, XCircle, CheckCircle, Clock, Loader2, Download, 
-  MessageSquare, HardDrive, Send 
+  MessageSquare, HardDrive, Send, Plus 
 } from "lucide-react";
 
 interface ProjectCardProps {
@@ -20,6 +20,7 @@ interface ProjectCardProps {
   toggleComments: (id: string) => void;
   openCommentsId: string | null;
   comments: any[];
+  versions: any[];
   newComment: string;
   setNewComment: (val: string) => void;
   sendingComment: boolean;
@@ -46,6 +47,7 @@ export function ProjectCard({
   toggleComments,
   openCommentsId,
   comments,
+  versions,
   newComment,
   setNewComment,
   sendingComment,
@@ -68,7 +70,6 @@ export function ProjectCard({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
     >
-      {/* HEADER SECTION */}
       <div className="p-4 border-b border-border flex justify-between items-center bg-muted/10">
         <div className="flex-1 min-w-0">
           {editingId === project.id ? (
@@ -95,7 +96,6 @@ export function ProjectCard({
         </span>
       </div>
 
-      {/* CENTER WORKSPACE (Preview or Messages) */}
       <div className="flex-1 min-h-[220px] flex flex-col items-center justify-center relative overflow-hidden bg-muted/5">
         <AnimatePresence mode="wait">
           {openCommentsId === project.id ? (
@@ -126,12 +126,6 @@ export function ProjectCard({
               </div>
               
               <div className="flex gap-1.5 border-t border-border pt-2">
-                {isAdmin && (
-                  <label className="w-7 h-7 flex items-center justify-center rounded-lg border border-border bg-background hover:bg-muted cursor-pointer transition-colors">
-                    <input type="file" className="hidden" accept="image/*,application/pdf" onChange={(e) => e.target.files && handleFileUpload(project.id, e.target.files[0])} />
-                    <HardDrive size={12} className="text-muted-foreground" />
-                  </label>
-                )}
                 <input
                   type="text"
                   placeholder="Reply..."
@@ -149,20 +143,11 @@ export function ProjectCard({
             <motion.div className="flex flex-col items-center justify-center p-4 w-full h-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               {project.file_url ? (
                 <div className="relative group w-full h-full flex items-center justify-center overflow-hidden rounded-xl">
-                  {/* Fixed object-contain to support 4:5 aspect ratio */}
                   <img 
                     src={project.file_url} 
                     className="max-h-[200px] w-auto object-contain rounded-lg shadow-xl transition-transform duration-500 group-hover:scale-105" 
                     alt="Preview" 
                   />
-                  {isAdmin && (
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                       <label className="cursor-pointer p-2 bg-primary text-white rounded-full">
-                          <HardDrive size={16} />
-                          <input type="file" className="hidden" accept="image/*" onChange={(e) => e.target.files && handleFileUpload(project.id, e.target.files[0])} />
-                       </label>
-                    </div>
-                  )}
                 </div>
               ) : (
                 <>
@@ -179,7 +164,6 @@ export function ProjectCard({
         </AnimatePresence>
       </div>
 
-      {/* PROGRESS BAR */}
       <div className="px-4 py-2">
         <div className="flex justify-between items-center mb-1">
           <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-tighter">Project Status</span>
@@ -193,22 +177,41 @@ export function ProjectCard({
             transition={{ duration: 0.8 }}
           />
         </div>
+
+        {/* VERSION HISTORY LIST */}
+        {versions && versions.length > 0 && (
+          <div className="mt-4 border-t border-border/30 pt-3">
+            <h4 className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1.5">
+              <HardDrive size={10} />
+              Design Revisions
+            </h4>
+            <div className="space-y-1.5 max-h-[100px] overflow-y-auto custom-scrollbar">
+              {versions.map((v: any) => (
+                <div key={v.id} className="flex items-center justify-between bg-card/50 p-2 rounded-lg border border-border/30 group hover:border-primary/30 transition-colors">
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-bold text-foreground truncate max-w-[120px]">{v.version_name}</span>
+                    <span className="text-[7px] text-muted-foreground">{new Date(v.created_at).toLocaleDateString()}</span>
+                  </div>
+                  <button 
+                    onClick={() => downloadFile(v.file_url, `${project.title}-${v.version_name}`)}
+                    className="p-1.5 bg-muted/50 rounded-md group-hover:bg-primary/20 group-hover:text-primary transition-colors"
+                  >
+                    <Download size={10} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* FOOTER ACTIONS */}
       <div className="p-4 bg-muted/5 border-t border-border">
         <div className="flex flex-col gap-3">
-          {project.file_url ? (
-            <button 
-              onClick={() => downloadFile(project.file_url, `${project.title}-design`)}
-              className="w-full h-8 flex items-center justify-center gap-2 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-[10px] shadow-lg shadow-primary/20 transition-all active:scale-95"
-            >
-              <Download size={12} /> Download Final Assets
-            </button>
-          ) : !isAdmin && (
-            <div className="w-full text-center text-muted-foreground text-[9px] py-2 border border-dashed border-border rounded-xl font-medium uppercase tracking-tight">
-              Design production in progress...
-            </div>
+          {isAdmin && (
+            <label className="w-full h-8 flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border/60 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer text-[10px] font-bold text-muted-foreground hover:text-primary">
+              <Plus size={14} /> Upload New Version
+              <input type="file" className="hidden" accept="image/*,application/pdf" onChange={(e) => e.target.files && handleFileUpload(project.id, e.target.files[0])} />
+            </label>
           )}
 
           <div className="flex justify-between items-center">
