@@ -21,6 +21,10 @@ import { ProjectManagement } from "@/components/dashboard/ProjectManagement";
 import WelcomeNameModal from "@/components/dashboard/WelcomeNameModal";
 import { CertificateGenerator } from "./components/certificates/CertificateGenerator";
 
+// Page Imports for Client Buttons
+import Questionnaire from "@/pages/Questionnaire";
+import Agreement from "@/pages/Agreement";
+
 // Fixed imports for Admin usage
 import Receipt from "./Receipt";
 import Invoice from "./Invoice";
@@ -78,7 +82,6 @@ export default function Dashboard() {
     initializeDashboard();
   }, []);
 
-  // REAL-TIME MESSAGE LISTENER
   useEffect(() => {
     const channel = supabase
       .channel('realtime-comments')
@@ -140,7 +143,6 @@ export default function Dashboard() {
 
   const toggleComments = async (id: string) => {
     if (openCommentsId !== id) {
-      // Load existing messages when opening
       const { data, error } = await supabase
         .from("comments")
         .select("*")
@@ -166,9 +168,7 @@ export default function Dashboard() {
     }]);
     
     if (!error) {
-      setNewComment(""); // Clear input on success
-    } else {
-      console.error("Message failed to send:", error.message);
+      setNewComment("");
     }
     setSendingComment(false);
   };
@@ -329,6 +329,26 @@ export default function Dashboard() {
               isAdmin={isAdmin} 
             />
 
+            {/* Client-Only Questionnaire and Agreement Buttons */}
+            {!isAdmin && (
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={() => setActiveOverlay('questionnaire')}
+                  className="flex items-center justify-center gap-2 p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-xl hover:bg-cyan-500/20 transition-all text-cyan-400 font-bold text-sm"
+                >
+                  <ClipboardList size={18} />
+                  Fill Questionnaire
+                </button>
+                <button
+                  onClick={() => setActiveOverlay('agreement')}
+                  className="flex items-center justify-center gap-2 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl hover:bg-blue-500/20 transition-all text-blue-400 font-bold text-sm"
+                >
+                  <Award size={18} />
+                  Sign Agreement
+                </button>
+              </div>
+            )}
+
             {isAdmin && (
               <OnboardClient 
                 inviteEmail={inviteEmail}
@@ -429,6 +449,9 @@ export default function Dashboard() {
                   {activeOverlay === 'receipt' && <Receipt />}
                   {activeOverlay === 'invoice' && <Invoice />}
                   {activeOverlay === 'questionnaires' && <ViewQuestionnaires />}
+                  {/* Client Form Overlays */}
+                  {activeOverlay === 'questionnaire' && <Questionnaire />}
+                  {activeOverlay === 'agreement' && <Agreement />}
                 </div>
               </div>
             </motion.div>
