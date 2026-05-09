@@ -80,6 +80,7 @@ export default function Dashboard() {
       fetchProjects(user, adminStatus);
       if (adminStatus) fetchClientEmails();
     };
+ 
     initializeDashboard();
   }, []);
 
@@ -122,7 +123,6 @@ export default function Dashboard() {
       if (error) throw error;
       setProjects(data || []);
       
-      // Fetch versions for all loaded projects
       if (data) {
         data.forEach(project => fetchVersions(project.id));
       }
@@ -139,7 +139,6 @@ export default function Dashboard() {
       .select("*")
       .eq("project_id", projectId)
       .order("created_at", { ascending: false });
-    
     if (!error && data) {
       setVersionsMap(prev => ({ ...prev, [projectId]: data }));
     }
@@ -166,7 +165,6 @@ export default function Dashboard() {
         .select("*")
         .eq("project_id", id)
         .order("created_at", { ascending: true });
-
       if (!error && data) {
         setCommentsMap(prev => ({ ...prev, [id]: data }));
       }
@@ -184,7 +182,6 @@ export default function Dashboard() {
       message: newComment.trim(),
       user_id: user.id
     }]);
-    
     if (!error) {
       setNewComment("");
     }
@@ -233,6 +230,7 @@ export default function Dashboard() {
   };
 
   const startEdit = (project: any) => { if(isAdmin) { setEditingId(project.id); setEditTitle(project.title); } };
+
   const saveEdit = async () => {
     if (!editingId || !isAdmin) return;
     const { error } = await supabase.from("projects").update({ title: editTitle }).eq("id", editingId);
@@ -260,7 +258,6 @@ export default function Dashboard() {
   const handleFileUpload = async (id: string, file: File) => {
     if (!isAdmin) return;
     const versionName = prompt("Enter a name for this version (e.g., Draft 1, Final):") || "New Version";
-    
     try {
       setLoading(true);
       const fileExt = file.name.split('.').pop();
@@ -268,7 +265,6 @@ export default function Dashboard() {
       const filePath = `previews/${fileName}`;
       const { error: uploadError } = await supabase.storage.from('project-files').upload(filePath, file);
       if (uploadError) throw uploadError;
-      
       const { data: { publicUrl } } = supabase.storage.from('project-files').getPublicUrl(filePath);
       
       // Save to project_versions table
@@ -277,11 +273,13 @@ export default function Dashboard() {
         file_url: publicUrl,
         version_name: versionName
       }]);
-
       if (versionError) throw versionError;
 
-      // Update project status
-      const { error: dbError } = await supabase.from("projects").update({ status: "Completed" }).eq("id", id);
+      // UPDATE: Update main project card preview and status simultaneously [cite: 61]
+      const { error: dbError } = await supabase.from("projects").update({ 
+        status: "Completed",
+        file_url: publicUrl 
+      }).eq("id", id);
       if (dbError) throw dbError;
       
       fetchProjects(user, isAdmin);
@@ -298,10 +296,18 @@ export default function Dashboard() {
     setLocation("/login");
   };
 
+  // UPDATE: Simultaneous View & Download logic 
   const downloadFile = (url: string, filename: string) => {
+    // Open in new tab for viewing
+    window.open(url, '_blank');
+
+    // Trigger browser download
     const link = document.createElement('a');
-    link.href = url; link.download = filename;
-    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link); 
+    link.click(); 
+    document.body.removeChild(link);
   };
 
   const filteredProjects = projects.filter((p) => {
@@ -341,6 +347,7 @@ export default function Dashboard() {
 
       <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl">
         {showWelcome && <WelcomeNameModal onClose={() => setShowWelcome(false)} userName={isAdmin ? "Sulaiman" : "Client"} />}
+  
         {isSettingsOpen && <AccountSettings onClose={() => setIsSettingsOpen(false)} userEmail={user?.email} />}
 
         <div className="mb-8">
@@ -362,7 +369,6 @@ export default function Dashboard() {
               isAdmin={isAdmin} 
             />
 
-            {/* Client-Only Questionnaire and Agreement Buttons */}
             {!isAdmin && (
               <div className="grid grid-cols-2 gap-4">
                 <button
@@ -483,7 +489,6 @@ export default function Dashboard() {
                   {activeOverlay === 'receipt' && <Receipt />}
                   {activeOverlay === 'invoice' && <Invoice />}
                   {activeOverlay === 'questionnaires' && <ViewQuestionnaires />}
-                  {/* Client Form Overlays */}
                   {activeOverlay === 'questionnaire' && <Questionnaire />}
                   {activeOverlay === 'agreement' && <Agreement />}
                 </div>
