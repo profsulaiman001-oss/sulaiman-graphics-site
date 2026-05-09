@@ -40,6 +40,7 @@ export default function Dashboard() {
   const [projects, setProjects] = useState<any[]>([]);
   const [clientEmails, setClientEmails] = useState<string[]>([]);
   const [commentsMap, setCommentsMap] = useState<{ [key: string]: any[] }>({});
+  const [versionsMap, setVersionsMap] = useState<{ [key: string]: any[] }>({});
   const [notifications, setNotifications] = useState<string[]>([]);
 
   // UI States
@@ -120,10 +121,27 @@ export default function Dashboard() {
       const { data, error } = await query;
       if (error) throw error;
       setProjects(data || []);
+      
+      // Fetch versions for all loaded projects
+      if (data) {
+        data.forEach(project => fetchVersions(project.id));
+      }
     } catch (err: any) {
       console.error("Fetch projects error:", err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchVersions = async (projectId: string) => {
+    const { data, error } = await supabase
+      .from("project_versions")
+      .select("*")
+      .eq("project_id", projectId)
+      .order("created_at", { ascending: false });
+    
+    if (!error && data) {
+      setVersionsMap(prev => ({ ...prev, [projectId]: data }));
     }
   };
 
@@ -241,6 +259,8 @@ export default function Dashboard() {
 
   const handleFileUpload = async (id: string, file: File) => {
     if (!isAdmin) return;
+    const versionName = prompt("Enter a name for this version (e.g., Draft 1, Final):") || "New Version";
+    
     try {
       setLoading(true);
       const fileExt = file.name.split('.').pop();
@@ -248,9 +268,22 @@ export default function Dashboard() {
       const filePath = `previews/${fileName}`;
       const { error: uploadError } = await supabase.storage.from('project-files').upload(filePath, file);
       if (uploadError) throw uploadError;
+      
       const { data: { publicUrl } } = supabase.storage.from('project-files').getPublicUrl(filePath);
-      const { error: dbError } = await supabase.from("projects").update({ file_url: publicUrl, status: "Completed" }).eq("id", id);
+      
+      // Save to project_versions table
+      const { error: versionError } = await supabase.from("project_versions").insert([{
+        project_id: id,
+        file_url: publicUrl,
+        version_name: versionName
+      }]);
+
+      if (versionError) throw versionError;
+
+      // Update project status
+      const { error: dbError } = await supabase.from("projects").update({ status: "Completed" }).eq("id", id);
       if (dbError) throw dbError;
+      
       fetchProjects(user, isAdmin);
     } catch (err: any) {
       console.error("Upload failed:", err.message);
@@ -402,6 +435,7 @@ export default function Dashboard() {
                     toggleComments={toggleComments}
                     openCommentsId={openCommentsId}
                     comments={commentsMap[project.id] || []}
+                    versions={versionsMap[project.id] || []}
                     newComment={newComment}
                     setNewComment={setNewComment}
                     sendingComment={sendingComment}
