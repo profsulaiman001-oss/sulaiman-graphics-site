@@ -274,7 +274,6 @@ export default function Dashboard() {
       }]);
       if (versionError) throw versionError;
 
-      // Ensure the project card preview updates immediately
       const { error: dbError } = await supabase.from("projects").update({ 
         status: "Completed",
         file_url: publicUrl 
@@ -295,21 +294,36 @@ export default function Dashboard() {
     setLocation("/login");
   };
 
-  // FINAL FIX: This function handles opening and downloading sequentially to bypass browser blocks.
-  const downloadFile = (url: string, filename: string) => {
-    // 1. Open in new tab immediately for viewing
-    const viewWindow = window.open(url, '_blank');
-    
-    // 2. Small delay to ensure browser allows the second action (download)
-    setTimeout(() => {
+  // FINAL RESOLUTION: Simultaneous View & Download (Blob Fetch method)
+  const downloadFile = async (url: string, filename: string) => {
+    try {
+      // 1. Open in new tab for viewing
+      window.open(url, '_blank');
+
+      // 2. Fetch the file as a blob to force a local download (avoids "double opening")
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.setAttribute('download', filename || 'design-file');
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Download failed:", error);
+      // Fallback if fetch fails (CORS issues etc)
       const link = document.createElement('a');
       link.href = url;
-      // Force download attribute
-      link.setAttribute('download', filename || 'design-asset');
+      link.setAttribute('download', filename);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-    }, 150);
+    }
   };
 
   const filteredProjects = projects.filter((p) => {
@@ -491,7 +505,6 @@ export default function Dashboard() {
                   {activeOverlay === 'receipt' && <Receipt />}
                   {activeOverlay === 'invoice' && <Invoice />}
                   {activeOverlay === 'questionnaires' && <ViewQuestionnaires />}
-                  {/* Client Form Overlays */}
                   {activeOverlay === 'questionnaire' && <Questionnaire />}
                   {activeOverlay === 'agreement' && <Agreement />}
                 </div>
@@ -510,4 +523,4 @@ export default function Dashboard() {
       {isCertOpen && <CertificateGenerator onClose={() => setIsCertOpen(false)} />}
     </div>
   );
-} 
+}
