@@ -267,7 +267,6 @@ export default function Dashboard() {
       if (uploadError) throw uploadError;
       const { data: { publicUrl } } = supabase.storage.from('project-files').getPublicUrl(filePath);
       
-      // Save to project_versions table
       const { error: versionError } = await supabase.from("project_versions").insert([{
         project_id: id,
         file_url: publicUrl,
@@ -275,7 +274,7 @@ export default function Dashboard() {
       }]);
       if (versionError) throw versionError;
 
-      // UPDATE: Update main project card preview and status simultaneously [cite: 61]
+      // Update main project card preview (file_url) and status
       const { error: dbError } = await supabase.from("projects").update({ 
         status: "Completed",
         file_url: publicUrl 
@@ -296,18 +295,21 @@ export default function Dashboard() {
     setLocation("/login");
   };
 
-  // UPDATE: Simultaneous View & Download logic 
+  // FIX: Proper Simultaneous View & Download
   const downloadFile = (url: string, filename: string) => {
-    // Open in new tab for viewing
+    // 1. Open in new tab for viewing
     window.open(url, '_blank');
 
-    // Trigger browser download
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link); 
-    link.click(); 
-    document.body.removeChild(link);
+    // 2. Trigger browser download with a slight timeout to ensure both execute
+    setTimeout(() => {
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      link.setAttribute('target', '_self'); // Ensure download stays in this window
+      document.body.appendChild(link); 
+      link.click(); 
+      document.body.removeChild(link);
+    }, 150);
   };
 
   const filteredProjects = projects.filter((p) => {
