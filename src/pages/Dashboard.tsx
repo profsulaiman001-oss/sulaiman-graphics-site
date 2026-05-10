@@ -274,7 +274,7 @@ export default function Dashboard() {
       }]);
       if (versionError) throw versionError;
 
-      // Update main project card preview (file_url) and status
+      // Ensure the project card preview updates immediately
       const { error: dbError } = await supabase.from("projects").update({ 
         status: "Completed",
         file_url: publicUrl 
@@ -295,19 +295,19 @@ export default function Dashboard() {
     setLocation("/login");
   };
 
-  // FIX: Proper Simultaneous View & Download
+  // FINAL FIX: This function handles opening and downloading sequentially to bypass browser blocks.
   const downloadFile = (url: string, filename: string) => {
-    // 1. Open in new tab for viewing
-    window.open(url, '_blank');
-
-    // 2. Trigger browser download with a slight timeout to ensure both execute
+    // 1. Open in new tab immediately for viewing
+    const viewWindow = window.open(url, '_blank');
+    
+    // 2. Small delay to ensure browser allows the second action (download)
     setTimeout(() => {
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', filename);
-      link.setAttribute('target', '_self'); // Ensure download stays in this window
-      document.body.appendChild(link); 
-      link.click(); 
+      // Force download attribute
+      link.setAttribute('download', filename || 'design-asset');
+      document.body.appendChild(link);
+      link.click();
       document.body.removeChild(link);
     }, 150);
   };
@@ -491,6 +491,7 @@ export default function Dashboard() {
                   {activeOverlay === 'receipt' && <Receipt />}
                   {activeOverlay === 'invoice' && <Invoice />}
                   {activeOverlay === 'questionnaires' && <ViewQuestionnaires />}
+                  {/* Client Form Overlays */}
                   {activeOverlay === 'questionnaire' && <Questionnaire />}
                   {activeOverlay === 'agreement' && <Agreement />}
                 </div>
@@ -509,4 +510,4 @@ export default function Dashboard() {
       {isCertOpen && <CertificateGenerator onClose={() => setIsCertOpen(false)} />}
     </div>
   );
-}
+} 
