@@ -196,7 +196,11 @@ export function ProjectCard({
                     <span className="text-[7px] text-muted-foreground">{new Date(v.created_at).toLocaleDateString()}</span>
                   </div>
                   <button 
-                    onClick={() => downloadFile(v.file_url, `${project.title}-${v.version_name}`)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      downloadFile(v.file_url, `${project.title}-${v.version_name}`);
+                    }}
                     className="p-1.5 bg-muted/50 rounded-md group-hover:bg-primary/20 group-hover:text-primary transition-colors"
                   >
                     <Download size={10} />
@@ -214,7 +218,11 @@ export function ProjectCard({
           {/* Main Download Button: Opens and Downloads latest version */}
           {versions && versions.length > 0 ? (
             <button 
-              onClick={() => downloadFile(versions[0].file_url, `${project.title}-latest`)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                downloadFile(versions[0].file_url, `${project.title}-latest`);
+              }}
               className="w-full h-8 flex items-center justify-center gap-2 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-[10px] shadow-lg shadow-primary/20 transition-all active:scale-95"
             >
               <Download size={12} /> Open & Download Latest Assets
