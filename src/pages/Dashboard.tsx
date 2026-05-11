@@ -84,6 +84,7 @@ export default function Dashboard() {
     initializeDashboard();
   }, []);
 
+  // Real-time listener for new messages
   useEffect(() => {
     const channel = supabase
       .channel('realtime-comments')
@@ -92,6 +93,16 @@ export default function Dashboard() {
         { event: 'INSERT', schema: 'public', table: 'comments' },
         (payload) => {
           const newMsg = payload.new;
+          
+          // Only increment unread if the chat isn't currently open
+          if (openCommentsId !== newMsg.project_id) {
+            setUnreadCounts(prev => ({
+              ...prev,
+              [newMsg.project_id]: (prev[newMsg.project_id] || 0) + 1
+            }));
+          }
+
+          // Also update the local comments list so the UI stays fresh
           setCommentsMap((prev) => {
             const currentMsgs = prev[newMsg.project_id] || [];
             if (currentMsgs.find(m => m.id === newMsg.id)) return prev;
@@ -100,13 +111,6 @@ export default function Dashboard() {
               [newMsg.project_id]: [...currentMsgs, newMsg],
             };
           });
-
-          if (openCommentsId !== newMsg.project_id) {
-            setUnreadCounts(prev => ({
-              ...prev,
-              [newMsg.project_id]: (prev[newMsg.project_id] || 0) + 1
-            }));
-          }
         }
       )
       .subscribe();
@@ -124,12 +128,35 @@ export default function Dashboard() {
       setProjects(data || []);
       
       if (data) {
-        data.forEach(project => fetchVersions(project.id));
+        data.forEach(project => {
+          fetchVersions(project.id);
+          fetchInitialUnreadCount(project.id, admin); // Get initial unread count on load
+        });
       }
     } catch (err: any) {
       console.error("Fetch projects error:", err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Helper to get message counts when the dashboard first loads
+  const fetchInitialUnreadCount = async (projectId: string, admin: boolean) => {
+    try {
+      // Logic: Count messages that are NOT from the current user type
+      // If admin, count messages from client (is_admin = false)
+      // If client, count messages from admin (is_admin = true)
+      const { count, error } = await supabase
+        .from("comments")
+        .select('*', { count: 'exact', head: true })
+        .eq("project_id", projectId)
+        .eq("is_admin", !admin); 
+
+      if (!error && count !== null) {
+        setUnreadCounts(prev => ({ ...prev, [projectId]: count }));
+      }
+    } catch (err) {
+      console.error("Unread count fetch error:", err);
     }
   };
 
@@ -170,6 +197,7 @@ export default function Dashboard() {
       }
     }
     setOpenCommentsId(openCommentsId === id ? null : id);
+    // RESET unread count when the chat is opened
     setUnreadCounts(prev => ({ ...prev, [id]: 0 }));
   };
 
@@ -294,29 +322,21 @@ export default function Dashboard() {
     setLocation("/login");
   };
 
-  // FINAL RESOLUTION: Simultaneous View & Download (Blob Fetch method)
   const downloadFile = async (url: string, filename: string) => {
     try {
-      // 1. Open in new tab for viewing
       window.open(url, '_blank');
-
-      // 2. Fetch the file as a blob to force a local download (avoids "double opening")
       const response = await fetch(url);
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
-
       const link = document.createElement('a');
       link.href = blobUrl;
       link.setAttribute('download', filename || 'design-file');
       document.body.appendChild(link);
       link.click();
-      
-      // Cleanup
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
       console.error("Download failed:", error);
-      // Fallback if fetch fails (CORS issues etc)
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', filename);
