@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Edit3, Trash2, Save, XCircle, LogOut, CheckCircle, 
   Clock, Loader2, Plus, HardDrive, Download, Settings, X, 
-  MessageSquare, Send, ClipboardList, Award, BarChart3
+  MessageSquare, Send, ClipboardList, Award, BarChart3, Maximize2, ShieldCheck, ShieldAlert
 } from "lucide-react";
 
 // Component Imports
@@ -61,6 +61,9 @@ export default function Dashboard() {
   const [isCertOpen, setIsCertOpen] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
   const [activeOverlay, setActiveOverlay] = useState<string | null>(null);
+
+  // PREVIEW & RESTRICTION STATES
+  const [viewingFile, setViewingFile] = useState<{url: string, name: string, restricted: boolean} | null>(null);
 
   const statusColors: { [key: string]: string } = {
     'Pending': 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500',
@@ -219,6 +222,17 @@ export default function Dashboard() {
     setSendingComment(false);
   };
 
+  // ADMIN TOGGLE: Control Download Access
+  const toggleProjectRestriction = async (projectId: string, currentStatus: boolean) => {
+    if (!isAdmin) return;
+    const { error } = await supabase
+      .from("projects")
+      .update({ allow_download: !currentStatus })
+      .eq("id", projectId);
+    
+    if (!error) fetchProjects(user, isAdmin);
+  };
+
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim() || !isAdmin) return;
@@ -227,7 +241,8 @@ export default function Dashboard() {
         title: newTitle.trim(),
         client_email: newClient || null,
         status: "Pending",
-        user_id: user.id
+        user_id: user.id,
+        allow_download: false // Default to watermarked/restricted
       }]);
       if (error) throw error;
       setNewTitle("");
@@ -286,16 +301,11 @@ export default function Dashboard() {
     if (!error) fetchProjects(user, isAdmin);
   };
 
-  // ADDED: Delete logic for Design Revisions
   const handleDeleteVersion = async (versionId: string) => {
+    if (!isAdmin) return;
     try {
-      const { error } = await supabase
-        .from("project_versions")
-        .delete()
-        .eq("id", versionId);
+      const { error } = await supabase.from("project_versions").delete().eq("id", versionId);
       if (error) throw error;
-      
-      // Refresh only versions for all projects to update UI
       projects.forEach(p => fetchVersions(p.id));
     } catch (err: any) {
       alert("Failed to delete: " + err.message);
@@ -329,14 +339,12 @@ export default function Dashboard() {
       
       fetchProjects(user, isAdmin);
     } catch (err: any) {
-      console.error("Upload failed:", err.message);
       alert("Error uploading file: " + err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // UPDATED: Now handles Multiple File Uploads for Mockups
   const handleMockupUpload = async (id: string, files: FileList) => {
     if (!isAdmin) return;
     try {
@@ -344,18 +352,14 @@ export default function Dashboard() {
       const uploadPromises = Array.from(files).map(async (file) => {
         const fileName = `mockup-${id}-${Date.now()}-${Math.random().toString(36).substring(7)}.webp`;
         const filePath = `mockups/${fileName}`;
-        
         const { error: uploadError } = await supabase.storage.from('project-files').upload(filePath, file);
         if (uploadError) throw uploadError;
-        
         const { data: { publicUrl } } = supabase.storage.from('project-files').getPublicUrl(filePath);
-        
         return supabase.from("project_mockups").insert([{
           project_id: id,
           file_url: publicUrl
         }]);
       });
-
       await Promise.all(uploadPromises);
       fetchMockups(id);
       alert(`${files.length} mockups uploaded successfully!`);
@@ -373,7 +377,6 @@ export default function Dashboard() {
 
   const downloadFile = async (url: string, filename: string) => {
     try {
-      window.open(url, '_blank');
       const response = await fetch(url);
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
@@ -385,14 +388,12 @@ export default function Dashboard() {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
-      console.error("Download failed:", error);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', filename);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      window.open(url, '_blank');
     }
+  };
+
+  const openProtectedPreview = (url: string, name: string, isRestricted: boolean) => {
+    setViewingFile({ url, name, restricted: isRestricted });
   };
 
   const filteredProjects = projects.filter((p) => {
@@ -408,8 +409,6 @@ export default function Dashboard() {
     active: projects.filter((p) => p.status === "In Progress").length,
     pending: projects.filter((p) => p.status === "Pending").length,
   };
-
-  const COLORS = ["#06b6d4", "#3b82f6", "#eab308"];
 
   if (loading && projects.length === 0) {
     return (
@@ -436,7 +435,7 @@ export default function Dashboard() {
         {isSettingsOpen && <AccountSettings onClose={() => setIsSettingsOpen(false)} userEmail={user?.email} />}
 
         <div className="mb-8">
-           <AnalyticsDashboard stats={stats} COLORS={COLORS} />
+           <AnalyticsDashboard stats={stats} COLORS={["#06b6d4", "#3b82f6", "#eab308"]} />
         </div>
 
         <div className="grid gap-6 md:grid-cols-3">
@@ -501,15 +500,68 @@ export default function Dashboard() {
           <h2 className="text-xl font-bold tracking-tight mb-6">
             {isAdmin ? "Project Status Workspace" : "Your Active Projects"}
           </h2>
-          {filteredProjects.length === 0 ? (
-            <div className="text-center py-16 border border-dashed border-border rounded-2xl bg-card/40">
-              <ClipboardList className="mx-auto text-muted-foreground mb-4" size={32} />
-              <h3 className="text-sm font-bold text-foreground">No Projects Found</h3>
-            </div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filteredProjects.map((project: any) => (
-                <div key={project.id} className="flex flex-col gap-3">
+          
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {filteredProjects.map((project: any) => (
+              <div key={project.id} className="flex flex-col gap-3">
+                {/* Project Card Internalized to handle specific Expand/Restrict UI */}
+                <div className="bg-card border border-border rounded-2xl p-5 space-y-4 shadow-sm">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-bold text-lg">{project.title}</h3>
+                      <p className="text-xs text-muted-foreground">{project.client_email}</p>
+                    </div>
+                    <span className={`text-[10px] px-2 py-1 rounded-full border font-bold uppercase ${statusColors[project.status]}`}>
+                      {project.status}
+                    </span>
+                  </div>
+
+                  {isAdmin && (
+                    <div className="flex items-center justify-between p-2 bg-muted/30 rounded-lg border border-dashed border-border">
+                      <span className="text-[10px] font-bold uppercase text-muted-foreground">Download Access</span>
+                      <button 
+                        onClick={() => toggleProjectRestriction(project.id, project.allow_download)}
+                        className={`flex items-center gap-2 px-3 py-1 rounded-md transition-all text-[11px] font-bold ${project.allow_download ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}
+                      >
+                        {project.allow_download ? <ShieldCheck size={14}/> : <ShieldAlert size={14}/>}
+                        {project.allow_download ? "ENABLED" : "RESTRICTED"}
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Main Designs</p>
+                    {versionsMap[project.id]?.map((v: any) => (
+                      <div key={v.id} className="flex items-center justify-between bg-background p-2 rounded-lg border border-border">
+                        <span className="text-xs font-medium truncate max-w-[120px]">{v.version_name}</span>
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => openProtectedPreview(v.file_url, v.version_name, !project.allow_download)}
+                            className="p-2 bg-muted hover:bg-cyan-500/10 hover:text-cyan-400 rounded-md transition-colors"
+                          >
+                            <Maximize2 size={14} />
+                          </button>
+                          
+                          {(project.allow_download || isAdmin) && (
+                            <button 
+                              onClick={() => downloadFile(v.file_url, v.version_name)}
+                              className="p-2 bg-cyan-500 text-white rounded-md hover:bg-cyan-600 transition-colors"
+                            >
+                              <Download size={14} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {isAdmin && (
+                      <label className="flex items-center justify-center gap-2 p-2 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-cyan-500/50 transition-colors">
+                        <Plus size={14} /> <span className="text-xs font-bold">Upload Version</span>
+                        <input type="file" className="hidden" onChange={(e) => e.target.files && handleFileUpload(project.id, e.target.files[0])} />
+                      </label>
+                    )}
+                  </div>
+
                   <ProjectCard 
                     project={project}
                     isAdmin={isAdmin}
@@ -526,10 +578,10 @@ export default function Dashboard() {
                     toggleComments={toggleComments}
                     openCommentsId={openCommentsId}
                     comments={commentsMap[project.id] || []}
-                    versions={versionsMap[project.id] || []}
+                    versions={[]} // Versions handled manually above for custom UI
                     mockups={mockupsMap[project.id] || []}
                     handleMockupUpload={handleMockupUpload}
-                    handleDeleteVersion={handleDeleteVersion} // PASSED PROP
+                    handleDeleteVersion={handleDeleteVersion}
                     newComment={newComment}
                     setNewComment={setNewComment}
                     sendingComment={sendingComment}
@@ -539,47 +591,71 @@ export default function Dashboard() {
                     downloadFile={downloadFile}
                     statusColors={statusColors}
                   />
-                  {openCommentsId === project.id && (
-                    <ProjectComments projectId={project.id} />
-                  )}
                 </div>
-              ))}
-            </div>
-          )}
+                {openCommentsId === project.id && <ProjectComments projectId={project.id} />}
+              </div>
+            ))}
+          </div>
         </div>
       </main>
 
+      {/* FULL SCREEN EXPAND PREVIEW - WITH WATERMARK & BLOCK DOWNLOAD */}
       <AnimatePresence>
+        {viewingFile && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center p-4 md:p-10"
+            onContextMenu={(e) => viewingFile.restricted && e.preventDefault()}
+          >
+            <div className="absolute top-5 right-5 flex gap-4">
+              {!viewingFile.restricted && (
+                <button onClick={() => downloadFile(viewingFile.url, viewingFile.name)} className="flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-full font-bold text-sm">
+                  <Download size={18}/> Download
+                </button>
+              )}
+              <button onClick={() => setViewingFile(null)} className="p-3 bg-white/10 hover:bg-red-500/50 text-white rounded-full transition-colors"><X size={24}/></button>
+            </div>
+
+            <div className="relative max-w-full max-h-[80vh] flex items-center justify-center overflow-hidden rounded-xl shadow-2xl">
+              <img 
+                src={viewingFile.url} 
+                alt="Design Preview" 
+                className="max-w-full max-h-full object-contain pointer-events-none select-none" 
+              />
+              
+              {viewingFile.restricted && (
+                <div className="absolute inset-0 flex flex-wrap items-center justify-center opacity-[0.08] pointer-events-none select-none overflow-hidden">
+                  {Array.from({ length: 24 }).map((_, i) => (
+                    <span key={i} className="text-white font-black text-5xl -rotate-45 m-12 whitespace-nowrap uppercase tracking-[1em]">
+                      SULAIMAN GRAPHICS • PREVIEW ONLY
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+            <p className="mt-6 text-white/60 text-sm font-medium tracking-wide uppercase">{viewingFile.name}</p>
+          </motion.div>
+        )}
+
         {activeOverlay && (
           <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 bg-background/95 backdrop-blur-xl flex items-center justify-center overflow-hidden"
           >
             <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
               className="bg-card border-x border-border/50 w-full h-full max-w-7xl relative shadow-2xl flex flex-col"
             >
               <div className="p-6 border-b border-border flex items-center justify-between sticky top-0 bg-card z-50">
                 <h2 className="text-lg font-bold capitalize tracking-tight">{activeOverlay} Details</h2>
-                <button 
-                  onClick={() => setActiveOverlay(null)} 
-                  className="p-2 bg-muted/50 hover:bg-red-500/20 hover:text-red-500 rounded-full transition-colors"
-                >
-                  <X size={20} />
-                </button>
+                <button onClick={() => setActiveOverlay(null)} className="p-2 bg-muted/50 hover:bg-red-500/20 hover:text-red-500 rounded-full transition-colors"><X size={20} /></button>
               </div>
-              <div className="flex-1 overflow-y-auto p-4 md:p-10 custom-scrollbar">
-                <div className="mx-auto max-w-4xl">
+              <div className="flex-1 overflow-y-auto p-4 md:p-10 custom-scrollbar mx-auto w-full max-w-4xl">
                   {activeOverlay === 'receipt' && <Receipt />}
                   {activeOverlay === 'invoice' && <Invoice />}
                   {activeOverlay === 'questionnaires' && <ViewQuestionnaires />}
                   {activeOverlay === 'questionnaire' && <Questionnaire />}
                   {activeOverlay === 'agreement' && <Agreement />}
-                </div>
               </div>
             </motion.div>
           </motion.div>
