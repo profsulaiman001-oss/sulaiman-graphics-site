@@ -41,7 +41,7 @@ export default function Dashboard() {
   const [clientEmails, setClientEmails] = useState<string[]>([]);
   const [commentsMap, setCommentsMap] = useState<{ [key: string]: any[] }>({});
   const [versionsMap, setVersionsMap] = useState<{ [key: string]: any[] }>({});
-  const [mockupsMap, setMockupsMap] = useState<{ [key: string]: any[] }>({}); // NEW: Mockups state
+  const [mockupsMap, setMockupsMap] = useState<{ [key: string]: any[] }>({}); 
   const [notifications, setNotifications] = useState<string[]>([]);
 
   // UI States
@@ -126,7 +126,7 @@ export default function Dashboard() {
       if (data) {
         data.forEach(project => {
           fetchVersions(project.id);
-          fetchMockups(project.id); // NEW: Fetch mockups for each project
+          fetchMockups(project.id);
           fetchInitialUnreadCount(project.id, admin);
         });
       }
@@ -137,7 +137,6 @@ export default function Dashboard() {
     }
   };
 
-  // NEW: Fetch Mockups from the project_mockups table
   const fetchMockups = async (projectId: string) => {
     const { data, error } = await supabase
       .from("project_mockups")
@@ -287,6 +286,22 @@ export default function Dashboard() {
     if (!error) fetchProjects(user, isAdmin);
   };
 
+  // ADDED: Delete logic for Design Revisions
+  const handleDeleteVersion = async (versionId: string) => {
+    try {
+      const { error } = await supabase
+        .from("project_versions")
+        .delete()
+        .eq("id", versionId);
+      if (error) throw error;
+      
+      // Refresh only versions for all projects to update UI
+      projects.forEach(p => fetchVersions(p.id));
+    } catch (err: any) {
+      alert("Failed to delete: " + err.message);
+    }
+  };
+
   const handleFileUpload = async (id: string, file: File) => {
     if (!isAdmin) return;
     const versionName = prompt("Enter a name for this version (e.g., Draft 1, Final):") || "New Version";
@@ -321,27 +336,29 @@ export default function Dashboard() {
     }
   };
 
-  // NEW: Handle Mockup Upload (Specifically for .webp files)
-  const handleMockupUpload = async (id: string, file: File) => {
+  // UPDATED: Now handles Multiple File Uploads for Mockups
+  const handleMockupUpload = async (id: string, files: FileList) => {
     if (!isAdmin) return;
     try {
       setLoading(true);
-      const fileName = `mockup-${id}-${Date.now()}.webp`;
-      const filePath = `mockups/${fileName}`;
-      
-      const { error: uploadError } = await supabase.storage.from('project-files').upload(filePath, file);
-      if (uploadError) throw uploadError;
-      
-      const { data: { publicUrl } } = supabase.storage.from('project-files').getPublicUrl(filePath);
-      
-      const { error: dbError } = await supabase.from("project_mockups").insert([{
-        project_id: id,
-        file_url: publicUrl
-      }]);
-      
-      if (dbError) throw dbError;
+      const uploadPromises = Array.from(files).map(async (file) => {
+        const fileName = `mockup-${id}-${Date.now()}-${Math.random().toString(36).substring(7)}.webp`;
+        const filePath = `mockups/${fileName}`;
+        
+        const { error: uploadError } = await supabase.storage.from('project-files').upload(filePath, file);
+        if (uploadError) throw uploadError;
+        
+        const { data: { publicUrl } } = supabase.storage.from('project-files').getPublicUrl(filePath);
+        
+        return supabase.from("project_mockups").insert([{
+          project_id: id,
+          file_url: publicUrl
+        }]);
+      });
+
+      await Promise.all(uploadPromises);
       fetchMockups(id);
-      alert("Mockup uploaded successfully!");
+      alert(`${files.length} mockups uploaded successfully!`);
     } catch (err: any) {
       alert("Upload failed: " + err.message);
     } finally {
@@ -510,8 +527,9 @@ export default function Dashboard() {
                     openCommentsId={openCommentsId}
                     comments={commentsMap[project.id] || []}
                     versions={versionsMap[project.id] || []}
-                    mockups={mockupsMap[project.id] || []} // NEW: Pass mockups
-                    handleMockupUpload={handleMockupUpload} // NEW: Pass upload handler
+                    mockups={mockupsMap[project.id] || []}
+                    handleMockupUpload={handleMockupUpload}
+                    handleDeleteVersion={handleDeleteVersion} // PASSED PROP
                     newComment={newComment}
                     setNewComment={setNewComment}
                     sendingComment={sendingComment}
