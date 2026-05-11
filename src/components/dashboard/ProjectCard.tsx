@@ -31,9 +31,10 @@ interface ProjectCardProps {
   clientEmails: string[];
   downloadFile: (url: string, filename: string) => void;
   statusColors: { [key: string]: string };
-  // NEW PROPS FOR MOCKUPS
   mockups: any[];
-  handleMockupUpload: (id: string, file: File) => void;
+  // UPDATED: Now accepts FileList for multiple uploads
+  handleMockupUpload: (id: string, files: FileList) => void;
+  handleDeleteVersion: (versionId: string) => void;
 }
 
 export function ProjectCard({
@@ -62,7 +63,8 @@ export function ProjectCard({
   downloadFile,
   statusColors,
   mockups = [], 
-  handleMockupUpload
+  handleMockupUpload,
+  handleDeleteVersion
 }: ProjectCardProps) {
 
   const [showGallery, setShowGallery] = useState(false); 
@@ -190,7 +192,7 @@ export function ProjectCard({
           />
         </div>
 
-        {/* VERSION HISTORY LIST */}
+        {/* VERSION HISTORY LIST WITH ADMIN DELETE */}
         {versions && versions.length > 0 && (
           <div className="mt-4 border-t border-border/30 pt-3">
             <h4 className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1.5">
@@ -204,16 +206,30 @@ export function ProjectCard({
                     <span className="text-[9px] font-bold text-foreground truncate max-w-[120px]">{v.version_name}</span>
                     <span className="text-[7px] text-muted-foreground">{new Date(v.created_at).toLocaleDateString()}</span>
                   </div>
-                  <button 
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      downloadFile(v.file_url, `${project.title}-${v.version_name}`);
-                    }}
-                    className="p-1.5 bg-muted/50 rounded-md group-hover:bg-primary/20 group-hover:text-primary transition-colors"
-                  >
-                    <Download size={10} />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    {isAdmin && (
+                      <button 
+                        onClick={() => {
+                          if(confirm("Delete this design version?")) {
+                            handleDeleteVersion(v.id);
+                          }
+                        }}
+                        className="p-1.5 rounded-md text-red-500 hover:bg-red-500/10 transition-colors"
+                      >
+                        <Trash2 size={10} />
+                      </button>
+                    )}
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        downloadFile(v.file_url, `${project.title}-${v.version_name}`);
+                      }}
+                      className="p-1.5 bg-muted/50 rounded-md group-hover:bg-primary/20 group-hover:text-primary transition-colors"
+                    >
+                      <Download size={10} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -225,7 +241,6 @@ export function ProjectCard({
       <div className="p-4 bg-muted/5 border-t border-border">
         <div className="flex flex-col gap-3">
           
-          {/* MOCKUP BUTTONS (NEW) */}
           <div className="flex flex-col gap-2">
             {mockups.length > 0 ? (
               <button 
@@ -236,13 +251,23 @@ export function ProjectCard({
               </button>
             ) : isAdmin && (
               <label className="w-full h-8 flex items-center justify-center gap-2 rounded-xl border border-dashed border-cyan-500/30 text-cyan-500/60 hover:text-cyan-500 text-[9px] cursor-pointer">
-                <ImageIcon size={12} /> Upload First Mockup (.webp)
-                <input type="file" className="hidden" accept="image/webp" onChange={(e) => e.target.files && handleMockupUpload(project.id, e.target.files[0])} />
+                <ImageIcon size={12} /> Upload Mockups (.webp)
+                {/* UPDATED: Multiple Selection Logic Added */}
+                <input 
+                  type="file" 
+                  className="hidden" 
+                  accept="image/webp" 
+                  multiple 
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files.length > 0) {
+                      handleMockupUpload(project.id, e.target.files);
+                    }
+                  }} 
+                />
               </label>
             )}
           </div>
 
-          {/* Main Download Button */}
           {versions && versions.length > 0 ? (
             <button 
               onClick={(e) => {
@@ -310,7 +335,7 @@ export function ProjectCard({
         </div>
       </div>
 
-      {/* FULL SCREEN GALLERY OVERLAY (NEW) */}
+      {/* FULL SCREEN GALLERY OVERLAY */}
       <AnimatePresence>
         {showGallery && (
           <motion.div 
