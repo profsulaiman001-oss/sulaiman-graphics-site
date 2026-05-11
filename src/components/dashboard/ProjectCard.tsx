@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react"; 
 import { 
   Edit3, Trash2, Save, XCircle, CheckCircle, Clock, Loader2, Download, 
-  MessageSquare, HardDrive, Send, Plus, Smartphone, Image as ImageIcon, X 
+  MessageSquare, HardDrive, Send, Plus, Smartphone, Image as ImageIcon, X, Lock, Unlock
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
@@ -32,7 +32,6 @@ interface ProjectCardProps {
   downloadFile: (url: string, filename: string) => void;
   statusColors: { [key: string]: string };
   mockups: any[];
-  // UPDATED: Now accepts FileList for multiple uploads
   handleMockupUpload: (id: string, files: FileList) => void;
   handleDeleteVersion: (versionId: string) => void;
 }
@@ -68,6 +67,8 @@ export function ProjectCard({
 }: ProjectCardProps) {
 
   const [showGallery, setShowGallery] = useState(false); 
+  const [showFullPreview, setShowFullPreview] = useState(false); // NEW: For the Proofing Room
+  const [releasing, setReleasing] = useState(false); // NEW: For the Lock Toggle
 
   const getProgress = (status: string) => {
     if (status === "Completed") return 100;
@@ -75,11 +76,29 @@ export function ProjectCard({
     return 25;
   };
 
+  // NEW: Toggle function for Admin to release assets
+  const toggleRelease = async () => {
+    setReleasing(true);
+    try {
+      const { error } = await supabase
+        .from("projects")
+        .update({ assets_released: !project.assets_released })
+        .eq("id", project.id);
+      if (error) throw error;
+      // Note: Parent component needs to re-fetch or use Realtime to update 'project' object
+    } catch (err: any) {
+      alert("Error updating lock: " + err.message);
+    } finally {
+      setReleasing(false);
+    }
+  };
+
   return (
     <motion.div 
       className="bg-card border border-border/60 rounded-3xl overflow-hidden flex flex-col shadow-sm hover:shadow-md transition-all duration-300 relative"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
+      onContextMenu={(e) => !isAdmin && e.preventDefault()} // NEW: Disable Right Click for Clients
     >
       {/* HEADER SECTION */}
       <div className="p-4 border-b border-border flex justify-between items-center bg-muted/10">
@@ -103,6 +122,18 @@ export function ProjectCard({
             </div>
           )}
         </div>
+
+        {/* NEW: Admin Release Toggle Button */}
+        {isAdmin && (
+          <button 
+            onClick={toggleRelease}
+            disabled={releasing}
+            className={`mr-2 p-1.5 rounded-lg border transition-all ${project.assets_released ? 'bg-green-500/10 border-green-500 text-green-500' : 'bg-red-500/10 border-red-500 text-red-500'}`}
+          >
+            {releasing ? <Loader2 size={12} className="animate-spin" /> : project.assets_released ? <Unlock size={12} /> : <Lock size={12} />}
+          </button>
+        )}
+
         <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${statusColors[project.status] || "bg-card"}`}>
           {project.status}
         </span>
@@ -155,12 +186,18 @@ export function ProjectCard({
           ) : (
             <motion.div className="flex flex-col items-center justify-center p-4 w-full h-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               {project.file_url ? (
-                <div className="relative group w-full h-full flex items-center justify-center overflow-hidden rounded-xl">
+                <div 
+                  className="relative group w-full h-full flex items-center justify-center overflow-hidden rounded-xl cursor-zoom-in"
+                  onClick={() => setShowFullPreview(true)} // Opens the watermarked Proofing Room
+                >
                   <img 
                     src={project.file_url} 
+                    onPointerDown={(e) => !isAdmin && e.preventDefault()} // NEW: Disable drag/long-press save
                     className="max-h-[200px] w-auto object-contain rounded-lg shadow-xl transition-transform duration-500 group-hover:scale-105" 
                     alt="Preview" 
                   />
+                  {/* Invisible block layer to prevent "Save As" for clients */}
+                  {!isAdmin && <div className="absolute inset-0 z-10 bg-transparent pointer-events-auto" />}
                 </div>
               ) : (
                 <>
@@ -192,7 +229,7 @@ export function ProjectCard({
           />
         </div>
 
-        {/* VERSION HISTORY LIST WITH ADMIN DELETE */}
+        {/* VERSION HISTORY LIST */}
         {versions && versions.length > 0 && (
           <div className="mt-4 border-t border-border/30 pt-3">
             <h4 className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1.5">
@@ -219,16 +256,20 @@ export function ProjectCard({
                         <Trash2 size={10} />
                       </button>
                     )}
-                    <button 
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        downloadFile(v.file_url, `${project.title}-${v.version_name}`);
-                      }}
-                      className="p-1.5 bg-muted/50 rounded-md group-hover:bg-primary/20 group-hover:text-primary transition-colors"
-                    >
-                      <Download size={10} />
-                    </button>
+                    {/* NEW: Locked Version Download Check */}
+                    {(project.assets_released || isAdmin) ? (
+                      <button 
+                        onClick={(e) => {
+                          e.preventDefault(); e.stopPropagation();
+                          downloadFile(v.file_url, `${project.title}-${v.version_name}`);
+                        }}
+                        className="p-1.5 bg-muted/50 rounded-md group-hover:bg-primary/20 group-hover:text-primary transition-colors"
+                      >
+                        <Download size={10} />
+                      </button>
+                    ) : (
+                      <div className="p-1.5 text-muted-foreground opacity-30"><Lock size={10} /></div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -252,33 +293,31 @@ export function ProjectCard({
             ) : isAdmin && (
               <label className="w-full h-8 flex items-center justify-center gap-2 rounded-xl border border-dashed border-cyan-500/30 text-cyan-500/60 hover:text-cyan-500 text-[9px] cursor-pointer">
                 <ImageIcon size={12} /> Upload Mockups (.webp)
-                {/* UPDATED: Multiple Selection Logic Added */}
                 <input 
-                  type="file" 
-                  className="hidden" 
-                  accept="image/webp" 
-                  multiple 
-                  onChange={(e) => {
-                    if (e.target.files && e.target.files.length > 0) {
-                      handleMockupUpload(project.id, e.target.files);
-                    }
-                  }} 
+                  type="file" className="hidden" accept="image/webp" multiple 
+                  onChange={(e) => e.target.files && e.target.files.length > 0 && handleMockupUpload(project.id, e.target.files)} 
                 />
               </label>
             )}
           </div>
 
+          {/* MAIN DOWNLOAD BUTTON (Gated by Release Toggle) */}
           {versions && versions.length > 0 ? (
-            <button 
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                downloadFile(versions[0].file_url, `${project.title}-latest`);
-              }}
-              className="w-full h-8 flex items-center justify-center gap-2 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-[10px] shadow-lg shadow-primary/20 transition-all active:scale-95"
-            >
-              <Download size={12} /> Open & Download Latest Assets
-            </button>
+            (project.assets_released || isAdmin) ? (
+              <button 
+                onClick={(e) => {
+                  e.preventDefault(); e.stopPropagation();
+                  downloadFile(versions[0].file_url, `${project.title}-latest`);
+                }}
+                className="w-full h-8 flex items-center justify-center gap-2 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-[10px] shadow-lg shadow-primary/20 transition-all active:scale-95"
+              >
+                <Download size={12} /> Open & Download Latest Assets
+              </button>
+            ) : (
+              <div className="w-full h-8 flex items-center justify-center gap-2 rounded-xl bg-muted/50 border border-dashed border-border text-muted-foreground font-bold text-[10px]">
+                <Lock size={12} /> Final Assets Locked (Pending Approval)
+              </div>
+            )
           ) : !isAdmin && (
             <div className="w-full text-center text-muted-foreground text-[9px] py-2 border border-dashed border-border rounded-xl font-medium uppercase tracking-tight">
               Design production in progress...
@@ -335,7 +374,69 @@ export function ProjectCard({
         </div>
       </div>
 
-      {/* FULL SCREEN GALLERY OVERLAY */}
+      {/* NEW: THE PROOFING ROOM (Full Screen + Watermark) */}
+      <AnimatePresence>
+        {showFullPreview && project.file_url && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[110] bg-background/98 backdrop-blur-2xl flex flex-col"
+          >
+            <div className="p-4 border-b border-border flex justify-between items-center bg-card">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                   <ImageIcon size={16} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-foreground">{project.title}</h3>
+                  <p className="text-[10px] text-muted-foreground">Reviewing Draft Version</p>
+                </div>
+              </div>
+              <button onClick={() => setShowFullPreview(false)} className="p-2 bg-muted rounded-full hover:bg-red-500/10 hover:text-red-500 transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center relative custom-scrollbar">
+              <div className="relative max-w-4xl w-full shadow-2xl rounded-lg overflow-hidden select-none">
+                <img 
+                  src={project.file_url} 
+                  className="w-full h-auto object-contain" 
+                  alt="Full Proof"
+                  onPointerDown={(e) => !isAdmin && e.preventDefault()}
+                />
+                
+                {/* NEW: DYNAMIC WATERMARK OVERLAY */}
+                {!project.assets_released && !isAdmin && (
+                  <div className="absolute inset-0 pointer-events-none grid grid-cols-2 grid-rows-6 gap-x-10 gap-y-20 p-10 opacity-[0.15] overflow-hidden">
+                    {[...Array(24)].map((_, i) => (
+                      <span key={i} className="text-[32px] font-black text-white rotate-[-35deg] whitespace-nowrap uppercase tracking-[0.3em] border border-white/20 p-4">
+                        SULAIMAN GRAPHICS PROOF
+                      </span>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Shield layer to prevent clicks */}
+                {!isAdmin && <div className="absolute inset-0 z-10 bg-transparent" />}
+              </div>
+            </div>
+
+            {/* Bottom Status Bar for Client */}
+            {!project.assets_released && !isAdmin && (
+              <div className="p-6 border-t border-border bg-card flex flex-col items-center gap-2">
+                <p className="text-[10px] text-muted-foreground text-center">
+                   Scroll to review details. Watermark is removed automatically after final payment.
+                </p>
+                <button className="w-full max-w-sm h-10 bg-primary/10 text-primary border border-primary/20 rounded-xl font-bold text-xs flex items-center justify-center gap-2">
+                  <Lock size={14} /> Design Awaiting Final Approval
+                </button>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* FULL SCREEN GALLERY OVERLAY (Mockups) */}
       <AnimatePresence>
         {showGallery && (
           <motion.div 
