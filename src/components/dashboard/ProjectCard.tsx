@@ -1,7 +1,8 @@
 import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react"; // Added useState
 import { 
   Edit3, Trash2, Save, XCircle, CheckCircle, Clock, Loader2, Download, 
-  MessageSquare, HardDrive, Send, Plus 
+  MessageSquare, HardDrive, Send, Plus, Smartphone, Image as ImageIcon, X 
 } from "lucide-react";
 
 interface ProjectCardProps {
@@ -29,6 +30,9 @@ interface ProjectCardProps {
   clientEmails: string[];
   downloadFile: (url: string, filename: string) => void;
   statusColors: { [key: string]: string };
+  // NEW PROPS FOR MOCKUPS
+  mockups: any[];
+  handleMockupUpload: (id: string, file: File) => void;
 }
 
 export function ProjectCard({
@@ -56,7 +60,11 @@ export function ProjectCard({
   clientEmails,
   downloadFile,
   statusColors,
+  mockups = [], // Default to empty array
+  handleMockupUpload
 }: ProjectCardProps) {
+
+  const [showGallery, setShowGallery] = useState(false); // Gallery State
 
   const getProgress = (status: string) => {
     if (status === "Completed") return 100;
@@ -66,7 +74,7 @@ export function ProjectCard({
 
   return (
     <motion.div 
-      className="bg-card border border-border/60 rounded-3xl overflow-hidden flex flex-col shadow-sm hover:shadow-md transition-all duration-300"
+      className="bg-card border border-border/60 rounded-3xl overflow-hidden flex flex-col shadow-sm hover:shadow-md transition-all duration-300 relative"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
     >
@@ -215,7 +223,25 @@ export function ProjectCard({
       {/* FOOTER ACTIONS */}
       <div className="p-4 bg-muted/5 border-t border-border">
         <div className="flex flex-col gap-3">
-          {/* Main Download Button: Opens and Downloads latest version */}
+          
+          {/* MOCKUP BUTTONS (NEW) */}
+          <div className="flex flex-col gap-2">
+            {mockups.length > 0 ? (
+              <button 
+                onClick={() => setShowGallery(true)}
+                className="w-full h-8 flex items-center justify-center gap-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-bold text-[10px] hover:bg-cyan-500/20 transition-all"
+              >
+                <Smartphone size={12} /> View {mockups.length} Premium Mockups
+              </button>
+            ) : isAdmin && (
+              <label className="w-full h-8 flex items-center justify-center gap-2 rounded-xl border border-dashed border-cyan-500/30 text-cyan-500/60 hover:text-cyan-500 text-[9px] cursor-pointer">
+                <ImageIcon size={12} /> Upload First Mockup (.webp)
+                <input type="file" className="hidden" accept="image/webp" onChange={(e) => e.target.files && handleMockupUpload(project.id, e.target.files[0])} />
+              </label>
+            )}
+          </div>
+
+          {/* Main Download Button */}
           {versions && versions.length > 0 ? (
             <button 
               onClick={(e) => {
@@ -282,6 +308,58 @@ export function ProjectCard({
           </div>
         </div>
       </div>
+
+      {/* FULL SCREEN GALLERY OVERLAY (NEW) */}
+      <AnimatePresence>
+        {showGallery && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex flex-col p-4"
+          >
+            <div className="flex justify-between items-center mb-6">
+               <h3 className="text-white font-bold text-sm tracking-tight">{project.title} - Mockup Showcase</h3>
+               <button onClick={() => setShowGallery(false)} className="p-2 bg-white/10 rounded-full text-white active:scale-90 transition-all"><X size={24}/></button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto space-y-8 custom-scrollbar pb-20">
+              {mockups.map((m, index) => (
+                <div key={m.id} className="relative group max-w-4xl mx-auto">
+                  <img 
+                    src={m.file_url} 
+                    className="w-full h-auto rounded-3xl shadow-2xl border border-white/5" 
+                    alt={`Mockup ${index + 1}`} 
+                  />
+                  <div className="absolute bottom-4 right-4 flex gap-2">
+                    {isAdmin && (
+                      <button 
+                        onClick={async () => {
+                          if(confirm("Delete this mockup?")) {
+                            await supabase.from("project_mockups").delete().eq("id", m.id);
+                            // Gallery will refresh on next open or you can trigger a reload
+                            alert("Mockup deleted.");
+                          }
+                        }}
+                        className="bg-red-500/20 backdrop-blur-md p-3 rounded-full text-red-500 border border-red-500/20"
+                      >
+                        <Trash2 size={20} />
+                      </button>
+                    )}
+                    <button 
+                      onClick={() => downloadFile(m.file_url, `${project.title}-mockup-${index + 1}`)}
+                      className="bg-cyan-500 p-4 rounded-full text-white shadow-xl active:scale-95 transition-all flex items-center gap-2 font-bold"
+                    >
+                      <Download size={20} /> <span className="text-xs">Save to Phone</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="text-center text-white/20 text-[9px] uppercase tracking-[0.2em] font-bold py-6">
+              Exclusive Visualization by Sulaiman Graphics
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
