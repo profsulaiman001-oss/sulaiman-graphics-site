@@ -1,9 +1,10 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react"; // Added useState
+import { useState } from "react"; 
 import { 
   Edit3, Trash2, Save, XCircle, CheckCircle, Clock, Loader2, Download, 
   MessageSquare, HardDrive, Send, Plus, Smartphone, Image as ImageIcon, X 
 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 interface ProjectCardProps {
   project: any;
@@ -60,11 +61,11 @@ export function ProjectCard({
   clientEmails,
   downloadFile,
   statusColors,
-  mockups = [], // Default to empty array
+  mockups = [], 
   handleMockupUpload
 }: ProjectCardProps) {
 
-  const [showGallery, setShowGallery] = useState(false); // Gallery State
+  const [showGallery, setShowGallery] = useState(false); 
 
   const getProgress = (status: string) => {
     if (status === "Completed") return 100;
@@ -335,7 +336,6 @@ export function ProjectCard({
                         onClick={async () => {
                           if(confirm("Delete this mockup?")) {
                             await supabase.from("project_mockups").delete().eq("id", m.id);
-                            // Gallery will refresh on next open or you can trigger a reload
                             alert("Mockup deleted.");
                           }
                         }}
