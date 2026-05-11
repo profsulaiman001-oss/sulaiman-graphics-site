@@ -41,6 +41,7 @@ export default function Dashboard() {
   const [clientEmails, setClientEmails] = useState<string[]>([]);
   const [commentsMap, setCommentsMap] = useState<{ [key: string]: any[] }>({});
   const [versionsMap, setVersionsMap] = useState<{ [key: string]: any[] }>({});
+  const [mockupsMap, setMockupsMap] = useState<{ [key: string]: any[] }>({}); // NEW: Mockups state
   const [notifications, setNotifications] = useState<string[]>([]);
 
   // UI States
@@ -84,7 +85,6 @@ export default function Dashboard() {
     initializeDashboard();
   }, []);
 
-  // Real-time listener for new messages
   useEffect(() => {
     const channel = supabase
       .channel('realtime-comments')
@@ -93,16 +93,12 @@ export default function Dashboard() {
         { event: 'INSERT', schema: 'public', table: 'comments' },
         (payload) => {
           const newMsg = payload.new;
-          
-          // Only increment unread if the chat isn't currently open
           if (openCommentsId !== newMsg.project_id) {
             setUnreadCounts(prev => ({
               ...prev,
               [newMsg.project_id]: (prev[newMsg.project_id] || 0) + 1
             }));
           }
-
-          // Also update the local comments list so the UI stays fresh
           setCommentsMap((prev) => {
             const currentMsgs = prev[newMsg.project_id] || [];
             if (currentMsgs.find(m => m.id === newMsg.id)) return prev;
@@ -130,7 +126,8 @@ export default function Dashboard() {
       if (data) {
         data.forEach(project => {
           fetchVersions(project.id);
-          fetchInitialUnreadCount(project.id, admin); // Get initial unread count on load
+          fetchMockups(project.id); // NEW: Fetch mockups for each project
+          fetchInitialUnreadCount(project.id, admin);
         });
       }
     } catch (err: any) {
@@ -140,12 +137,20 @@ export default function Dashboard() {
     }
   };
 
-  // Helper to get message counts when the dashboard first loads
+  // NEW: Fetch Mockups from the project_mockups table
+  const fetchMockups = async (projectId: string) => {
+    const { data, error } = await supabase
+      .from("project_mockups")
+      .select("*")
+      .eq("project_id", projectId)
+      .order("created_at", { ascending: false });
+    if (!error && data) {
+      setMockupsMap(prev => ({ ...prev, [projectId]: data }));
+    }
+  };
+
   const fetchInitialUnreadCount = async (projectId: string, admin: boolean) => {
     try {
-      // Logic: Count messages that are NOT from the current user type
-      // If admin, count messages from client (is_admin = false)
-      // If client, count messages from admin (is_admin = true)
       const { count, error } = await supabase
         .from("comments")
         .select('*', { count: 'exact', head: true })
@@ -197,7 +202,6 @@ export default function Dashboard() {
       }
     }
     setOpenCommentsId(openCommentsId === id ? null : id);
-    // RESET unread count when the chat is opened
     setUnreadCounts(prev => ({ ...prev, [id]: 0 }));
   };
 
@@ -312,6 +316,34 @@ export default function Dashboard() {
     } catch (err: any) {
       console.error("Upload failed:", err.message);
       alert("Error uploading file: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // NEW: Handle Mockup Upload (Specifically for .webp files)
+  const handleMockupUpload = async (id: string, file: File) => {
+    if (!isAdmin) return;
+    try {
+      setLoading(true);
+      const fileName = `mockup-${id}-${Date.now()}.webp`;
+      const filePath = `mockups/${fileName}`;
+      
+      const { error: uploadError } = await supabase.storage.from('project-files').upload(filePath, file);
+      if (uploadError) throw uploadError;
+      
+      const { data: { publicUrl } } = supabase.storage.from('project-files').getPublicUrl(filePath);
+      
+      const { error: dbError } = await supabase.from("project_mockups").insert([{
+        project_id: id,
+        file_url: publicUrl
+      }]);
+      
+      if (dbError) throw dbError;
+      fetchMockups(id);
+      alert("Mockup uploaded successfully!");
+    } catch (err: any) {
+      alert("Upload failed: " + err.message);
     } finally {
       setLoading(false);
     }
@@ -478,6 +510,8 @@ export default function Dashboard() {
                     openCommentsId={openCommentsId}
                     comments={commentsMap[project.id] || []}
                     versions={versionsMap[project.id] || []}
+                    mockups={mockupsMap[project.id] || []} // NEW: Pass mockups
+                    handleMockupUpload={handleMockupUpload} // NEW: Pass upload handler
                     newComment={newComment}
                     setNewComment={setNewComment}
                     sendingComment={sendingComment}
