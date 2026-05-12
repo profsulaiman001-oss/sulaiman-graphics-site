@@ -1,12 +1,11 @@
 import { Link } from "wouter";
-import { ArrowUpRight, Instagram, WhatsApp, Twitter } from "lucide-react";
+import { ArrowUpRight, Instagram, Twitter } from "lucide-react";
 import { Button } from "./Button";
 
 /* Real social links */
 const socials = [
   { icon: Instagram, label: "Instagram", href: "https://instagram.com/profsulaiman001" },
   { icon: Twitter,   label: "X / Twitter", href: "https://x.com/profsulaiman001" },
-  { icon: WhatsApp,  label: "WhatsApp", href: "https://wa.me/2349060410369" },
 ];
 
 export function Footer() {
