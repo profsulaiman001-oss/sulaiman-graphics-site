@@ -9,8 +9,7 @@ import {
   ArrowRight, 
   ClipboardList, 
   LayoutDashboard,
-  Sparkles,
-  Fingerprint
+  Sparkles
 } from "lucide-react";
 
 const tools = [
@@ -36,7 +35,7 @@ const tools = [
     icon: <Bot className="w-6 h-6" />,
     href: "/assistant",
     color: "from-cyan-400 via-blue-500 to-indigo-600",
-    size: "md:col-span-2 lg:col-span-1" // Featured size
+    size: "md:col-span-2 lg:col-span-1"
   },
   {
     title: "Client Chat",
@@ -68,48 +67,44 @@ export default function ClientHub() {
       </div>
 
       <div className="max-w-6xl mx-auto relative z-10">
+        {/* ── REFINED HEADER (Left Aligned, No Italics) ── */}
         <motion.div 
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-24"
+          initial={{ opacity: 0, x: -30 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="text-left mb-20"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-black tracking-[0.3em] uppercase mb-6 backdrop-blur-md shadow-[0_0_20px_rgba(34,211,238,0.1)]">
-            <Sparkles size={14} className="animate-pulse" /> Client Executive Suite
-          </div>
-          <h1 className="text-6xl md:text-8xl font-black tracking-tighter text-white mb-6 uppercase italic leading-none">
-            Client<span className="bg-gradient-to-r from-cyan-400 to-blue-600 bg-clip-text text-transparent drop-shadow-[0_0_25px_rgba(34,211,238,0.3)]">Hub</span>
+          <h1 className="text-5xl md:text-7xl font-black tracking-tighter text-white mb-4 uppercase leading-none">
+            Client<span className="bg-gradient-to-r from-cyan-400 to-blue-600 bg-clip-text text-transparent">Hub</span>
           </h1>
-          <p className="text-zinc-400 max-w-2xl mx-auto font-medium text-lg leading-relaxed border-t border-white/5 pt-6">
-            Your exclusive gateway to <span className="text-white">premium design services</span>, <span className="text-cyan-400">AI-powered tools</span>, and real-time project management.
+          
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-black tracking-[0.3em] uppercase mb-8 backdrop-blur-md">
+            <Sparkles size={12} /> Client Executive Suite
+          </div>
+
+          <p className="text-zinc-400 max-w-xl font-medium text-lg leading-relaxed border-l-2 border-white/5 pl-6">
+            Your exclusive gateway to <span className="text-white">premium design services</span> and AI-powered management.
           </p>
         </motion.div>
 
-        {/* ── BENTO GRID ── */}
+        {/* ── BENTO GRID (Clean Titles) ── */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {tools.map((tool, i) => (
             <Link key={i} href={tool.href}>
               <motion.div 
-                initial={{ opacity: 0, scale: 0.9 }}
+                initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: i * 0.1 }}
                 whileHover={{ y: -5 }}
                 className={`group relative p-[1px] rounded-[2.5rem] overflow-hidden cursor-pointer ${tool.size}`}
               >
-                {/* Border Gradient Effect */}
-                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent group-hover:from-cyan-500/50 group-hover:to-blue-600/50 transition-all duration-500" />
+                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent group-hover:from-cyan-500/50 transition-all duration-500" />
                 
-                <div className="relative h-full p-8 bg-[#0a0f1d]/80 backdrop-blur-2xl rounded-[2.4rem] border border-white/5 overflow-hidden flex flex-col">
-                  
-                  {/* Subtle Background Icon Decoration */}
-                  <div className="absolute -right-4 -top-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-500 group-hover:scale-110 transform">
-                    {tool.icon && React.cloneElement(tool.icon as React.ReactElement, { size: 140 })}
-                  </div>
-
-                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${tool.color} flex items-center justify-center mb-8 shadow-2xl shadow-cyan-900/40 text-white ring-4 ring-white/5`}>
+                <div className="relative h-full p-8 bg-[#0a0f1d]/80 backdrop-blur-2xl rounded-[2.4rem] border border-white/5 flex flex-col">
+                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${tool.color} flex items-center justify-center mb-8 shadow-2xl text-white`}>
                     {tool.icon}
                   </div>
                   
-                  <h3 className="text-2xl font-black text-white mb-3 italic uppercase tracking-tight group-hover:text-cyan-400 transition-colors">
+                  <h3 className="text-2xl font-black text-white mb-3 uppercase tracking-tight group-hover:text-cyan-400 transition-colors">
                     {tool.title}
                   </h3>
                   <p className="text-zinc-400 text-sm leading-relaxed mb-10 font-medium">
@@ -125,42 +120,38 @@ export default function ClientHub() {
           ))}
         </div>
 
-        {/* ── PROJECT MANAGEMENT FOOTER ── */}
+        {/* ── PREMIUM PROJECT PORTAL (Redesigned) ── */}
         <motion.div 
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           className="mt-16 relative group"
         >
-          <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-[3rem] blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
-          <div className="relative bg-slate-950 border border-white/10 rounded-[3rem] p-10 md:p-14 flex flex-col md:flex-row items-center justify-between gap-10 overflow-hidden">
+          <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-[3rem] blur opacity-10 group-hover:opacity-25 transition duration-1000"></div>
+          <div className="relative bg-slate-950/50 border border-white/10 rounded-[3rem] p-10 md:p-14 flex flex-col md:flex-row items-center justify-between gap-10 overflow-hidden backdrop-blur-xl">
             
-            {/* Design Pattern Overlay */}
-            <div className="absolute inset-0 opacity-[0.02] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
-
             <div className="text-left max-w-lg relative z-10">
               <div className="flex items-center gap-3 mb-4">
-                <div className="h-px w-12 bg-cyan-500" />
-                <span className="text-cyan-500 text-[10px] font-black uppercase tracking-[0.4em]">Partner Portal</span>
+                <div className="h-px w-8 bg-cyan-500" />
+                <span className="text-cyan-500 text-[10px] font-black uppercase tracking-[0.4em]">Existing Partners</span>
               </div>
-              <h3 className="text-4xl md:text-5xl font-black text-white mb-6 uppercase italic leading-[0.9] tracking-tighter">
-                Project <br /> 
-                <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">Management</span>
+              <h3 className="text-3xl md:text-4xl font-black text-white mb-4 uppercase tracking-tighter">
+                Access Project <span className="text-cyan-400">Dashboard</span>
               </h3>
-              <p className="text-zinc-400 font-medium text-lg border-l-2 border-white/10 pl-6">
-                Active partner? Access your real-time project dashboard, deliverables, and asset vault.
+              <p className="text-zinc-400 font-medium text-base">
+                Already have an active project? Sign in to track progress, download your final assets, and manage deliverables.
               </p>
             </div>
             
             <Link href="/login">
               <motion.button 
-                whileHover={{ scale: 1.02, translateY: -2 }}
-                whileTap={{ scale: 0.98 }}
-                className="group relative px-12 py-6 bg-white rounded-[1.5rem] font-black text-slate-900 flex items-center gap-4 shadow-[0_20px_40px_rgba(0,0,0,0.4)]"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="group relative px-10 py-5 bg-slate-900 border border-white/10 rounded-2xl font-black text-white flex items-center gap-4 shadow-2xl transition-all hover:border-cyan-500/50"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-cyan-100 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-[1.5rem]" />
-                <LayoutDashboard size={24} className="relative z-10 group-hover:rotate-6 transition-transform text-blue-600" />
-                <span className="relative z-10 uppercase tracking-tighter text-lg italic">Enter Dashboard</span>
+                <LayoutDashboard size={20} className="text-cyan-400 group-hover:rotate-6 transition-transform" />
+                <span className="uppercase tracking-[0.1em] text-sm">Enter Portal</span>
+                <ArrowRight size={16} className="opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
               </motion.button>
             </Link>
           </div>
