@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X } from "lucide-react"; // Removed ShoppingBag import
+import { Menu, X } from "lucide-react"; 
 import { cn } from "@/lib/utils";
 import { SettingsDropdown } from "@/components/SettingsDropdown";
 
@@ -37,104 +37,101 @@ export function Navbar() {
       className={cn(
         "fixed top-0 inset-x-0 z-50 transition-all duration-500",
         isScrolled 
-          ? "bg-[#02040a]/40 backdrop-blur-xl border-b border-white/10 py-3 shadow-2xl" 
-          : "bg-transparent py-5"
+          ? "py-4 bg-[#02040a]/80 backdrop-blur-xl border-b border-white/5 shadow-[0_8px_32px_rgba(0,0,0,0.5)]" 
+          : "py-8 bg-transparent"
       )}
     >
-      <div className="max-w-7xl mx-auto px-6 lg:px-8">
-        <div className="flex items-center justify-between">
-       
-          <Link href="/" className="relative z-10 group">
-            <span className="font-display font-black text-2xl tracking-tighter text-white group-hover:text-blue-500 transition-colors uppercase italic">
-              SULAIMAN<span className="text-blue-600">.</span>GRAPHICS
-            </span>
-          </Link>
+      <nav className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+        {/* ── LOGO (FIXED: Removed Italic, Changed Dot to Cyan) ── */}
+        <Link href="/">
+          <motion.div 
+            whileHover={{ scale: 1.02 }}
+            className="flex items-center gap-2 cursor-pointer group"
+          >
+            <div className="relative">
+              <div className="absolute -inset-2 bg-blue-600/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+              <span className="relative text-xl md:text-2xl font-black tracking-tighter uppercase text-white not-italic">
+                Sulaiman
+                <span className="mx-0.5 text-cyan-400 group-hover:animate-pulse">.</span>
+                Graphics
+              </span>
+            </div>
+          </motion.div>
+        </Link>
 
-          {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-8">
-            {links.map((link) => {
-              const isActive = !link.hash && (location === link.path || (link.path !== "/" && location.startsWith(link.path)));
-              
-              return (
-                <Link key={link.path} href={link.path}>
-                  <a className={cn(
-                    "relative text-[10px] font-black uppercase tracking-[0.25em] transition-all duration-300 py-2",
-                    isActive ? "text-blue-500" : "text-gray-400 hover:text-white"
-                  )}>
-                    {link.name}
-                    {isActive && (
-                      <motion.div 
-                        layoutId="activeNav"
-                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.5)]"
-                      />
-                    )}
-                  </a>
-                </Link>
-              );
-            })}
-
-            {/* Shopping Bag Icon Removed from here */}
-
-            <div className="w-px h-6 bg-white/10 mx-2" />
- 
-            <SettingsDropdown />
-          </nav>
-
-          {/* Mobile Toggle */}
-          <div className="md:hidden flex items-center gap-4">
-             {/* Shopping Bag Icon Removed from here */}
-             
-             <button 
-               className="text-white p-2.5 bg-white/5 rounded-xl border border-white/10 transition-colors active:bg-white/20"
-               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-             >
-               {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-             </button>
+        {/* Desktop Links */}
+        <div className="hidden lg:flex items-center gap-1 bg-white/5 p-1 rounded-2xl border border-white/5 backdrop-blur-md">
+          {links.map((link) => {
+            const isActive = !link.hash && (location === link.path);
+            return (
+              <Link key={link.path} href={link.path}>
+                <a className={cn(
+                  "relative px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300",
+                  isActive 
+                    ? "text-white" 
+                    : "text-gray-400 hover:text-white"
+                )}>
+                  {isActive && (
+                    <motion.div 
+                      layoutId="navTab"
+                      className="absolute inset-0 bg-blue-600 shadow-lg shadow-blue-900/40 rounded-xl"
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+                  <span className="relative z-10">{link.name}</span>
+                </a>
+              </Link>
+            );
+          })}
+          
+          <div className="ml-2 pl-2 border-l border-white/10 h-6 flex items-center">
+             <SettingsDropdown />
           </div>
         </div>
-      </div>
 
-      {/* Mobile Nav Overlay */}
+        {/* Mobile Controls */}
+        <div className="lg:hidden flex items-center gap-4">
+          <SettingsDropdown />
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-3 bg-white/5 border border-white/10 rounded-2xl text-white shadow-xl"
+          >
+            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
+      </nav>
+
+      {/* Mobile Menu */}
       <AnimatePresence>
         {mobileMenuOpen && (
-          <>
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setMobileMenuOpen(false)}
-              className="fixed inset-0 bg-black/80 backdrop-blur-md md:hidden"
-            />
-           
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: -20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: -20 }}
-              className="absolute top-full left-4 right-4 mt-4 bg-[#02040a] border border-white/10 rounded-[2rem] shadow-2xl p-4 md:hidden overflow-hidden"
-            >
-              <div className="flex flex-col space-y-1 relative z-10">
-                {links.map((link) => {
-                  const isActive = !link.hash && (location === link.path);
-                  return (
-                    <Link
-                      key={link.path}
-                      href={link.path}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={cn(
-                        "flex items-center justify-between px-5 py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.25em] transition-all duration-300",
-                        isActive 
-                          ? "bg-blue-600 text-white shadow-lg shadow-blue-900/40" 
-                          : "text-gray-400 hover:bg-white/5 hover:text-white"
-                      )}
-                    >
-                      <span>{link.name}</span>
-                      {isActive && <motion.div layoutId="mobileDot" className="w-1.5 h-1.5 bg-white rounded-full" />}
-                    </Link>
-                  );
-                })}
-              </div>
-            </motion.div>
-          </>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: -20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -20 }}
+            className="absolute top-full left-4 right-4 mt-4 bg-[#02040a] border border-white/10 rounded-[2rem] shadow-2xl p-4 lg:hidden overflow-hidden"
+          >
+            <div className="flex flex-col space-y-1 relative z-10">
+              {links.map((link) => {
+                const isActive = !link.hash && (location === link.path);
+                return (
+                  <Link
+                    key={link.path}
+                    href={link.path}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={cn(
+                      "flex items-center justify-between px-5 py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.25em] transition-all duration-300",
+                      isActive 
+                        ? "bg-blue-600 text-white shadow-lg shadow-blue-900/40" 
+                        : "text-gray-400 hover:bg-white/5 hover:text-white"
+                    )}
+                  >
+                    <span>{link.name}</span>
+                    {isActive && <motion.div layoutId="mobileDot" className="w-1.5 h-1.5 bg-white rounded-full" />}
+                  </Link>
+                );
+              })}
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </header>
