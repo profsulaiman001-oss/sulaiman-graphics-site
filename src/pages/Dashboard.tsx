@@ -20,7 +20,7 @@ import { ProjectComments } from "@/components/dashboard/ProjectComments";
 import { ProjectManagement } from "@/components/dashboard/ProjectManagement";
 import WelcomeNameModal from "@/components/dashboard/WelcomeNameModal";
 import { CertificateGenerator } from "./components/certificates/CertificateGenerator";
-import { DashboardNav } from "@/components/dashboard/DashboardNav"; // NEW IMPORT
+import { DashboardNav } from "@/components/dashboard/DashboardNav"; 
 
 // Page Imports for Client Buttons
 import Questionnaire from "@/pages/Questionnaire";
@@ -46,7 +46,7 @@ export default function Dashboard() {
   const [notifications, setNotifications] = useState<string[]>([]);
 
   // UI States
-  const [activeSection, setActiveSection] = useState("projects"); // NEW NAVIGATION STATE
+  const [activeSection, setActiveSection] = useState("projects");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [openCommentsId, setOpenCommentsId] = useState<string | null>(null);
@@ -488,7 +488,6 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* PROJECTS SECTION - ONLY SHOWS IF ACTIVE SECTION IS PROJECTS */}
         {activeSection === "projects" && (
           <div className="mt-12">
             <h2 className="text-xl font-bold tracking-tight mb-6">
@@ -532,9 +531,6 @@ export default function Dashboard() {
                       downloadFile={downloadFile}
                       statusColors={statusColors}
                     />
-                    {openCommentsId === project.id && (
-                      <ProjectComments projectId={project.id} />
-                    )}
                   </div>
                 ))}
               </div>
@@ -542,50 +538,12 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* SETTINGS VIEW */}
         {activeSection === "settings" && user && (
           <div className="mt-12">
              <AccountSettings onClose={() => setActiveSection("projects")} userEmail={user.email} />
           </div>
         )}
       </main>
-
-      <AnimatePresence>
-        {activeOverlay && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-background/95 backdrop-blur-xl flex items-center justify-center overflow-hidden"
-          >
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              className="bg-card border-x border-border/50 w-full h-full max-w-7xl relative shadow-2xl flex flex-col"
-            >
-              <div className="p-6 border-b border-border flex items-center justify-between sticky top-0 bg-card z-50">
-                <h2 className="text-lg font-bold capitalize tracking-tight">{activeOverlay} Details</h2>
-                <button 
-                  onClick={() => setActiveOverlay(null)} 
-                  className="p-2 bg-muted/50 hover:bg-red-500/20 hover:text-red-500 rounded-full transition-colors"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              <div className="flex-1 overflow-y-auto p-4 md:p-10 custom-scrollbar">
-                <div className="mx-auto max-w-4xl">
-                  {activeOverlay === 'receipt' && <Receipt />}
-                  {activeOverlay === 'invoice' && <Invoice />}
-                  {activeOverlay === 'questionnaires' && <ViewQuestionnaires />}
-                  {activeOverlay === 'questionnaire' && <Questionnaire />}
-                  {activeOverlay === 'agreement' && <Agreement />}
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <footer className="border-t border-border py-6 mt-auto">
         <div className="container mx-auto px-4 text-center text-xs text-muted-foreground">
@@ -595,7 +553,7 @@ export default function Dashboard() {
       
       {isCertOpen && <CertificateGenerator onClose={() => setIsCertOpen(false)} />}
 
-      {/* NEW NAVIGATION MENU IMPORT */}
+      {/* FLOATING NAVIGATION COMPONENT */}
       <DashboardNav 
         activeSection={activeSection} 
         setActiveSection={setActiveSection} 
