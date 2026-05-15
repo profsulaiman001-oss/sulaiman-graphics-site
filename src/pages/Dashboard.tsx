@@ -20,7 +20,7 @@ import { ProjectComments } from "@/components/dashboard/ProjectComments";
 import { ProjectManagement } from "@/components/dashboard/ProjectManagement";
 import WelcomeNameModal from "@/components/dashboard/WelcomeNameModal";
 import { CertificateGenerator } from "./components/certificates/CertificateGenerator";
-import { DashboardNav } from "@/components/dashboard/DashboardNav"; 
+import { DashboardNav } from "@/components/dashboard/DashboardNav"; // NEW IMPORT
 
 // Page Imports for Client Buttons
 import Questionnaire from "@/pages/Questionnaire";
@@ -46,7 +46,7 @@ export default function Dashboard() {
   const [notifications, setNotifications] = useState<string[]>([]);
 
   // UI States
-  const [activeSection, setActiveSection] = useState("projects");
+  const [activeSection, setActiveSection] = useState("projects"); // NEW NAVIGATION STATE
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [openCommentsId, setOpenCommentsId] = useState<string | null>(null);
@@ -412,154 +412,143 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex">
-      {/* NAVIGATION SIDEBAR */}
-      <DashboardNav 
-        activeSection={activeSection} 
-        setActiveSection={setActiveSection} 
-        isAdmin={isAdmin} 
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
+      <DashboardHeader 
+        userEmail={user?.email || "User"}
+        notificationsCount={notifications.length}
+        isSettingsOpen={isSettingsOpen}
+        setIsSettingsOpen={setIsSettingsOpen}
+        SignOutHandler={handleSignOut}
       />
 
-      {/* MAIN CONTENT AREA WITH LEFT PADDING FOR SIDEBAR */}
-      <div className="flex-1 flex flex-col pl-20 md:pl-24">
-        <DashboardHeader 
-          userEmail={user?.email || "User"}
-          notificationsCount={notifications.length}
-          isSettingsOpen={isSettingsOpen}
-          setIsSettingsOpen={setIsSettingsOpen}
-          SignOutHandler={handleSignOut}
-        />
+      <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl pb-32">
+        {showWelcome && <WelcomeNameModal onClose={() => setShowWelcome(false)} userName={isAdmin ? "Sulaiman" : "Client"} />}
+  
+        {isSettingsOpen && <AccountSettings onClose={() => setIsSettingsOpen(false)} userEmail={user?.email} />}
 
-        <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl pb-12">
-          {showWelcome && <WelcomeNameModal onClose={() => setShowWelcome(false)} userName={isAdmin ? "Sulaiman" : "Client"} />}
-    
-          {isSettingsOpen && <AccountSettings onClose={() => setIsSettingsOpen(false)} userEmail={user?.email} />}
+        <div className="mb-8">
+           <AnalyticsDashboard stats={stats} COLORS={COLORS} />
+        </div>
 
-          <div className="mb-8">
-             <AnalyticsDashboard stats={stats} COLORS={COLORS} />
-          </div>
+        <div className="grid gap-6 md:grid-cols-3">
+          <div className="md:col-span-2 space-y-6">
+            <ProjectManagement 
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              statusFilter={statusFilter}
+              setStatusFilter={setStatusFilter}
+              newTitle={newTitle}
+              setNewTitle={setNewTitle}
+              newClient={newClient}
+              setNewClient={setNewClient}
+              handleCreateProject={handleCreateProject}
+              isAdmin={isAdmin} 
+            />
 
-          <div className="grid gap-6 md:grid-cols-3">
-            <div className="md:col-span-2 space-y-6">
-              <ProjectManagement 
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                statusFilter={statusFilter}
-                setStatusFilter={setStatusFilter}
-                newTitle={newTitle}
-                setNewTitle={setNewTitle}
-                newClient={newClient}
-                setNewClient={setNewClient}
-                handleCreateProject={handleCreateProject}
-                isAdmin={isAdmin} 
-              />
-
-              {!isAdmin && (
-                <div className="grid grid-cols-2 gap-4">
-                  <button
-                    onClick={() => setActiveOverlay('questionnaire')}
-                    className="flex items-center justify-center gap-2 p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-xl hover:bg-cyan-500/20 transition-all text-cyan-400 font-bold text-sm"
-                  >
-                    <ClipboardList size={18} />
-                    Fill Questionnaire
-                  </button>
-                  <button
-                    onClick={() => setActiveOverlay('agreement')}
-                    className="flex items-center justify-center gap-2 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl hover:bg-blue-500/20 transition-all text-blue-400 font-bold text-sm"
-                  >
-                    <Award size={18} />
-                    Sign Agreement
-                  </button>
-                </div>
-              )}
-
-              {isAdmin && (
-                <OnboardClient 
-                  inviteEmail={inviteEmail}
-                  setInviteEmail={setInviteEmail}
-                  handleInviteClient={handleInviteClient}
-                  loading={inviteLoading}
-                />
-              )}
-            </div>
+            {!isAdmin && (
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={() => setActiveOverlay('questionnaire')}
+                  className="flex items-center justify-center gap-2 p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-xl hover:bg-cyan-500/20 transition-all text-cyan-400 font-bold text-sm"
+                >
+                  <ClipboardList size={18} />
+                  Fill Questionnaire
+                </button>
+                <button
+                  onClick={() => setActiveOverlay('agreement')}
+                  className="flex items-center justify-center gap-2 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl hover:bg-blue-500/20 transition-all text-blue-400 font-bold text-sm"
+                >
+                  <Award size={18} />
+                  Sign Agreement
+                </button>
+              </div>
+            )}
 
             {isAdmin && (
-              <div>
-                <div className="bg-card/30 border border-border/50 p-4 rounded-2xl">
-                  <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Quick Actions</h2>
-                  <AdminNav 
-                    setLocation={setLocation} 
-                    setIsCertOpen={setIsCertOpen} 
-                    setActiveOverlay={setActiveOverlay} 
-                  />
-                </div>
-              </div>
+              <OnboardClient 
+                inviteEmail={inviteEmail}
+                setInviteEmail={setInviteEmail}
+                handleInviteClient={handleInviteClient}
+                loading={inviteLoading}
+              />
             )}
           </div>
 
-          {activeSection === "projects" && (
-            <div className="mt-12">
-              <h2 className="text-xl font-bold tracking-tight mb-6">
-                {isAdmin ? "Project Status Workspace" : "Your Active Projects"}
-              </h2>
-              {filteredProjects.length === 0 ? (
-                <div className="text-center py-16 border border-dashed border-border rounded-2xl bg-card/40">
-                  <ClipboardList className="mx-auto text-muted-foreground mb-4" size={32} />
-                  <h3 className="text-sm font-bold text-foreground">No Projects Found</h3>
-                </div>
-              ) : (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {filteredProjects.map((project: any) => (
-                    <div key={project.id} className="flex flex-col gap-3">
-                      <ProjectCard 
-                        project={project}
-                        isAdmin={isAdmin}
-                        editingId={editingId}
-                        editTitle={editTitle}
-                        setEditTitle={setEditTitle}
-                        startEdit={startEdit}
-                        saveEdit={saveEdit}
-                        setEditingId={setEditingId}
-                        updateStatus={updateStatus}
-                        assignUser={assignUser}
-                        handleDelete={handleDelete}
-                        handleFileUpload={handleFileUpload}
-                        toggleComments={toggleComments}
-                        openCommentsId={openCommentsId}
-                        comments={commentsMap[project.id] || []}
-                        versions={versionsMap[project.id] || []}
-                        mockups={mockupsMap[project.id] || []}
-                        handleMockupUpload={handleMockupUpload}
-                        handleDeleteVersion={handleDeleteVersion}
-                        newComment={newComment}
-                        setNewComment={setNewComment}
-                        sendingComment={sendingComment}
-                        sendComment={sendComment}
-                        unreadCounts={unreadCounts}
-                        clientEmails={clientEmails}
-                        downloadFile={downloadFile}
-                        statusColors={statusColors}
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
+          {isAdmin && (
+            <div>
+              <div className="bg-card/30 border border-border/50 p-4 rounded-2xl">
+                <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Quick Actions</h2>
+                <AdminNav 
+                  setLocation={setLocation} 
+                  setIsCertOpen={setIsCertOpen} 
+                  setActiveOverlay={setActiveOverlay} 
+                />
+              </div>
             </div>
           )}
+        </div>
 
-          {activeSection === "settings" && user && (
-            <div className="mt-12">
-               <AccountSettings onClose={() => setActiveSection("projects")} userEmail={user.email} />
-            </div>
-          )}
-        </main>
-
-        <footer className="border-t border-border py-6 mt-auto">
-          <div className="container mx-auto px-4 text-center text-xs text-muted-foreground">
-            © {new Date().getFullYear()} Sulaiman Graphics. All rights reserved.
+        {/* PROJECTS SECTION - ONLY SHOWS IF ACTIVE SECTION IS PROJECTS */}
+        {activeSection === "projects" && (
+          <div className="mt-12">
+            <h2 className="text-xl font-bold tracking-tight mb-6">
+              {isAdmin ? "Project Status Workspace" : "Your Active Projects"}
+            </h2>
+            {filteredProjects.length === 0 ? (
+              <div className="text-center py-16 border border-dashed border-border rounded-2xl bg-card/40">
+                <ClipboardList className="mx-auto text-muted-foreground mb-4" size={32} />
+                <h3 className="text-sm font-bold text-foreground">No Projects Found</h3>
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {filteredProjects.map((project: any) => (
+                  <div key={project.id} className="flex flex-col gap-3">
+                    <ProjectCard 
+                      project={project}
+                      isAdmin={isAdmin}
+                      editingId={editingId}
+                      editTitle={editTitle}
+                      setEditTitle={setEditTitle}
+                      startEdit={startEdit}
+                      saveEdit={saveEdit}
+                      setEditingId={setEditingId}
+                      updateStatus={updateStatus}
+                      assignUser={assignUser}
+                      handleDelete={handleDelete}
+                      handleFileUpload={handleFileUpload}
+                      toggleComments={toggleComments}
+                      openCommentsId={openCommentsId}
+                      comments={commentsMap[project.id] || []}
+                      versions={versionsMap[project.id] || []}
+                      mockups={mockupsMap[project.id] || []}
+                      handleMockupUpload={handleMockupUpload}
+                      handleDeleteVersion={handleDeleteVersion}
+                      newComment={newComment}
+                      setNewComment={setNewComment}
+                      sendingComment={sendingComment}
+                      sendComment={sendComment}
+                      unreadCounts={unreadCounts}
+                      clientEmails={clientEmails}
+                      downloadFile={downloadFile}
+                      statusColors={statusColors}
+                    />
+                    {openCommentsId === project.id && (
+                      <ProjectComments projectId={project.id} />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        </footer>
-      </div>
+        )}
+
+        {/* SETTINGS VIEW */}
+        {activeSection === "settings" && user && (
+          <div className="mt-12">
+             <AccountSettings onClose={() => setActiveSection("projects")} userEmail={user.email} />
+          </div>
+        )}
+      </main>
 
       <AnimatePresence>
         {activeOverlay && (
@@ -598,7 +587,20 @@ export default function Dashboard() {
         )}
       </AnimatePresence>
 
+      <footer className="border-t border-border py-6 mt-auto">
+        <div className="container mx-auto px-4 text-center text-xs text-muted-foreground">
+          © {new Date().getFullYear()} Sulaiman Graphics. All rights reserved.
+        </div>
+      </footer>
+      
       {isCertOpen && <CertificateGenerator onClose={() => setIsCertOpen(false)} />}
+
+      {/* NEW NAVIGATION MENU IMPORT */}
+      <DashboardNav 
+        activeSection={activeSection} 
+        setActiveSection={setActiveSection} 
+        isAdmin={isAdmin} 
+      />
     </div>
   );
 }
