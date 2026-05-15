@@ -1,12 +1,13 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   LayoutDashboard, 
-  FolderCanvas, 
-  CreditCard, 
   Settings, 
-  MessageSquare,
-  ClipboardCheck
+  CreditCard, 
+  ClipboardCheck,
+  Menu,
+  X
 } from "lucide-react";
+import { useState } from "react";
 
 interface NavProps {
   activeSection: string;
@@ -15,6 +16,8 @@ interface NavProps {
 }
 
 export function DashboardNav({ activeSection, setActiveSection, isAdmin }: NavProps) {
+  const [isOpen, setIsOpen] = useState(false);
+
   const navItems = [
     { id: 'projects', label: 'Projects', icon: LayoutDashboard },
     { id: 'agreements', label: 'Contracts', icon: ClipboardCheck },
@@ -22,47 +25,82 @@ export function DashboardNav({ activeSection, setActiveSection, isAdmin }: NavPr
     { id: 'settings', label: 'Profile', icon: Settings },
   ];
 
-  return (
-    <div className="fixed bottom-6 left-0 right-0 z-[100] flex justify-center px-4 pointer-events-none">
-      <motion.nav 
-        initial={{ y: 100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="pointer-events-auto bg-black/40 backdrop-blur-xl border border-white/10 p-2 rounded-[2rem] flex items-center gap-1 shadow-2xl shadow-black/50"
-      >
-        {navItems.map((item) => {
-          const isActive = activeSection === item.id;
-          const Icon = item.icon;
+  const handleNavClick = (id: string) => {
+    setActiveSection(id);
+    setIsOpen(false);
+  };
 
-          return (
-            <button
-              key={item.id}
-              onClick={() => setActiveSection(item.id)}
-              className="relative px-4 py-3 flex flex-col items-center gap-1 group transition-all"
+  return (
+    <>
+      {/* FLOATING HAMBURGER BUTTON */}
+      <button 
+        onClick={() => setIsOpen(true)}
+        className="fixed bottom-6 right-6 z-[110] w-14 h-14 bg-primary rounded-full shadow-2xl flex items-center justify-center text-black active:scale-90 transition-transform md:top-6 md:right-6 md:bottom-auto"
+      >
+        <Menu size={24} strokeWidth={3} />
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            {/* BACKDROP */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsOpen(false)}
+              className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[120]"
+            />
+
+            {/* SLIDE-OUT SIDEBAR */}
+            <motion.nav 
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed right-0 top-0 bottom-0 z-[130] w-[280px] bg-card border-l border-border shadow-2xl p-6 flex flex-col"
             >
-              {isActive && (
-                <motion.div 
-                  layoutId="nav-bg"
-                  className="absolute inset-0 bg-primary/20 rounded-2xl border border-primary/30"
-                  transition={{ type: "spring", bounce: 0.3, duration: 0.6 }}
-                />
-              )}
-              
-              <Icon 
-                size={20} 
-                className={`relative z-10 transition-colors duration-300 ${
-                  isActive ? 'text-primary' : 'text-white/40 group-hover:text-white/70'
-                }`} 
-              />
-              
-              <span className={`relative z-10 text-[9px] font-black uppercase tracking-widest transition-colors duration-300 ${
-                isActive ? 'text-white' : 'text-white/20 group-hover:text-white/40'
-              }`}>
-                {item.label}
-              </span>
-            </button>
-          );
-        })}
-      </motion.nav>
-    </div>
+              <div className="flex items-center justify-between mb-10">
+                <span className="font-black text-xl tracking-tighter text-primary">MENU</span>
+                <button 
+                  onClick={() => setIsOpen(false)}
+                  className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                {navItems.map((item) => {
+                  const isActive = activeSection === item.id;
+                  const Icon = item.icon;
+
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => handleNavClick(item.id)}
+                      className={`flex items-center gap-4 w-full p-4 rounded-2xl transition-all ${
+                        isActive 
+                          ? 'bg-primary text-black font-bold' 
+                          : 'hover:bg-white/5 text-muted-foreground hover:text-white'
+                      }`}
+                    >
+                      <Icon size={22} />
+                      <span className="text-sm uppercase tracking-widest font-black">
+                        {item.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="mt-auto pt-6 border-t border-border/50 text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
+                Sulaiman Graphics Studio v2.0
+              </div>
+            </motion.nav>
+          </>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
