@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { uploadToGitHubStorage } from "@/utils/githubStorage"; // Adjust import path if needed to match dashboard architecture
 import { 
   Search, 
   Send, 
@@ -14,7 +15,9 @@ import {
   ArrowRight,
   UserPlus,
   Loader2,
-  Trash2 
+  Trash2,
+  FileText,
+  Download
 } from "lucide-react";
 
 export default function Chat() {
@@ -233,25 +236,19 @@ export default function Chat() {
 
     try {
       setUploading(true);
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`;
+      
+      // Use your existing GitHub storage helper functionality
+      const downloadUrl = await uploadToGitHubStorage(file);
+      
+      if (!downloadUrl) {
+        throw new Error("Failed to receive download URL from storage server.");
+      }
 
-      const { error: uploadError } = await supabase.storage
-        .from('chat-attachments')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('chat-attachments')
-        .getPublicUrl(filePath);
-
-      sendMessageMutation.mutate(publicUrl);
+      sendMessageMutation.mutate(downloadUrl);
 
     } catch (error) {
       console.error("Upload error:", error);
-      alert("Failed to upload image. Please try again.");
+      alert("Failed to upload file to storage. Please try again.");
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -268,14 +265,31 @@ export default function Chat() {
   );
 
   const isImageMessage = (text: string) => {
-    return text.startsWith("http") && (
-      text.endsWith(".png") || 
-      text.endsWith(".jpg") || 
-      text.endsWith(".jpeg") || 
-      text.endsWith(".gif") || 
-      text.endsWith(".webp") ||
-      text.includes("chat-attachments") 
+    if (!text.startsWith("http")) return false;
+    const lowerText = text.toLowerCase();
+    return (
+      lowerText.endsWith(".png") || 
+      lowerText.endsWith(".jpg") || 
+      lowerText.endsWith(".jpeg") || 
+      lowerText.endsWith(".gif") || 
+      lowerText.endsWith(".webp") ||
+      lowerText.includes("chat-attachments") 
     );
+  };
+
+  const isLinkMessage = (text: string) => {
+    return text.startsWith("http");
+  };
+
+  const getFileNameFromUrl = (url: string) => {
+    try {
+      const decodedUrl = decodeURIComponent(url);
+      const parts = decodedUrl.split('/');
+      const lastPart = parts[parts.length - 1];
+      return lastPart.split('?')[0];
+    } catch {
+      return "Download File Attachment";
+    }
   };
 
   return (
@@ -283,7 +297,7 @@ export default function Chat() {
       
       <input 
         type="file" 
-        accept="image/*" 
+        accept="*" 
         ref={fileInputRef} 
         onChange={handleFileUpload} 
         className="hidden" 
@@ -458,6 +472,7 @@ export default function Chat() {
               const isMe = msg.sender_email === guestEmail;
               const formattedTime = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
               const isImage = isImageMessage(msg.message);
+              const isFile = isLinkMessage(msg.message) && !isImage;
 
               return (
                 <div 
@@ -488,6 +503,22 @@ export default function Chat() {
                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                              <ArrowRight className="w-6 h-6 text-white -rotate-45" />
                           </div>
+                        </div>
+                      ) : isFile ? (
+                        <div 
+                          onClick={() => window.open(msg.message, '_blank')}
+                          className="flex items-center gap-3 max-w-full sm:max-w-xs cursor-pointer select-none hover:opacity-90 transition-opacity"
+                        >
+                          <div className="w-10 h-10 rounded-xl bg-black/20 flex items-center justify-center flex-shrink-0 text-cyan-400 border border-cyan-500/10">
+                            <FileText className="w-5 h-5" />
+                          </div>
+                          <div className="min-w-0 flex-grow pr-1">
+                            <p className="text-xs font-medium truncate text-gray-200 max-w-[180px]">
+                              {getFileNameFromUrl(msg.message)}
+                            </p>
+                            <p className="text-[10px] text-gray-500 uppercase tracking-wider mt-0.5">Click to view/download</p>
+                          </div>
+                          <Download className="w-4 h-4 text-gray-500 flex-shrink-0 group-hover:text-cyan-400 transition-colors ml-auto" />
                         </div>
                       ) : (
                         <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.message}</p>
