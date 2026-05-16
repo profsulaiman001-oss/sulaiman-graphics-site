@@ -63,7 +63,6 @@ export default function Chat() {
     }
   }, []);
 
-  // Close message dropdown action context menu when clicking anywhere else
   useEffect(() => {
     const handleOutsideClick = () => setActiveMenuId(null);
     window.addEventListener("click", handleOutsideClick);
@@ -149,19 +148,25 @@ export default function Chat() {
 
   const deleteMessageMutation = useMutation({
     mutationFn: async (messageId: string) => {
-      const { error } = await supabase
+      // Clean request payload to align explicitly with UUID column types
+      const { error, count } = await supabase
         .from('chat_messages')
-        .delete()
+        .delete({ count: 'exact' })
         .eq('id', messageId);
       
       if (error) throw error;
+      
+      // If code runs successfully but no matching rows were affected by policy configuration
+      if (count === 0) {
+        throw new Error("Database processed request but message was not removed. Double check your RLS policy permissions.");
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['messages', activeClientEmail] });
     },
     onError: (error: any) => {
-      console.error("Supabase Delete Error Context:", error);
-      alert(error.message || "Failed to delete message asset. Check your Database RLS policies.");
+      console.error("Supabase Deletion Failure:", error);
+      alert(error.message || "Failed to clear target message block.");
     }
   });
 
@@ -288,8 +293,8 @@ export default function Chat() {
   );
 
   const isImageMessage = (text: string) => {
-    if (!text.startsWith("http")) return false;
-    const lowerText = text.toLowerCase();
+    if (!text || typeof text !== "string" || !text.startsWith("http")) return false;
+    const lowerText = text.toLowerCase().split('?')[0];
     
     return (
       lowerText.endsWith(".png") || 
@@ -297,15 +302,12 @@ export default function Chat() {
       lowerText.endsWith(".jpeg") || 
       lowerText.endsWith(".gif") || 
       lowerText.endsWith(".webp") ||
-      lowerText.split('?')[0].endsWith(".png") ||
-      lowerText.split('?')[0].endsWith(".jpg") ||
-      lowerText.split('?')[0].endsWith(".jpeg") ||
-      lowerText.split('?')[0].endsWith(".gif") ||
-      lowerText.split('?')[0].endsWith(".webp")
+      lowerText.includes("image")
     );
   };
 
   const isLinkMessage = (text: string) => {
+    if (!text || typeof text !== "string") return false;
     return text.startsWith("http");
   };
 
