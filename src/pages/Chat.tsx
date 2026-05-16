@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-import { uploadToGitHubStorage } from "@/utils/githubStorage"; // Adjust import path if needed to match dashboard architecture
+import { uploadToGitHubStorage } from "@/utils/uploader.ts"; // Adjust import path if needed to match dashboard architecture
 import { 
   Search, 
   Send, 
