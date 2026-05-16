@@ -17,7 +17,9 @@ import {
   Loader2,
   Trash2,
   FileText,
-  Download
+  Download,
+  Mic,
+  Square
 } from "lucide-react";
 
 export default function Chat() {
@@ -37,6 +39,11 @@ export default function Chat() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+
+  // Voice Recording States
+  const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -148,7 +155,6 @@ export default function Chat() {
 
   const deleteMessageMutation = useMutation({
     mutationFn: async (messageId: string) => {
-      // Clean request payload to align explicitly with UUID column types
       const { error, count } = await supabase
         .from('chat_messages')
         .delete({ count: 'exact' })
@@ -156,7 +162,6 @@ export default function Chat() {
       
       if (error) throw error;
       
-      // If code runs successfully but no matching rows were affected by policy configuration
       if (count === 0) {
         throw new Error("Database processed request but message was not removed. Double check your RLS policy permissions.");
       }
@@ -260,8 +265,15 @@ export default function Chat() {
     sendMessageMutation.mutate(message);
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement> | File) => {
+    let file: File | undefined;
+    
+    if (e instanceof File) {
+      file = e;
+    } else {
+      file = e.target.files?.[0];
+    }
+
     if (!file || !activeClientEmail) return;
 
     try {
@@ -283,6 +295,46 @@ export default function Chat() {
     }
   };
 
+  // Voice Note Recorder Controls
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        const voiceFile = new File([audioBlob], `voicenote_${Date.now()}.webm`, { type: "audio/webm" });
+        
+        // Directly route the voice file payload straight to your GitHub cloud storage logic
+        await handleFileUpload(voiceFile);
+        
+        // Kill audio tracks to cleanly free system microphone hardware access
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Microphone hardware access denied:", err);
+      alert("Could not access microphone. Please enable permissions.");
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
   const getInitials = (email: string) => {
     if (!email) return "CL";
     return email.substring(0, 2).toUpperCase();
@@ -295,7 +347,6 @@ export default function Chat() {
   const isImageMessage = (text: string) => {
     if (!text || typeof text !== "string" || !text.startsWith("http")) return false;
     const lowerText = text.toLowerCase().split('?')[0];
-    
     return (
       lowerText.endsWith(".png") || 
       lowerText.endsWith(".jpg") || 
@@ -303,6 +354,18 @@ export default function Chat() {
       lowerText.endsWith(".gif") || 
       lowerText.endsWith(".webp") ||
       lowerText.includes("image")
+    );
+  };
+
+  const isAudioMessage = (text: string) => {
+    if (!text || typeof text !== "string" || !text.startsWith("http")) return false;
+    const lowerText = text.toLowerCase().split('?')[0];
+    return (
+      lowerText.endsWith(".webm") ||
+      lowerText.endsWith(".mp3") ||
+      lowerText.endsWith(".wav") ||
+      lowerText.endsWith(".ogg") ||
+      lowerText.includes("voicenote")
     );
   };
 
@@ -512,7 +575,8 @@ export default function Chat() {
               const isMe = msg.sender_email === guestEmail;
               const formattedTime = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
               const isImage = isImageMessage(msg.message);
-              const isFile = isLinkMessage(msg.message) && !isImage;
+              const isAudio = isAudioMessage(msg.message);
+              const isFile = isLinkMessage(msg.message) && !isImage && !isAudio;
 
               return (
                 <div 
@@ -562,6 +626,14 @@ export default function Chat() {
                                <Download className="w-5 h-5" />
                              </button>
                           </div>
+                        </div>
+                      ) : isAudio ? (
+                        <div className="p-1 min-w-[240px] sm:min-w-[280px]">
+                          <audio 
+                            src={msg.message} 
+                            controls 
+                            className="w-full h-9 rounded-lg accent-cyan-500 custom-audio-player"
+                          />
                         </div>
                       ) : isFile ? (
                         <div 
@@ -626,8 +698,8 @@ export default function Chat() {
               
               <button 
                 onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-                className="text-gray-500 hover:text-cyan-500 p-1 disabled:opacity-50 transition-colors"
+                disabled={uploading || isRecording}
+                className="text-gray-500 hover:text-cyan-500 p-1 disabled:opacity-30 transition-colors flex-shrink-0"
               >
                 {uploading ? (
                   <Loader2 className="w-5 h-5 animate-spin text-cyan-500" />
@@ -636,22 +708,51 @@ export default function Chat() {
                 )}
               </button>
               
-              <input 
-                type="text" 
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                placeholder="Type your message..." 
-                className="flex-grow bg-transparent border-none outline-none text-sm text-gray-200 placeholder-gray-600 min-w-0 py-1"
-              />
+              {isRecording ? (
+                <div className="flex-grow flex items-center justify-between px-2 text-sm text-red-500 font-medium animate-pulse">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-red-500" />
+                    Recording voice note...
+                  </div>
+                  <button 
+                    onClick={stopRecording}
+                    className="p-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 rounded-lg transition-colors flex items-center justify-center"
+                    title="Stop and Send"
+                  >
+                    <Square className="w-3.5 h-3.5 fill-red-500" />
+                  </button>
+                </div>
+              ) : (
+                <input 
+                  type="text" 
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                  placeholder="Type your message..." 
+                  className="flex-grow bg-transparent border-none outline-none text-sm text-gray-200 placeholder-gray-600 min-w-0 py-1"
+                />
+              )}
               
-              <button 
-                onClick={handleSend}
-                disabled={sendMessageMutation.isPending || uploading || !message.trim()}
-                className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-black font-bold h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-xl transition-all disabled:opacity-30 disabled:grayscale"
-              >
-                <Send className="w-4 h-4" />
-              </button>
+              {!message.trim() && !isRecording && (
+                <button
+                  onClick={startRecording}
+                  disabled={uploading}
+                  className="text-gray-500 hover:text-cyan-400 p-1 transition-colors flex-shrink-0 disabled:opacity-30"
+                  title="Record Voice Note"
+                >
+                  <Mic className="w-5 h-5" />
+                </button>
+              )}
+              
+              {(message.trim() || isRecording) && (
+                <button 
+                  onClick={handleSend}
+                  disabled={sendMessageMutation.isPending || uploading || !message.trim()}
+                  className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-black font-bold h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-xl transition-all disabled:opacity-30 disabled:grayscale"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </div>
         </div>
