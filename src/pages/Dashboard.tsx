@@ -44,7 +44,8 @@ export default function Dashboard() {
   const [projects, setProjects] = useState<any[]>([]);
   const [clientEmails, setClientEmails] = useState<string[]>([]);
   const [commentsMap, setCommentsMap] = useState<{ [key: string]: any[] }>({});
-  const [versionsMap, setVersionsMap] = useState<{ [key: string]: any[] }>({});
+  const [comMap, setVersionsMap] = useState<{ [key: string]: any[] }>({});
+  const [versionsMap, setVersionsMapState] = useState<{ [key: string]: any[] }>({});
   const [mockupsMap, setMockupsMap] = useState<{ [key: string]: any[] }>({});
   const [notifications, setNotifications] = useState<string[]>([]);
 
@@ -174,7 +175,7 @@ export default function Dashboard() {
       .eq("project_id", projectId)
       .order("created_at", { ascending: false });
     if (!error && data) {
-      setVersionsMap(prev => ({ ...prev, [projectId]: data }));
+      setVersionsMapState(prev => ({ ...prev, [projectId]: data }));
     }
   };
 
@@ -215,9 +216,8 @@ export default function Dashboard() {
       is_admin: isAdmin,
       message: newComment.trim(),
       user_id: user.id
-    }]);
+     }]);
     if (!error) {
-      newComment.trim();
       setNewComment("");
     }
     setSendingComment(false);
