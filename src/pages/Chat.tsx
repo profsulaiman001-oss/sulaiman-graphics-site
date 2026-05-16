@@ -153,13 +153,15 @@ export default function Chat() {
         .from('chat_messages')
         .delete()
         .eq('id', messageId);
+      
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['messages', activeClientEmail] });
     },
     onError: (error: any) => {
-      alert(error.message || "Failed to delete message asset.");
+      console.error("Supabase Delete Error Context:", error);
+      alert(error.message || "Failed to delete message asset. Check your Database RLS policies.");
     }
   });
 
@@ -316,6 +318,16 @@ export default function Chat() {
     } catch {
       return "Download File Attachment";
     }
+  };
+
+  const handleDownloadFile = (url: string) => {
+    const link = document.createElement("a");
+    link.href = url;
+    link.target = "_blank";
+    link.setAttribute("download", getFileNameFromUrl(url));
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -519,20 +531,39 @@ export default function Chat() {
                       } ${isImage ? 'p-1.5' : 'px-4 py-3'} shadow-xl`}
                     >
                       {isImage ? (
-                        <div className="relative group overflow-hidden rounded-xl">
+                        <div className="relative group/img overflow-hidden rounded-xl">
                           <img 
                             src={msg.message} 
                             alt="Attachment" 
                             className="max-w-full sm:max-w-sm rounded-xl object-cover max-h-72 hover:scale-[1.02] transition-transform cursor-pointer"
                             onClick={() => window.open(msg.message, '_blank')}
                           />
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                             <ArrowRight className="w-6 h-6 text-white -rotate-45" />
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                             <button 
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 window.open(msg.message, '_blank');
+                               }}
+                               className="p-2.5 bg-white/10 backdrop-blur-md rounded-xl text-white hover:bg-white/20 transition-colors"
+                               title="View Full Size"
+                             >
+                               <ArrowRight className="w-5 h-5 -rotate-45" />
+                             </button>
+                             <button 
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 handleDownloadFile(msg.message);
+                               }}
+                               className="p-2.5 bg-cyan-500 text-black rounded-xl hover:bg-cyan-400 transition-colors"
+                               title="Download Image"
+                             >
+                               <Download className="w-5 h-5" />
+                             </button>
                           </div>
                         </div>
                       ) : isFile ? (
                         <div 
-                          onClick={() => window.open(msg.message, '_blank')}
+                          onClick={() => handleDownloadFile(msg.message)}
                           className="flex items-center gap-3 w-64 sm:w-72 bg-black/20 border border-white/5 p-3 rounded-xl cursor-pointer select-none hover:bg-black/40 transition-all group/file"
                         >
                           <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center flex-shrink-0 text-cyan-400 border border-cyan-500/20 group-hover/file:bg-cyan-500/20 transition-colors">
