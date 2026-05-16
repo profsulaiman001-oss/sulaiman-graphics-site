@@ -54,11 +54,15 @@ export async function uploadToGitHubStorage(file: File): Promise<string | null> 
       throw new Error(errorData.message || "Failed to commit chunk stream to GitHub.");
     }
 
-    // Convert the download_url to a clean, reliable production CDN URL via jsDelivr
-    // This bypasses raw.githubusercontent CORS issues and ensures immediate image rendering
-    const jsDelivrCdnUrl = `https://cdn.jsdelivr.net/gh/${owner}/${repo}@main/${uniquePath}`;
-    
-    return jsDelivrCdnUrl;
+    const data = await response.json();
+
+    // Route audio directly through raw.githubusercontent to allow timeline buffering
+    // Route images/files through jsDelivr to avoid canvas/DOM image CORS errors
+    if (file.type.startsWith("audio/") || file.name.includes("voicenote")) {
+      return data.content.download_url; // Direct raw URL for pristine audio streaming
+    } else {
+      return `https://cdn.jsdelivr.net/gh/${owner}/${repo}@main/${uniquePath}`; // High-perf CDN for images/files
+    }
 
   } catch (error) {
     console.error("Error inside uploadToGitHubStorage utility:", error);
