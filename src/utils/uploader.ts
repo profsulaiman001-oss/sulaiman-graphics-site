@@ -54,10 +54,11 @@ export async function uploadToGitHubStorage(file: File): Promise<string | null> 
       throw new Error(errorData.message || "Failed to commit chunk stream to GitHub.");
     }
 
-    const data = await response.json();
+    // Convert the download_url to a clean, reliable production CDN URL via jsDelivr
+    // This bypasses raw.githubusercontent CORS issues and ensures immediate image rendering
+    const jsDelivrCdnUrl = `https://cdn.jsdelivr.net/gh/${owner}/${repo}@main/${uniquePath}`;
     
-    // Return the absolute public URL of the committed file asset
-    return data.content.download_url;
+    return jsDelivrCdnUrl;
 
   } catch (error) {
     console.error("Error inside uploadToGitHubStorage utility:", error);
