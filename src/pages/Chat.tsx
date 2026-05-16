@@ -71,7 +71,7 @@ export default function Chat() {
   }, []);
 
   const handleIdentitySubmit = (e: React.FormEvent) => {
-    preventDefault();
+    e.preventDefault();
     if (!guestName.trim() || !guestEmail.trim()) return;
 
     const formattedEmail = guestEmail.trim().toLowerCase();
@@ -164,7 +164,7 @@ export default function Chat() {
   });
 
   const handleAddClient = async (e: React.FormEvent) => {
-    preventDefault();
+    e.preventDefault();
     const email = newClientEmail.trim().toLowerCase();
     if (!email) return;
     
@@ -270,7 +270,7 @@ export default function Chat() {
     } catch (error) {
       console.error("Upload error:", error);
       alert("Failed to upload file to storage. Please try again.");
-    } final {
+    } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
@@ -289,7 +289,6 @@ export default function Chat() {
     if (!text.startsWith("http")) return false;
     const lowerText = text.toLowerCase();
     
-    // Check purely for image variants without false classification on regular files
     return (
       lowerText.endsWith(".png") || 
       lowerText.endsWith(".jpg") || 
@@ -553,7 +552,6 @@ export default function Chat() {
                         <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.message}</p>
                       )}
 
-                      {/* Dropdown / Direct Action Toggle Context Container for Message Deletion */}
                       <div className={`absolute top-1/2 -translate-y-1/2 ${isMe ? '-left-10' : '-right-10'} opacity-0 group-hover:opacity-100 transition-opacity z-20`}>
                         {(isMe || isAdmin) && (
                           <button
