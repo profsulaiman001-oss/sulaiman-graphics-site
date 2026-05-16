@@ -8,6 +8,9 @@ import {
   MessageSquare, Send, ClipboardList, Award, BarChart3
 } from "lucide-react";
 
+// Storage Utility Import
+import { uploadToGitHubStorage } from "@/utils/uploader";
+
 // Component Imports
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import AccountSettings from "@/components/dashboard/AccountSettings";
@@ -214,6 +217,7 @@ export default function Dashboard() {
       user_id: user.id
     }]);
     if (!error) {
+      newComment.trim();
       setNewComment("");
     }
     setSendingComment(false);
@@ -303,30 +307,28 @@ export default function Dashboard() {
     const versionName = prompt("Enter a name for this version (e.g., Draft 1, Final):") || "New Version";
     try {
       setLoading(true);
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${id}-${Date.now()}.${fileExt}`;
-      const filePath = `previews/${fileName}`;
-      const { error: uploadError } = await supabase.storage.from('project-files').upload(filePath, file);
-      if (uploadError) throw uploadError;
-      const { data: { publicUrl } } = supabase.storage.from('project-files').getPublicUrl(filePath);
       
+      // 1. Fire file payload into your 100GB secure GitHub cluster stream
+      const directCdnUrl = await uploadToGitHubStorage(file, 'deliverables');
+      
+      // 2. Insert link into your database records
       const { error: versionError } = await supabase.from("project_versions").insert([{
         project_id: id,
-        file_url: publicUrl,
+        file_url: directCdnUrl,
         version_name: versionName
       }]);
       if (versionError) throw versionError;
 
       const { error: dbError } = await supabase.from("projects").update({ 
         status: "Completed",
-        file_url: publicUrl 
+        file_url: directCdnUrl 
       }).eq("id", id);
       if (dbError) throw dbError;
       
       fetchProjects(user, isAdmin);
     } catch (err: any) {
       console.error("Upload failed:", err.message);
-      alert("Error uploading file: " + err.message);
+      alert("Error uploading file to storage array: " + err.message);
     } finally {
       setLoading(false);
     }
@@ -336,20 +338,19 @@ export default function Dashboard() {
     if (!isAdmin) return;
     try {
       setLoading(true);
+      
+      // Map arrays into async streams sending components sequentially to Vercel/GitHub
       const uploadPromises = Array.from(files).map(async (file) => {
-        const fileName = `mockup-${id}-${Date.now()}-${Math.random().toString(36).substring(7)}.webp`;
-        const filePath = `mockups/${fileName}`;
-        const { error: uploadError } = await supabase.storage.from('project-files').upload(filePath, file);
-        if (uploadError) throw uploadError;
-        const { data: { publicUrl } } = supabase.storage.from('project-files').getPublicUrl(filePath);
+        const directCdnUrl = await uploadToGitHubStorage(file, 'products');
         return supabase.from("project_mockups").insert([{
           project_id: id,
-          file_url: publicUrl
+          file_url: directCdnUrl
         }]);
       });
+      
       await Promise.all(uploadPromises);
       fetchMockups(id);
-      alert(`${files.length} mockups uploaded successfully!`);
+      alert(`${files.length} mockups uploaded successfully to GitHub storage!`);
     } catch (err: any) {
       alert("Upload failed: " + err.message);
     } finally {
