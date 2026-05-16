@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-import { uploadToGitHubStorage } from "@/utils/uploader.ts"; // Adjust import path if needed to match dashboard architecture
+import { uploadToGitHubStorage } from "@/utils/uploader.ts"; 
 import { 
   Search, 
   Send, 
@@ -33,6 +33,7 @@ export default function Chat() {
 
   const [newClientEmail, setNewClientEmail] = useState("");
   const [activeClientEmail, setActiveClientEmail] = useState<string | null>(null);
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -62,8 +63,15 @@ export default function Chat() {
     }
   }, []);
 
+  // Close message dropdown action context menu when clicking anywhere else
+  useEffect(() => {
+    const handleOutsideClick = () => setActiveMenuId(null);
+    window.addEventListener("click", handleOutsideClick);
+    return () => window.removeEventListener("click", handleOutsideClick);
+  }, []);
+
   const handleIdentitySubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+    preventDefault();
     if (!guestName.trim() || !guestEmail.trim()) return;
 
     const formattedEmail = guestEmail.trim().toLowerCase();
@@ -139,8 +147,24 @@ export default function Chat() {
     }
   });
 
+  const deleteMessageMutation = useMutation({
+    mutationFn: async (messageId: string) => {
+      const { error } = await supabase
+        .from('chat_messages')
+        .delete()
+        .eq('id', messageId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['messages', activeClientEmail] });
+    },
+    onError: (error: any) => {
+      alert(error.message || "Failed to delete message asset.");
+    }
+  });
+
   const handleAddClient = async (e: React.FormEvent) => {
-    e.preventDefault();
+    preventDefault();
     const email = newClientEmail.trim().toLowerCase();
     if (!email) return;
     
@@ -180,16 +204,15 @@ export default function Chat() {
     const channel = supabase
       .channel('schema-db-changes')
       .on('postgres_changes', { 
-        event: 'INSERT', 
+        event: '*', 
         schema: 'public', 
         table: 'chat_messages' 
       }, (payload) => {
-        const newMessage = payload.new as any;
+        queryClient.invalidateQueries({ queryKey: ['messages', activeClientEmail] });
+        queryClient.invalidateQueries({ queryKey: ['chatClients'] });
 
-        if (newMessage.receiver_email === guestEmail || newMessage.sender_email === guestEmail) {
-          queryClient.invalidateQueries({ queryKey: ['messages', activeClientEmail] });
-          queryClient.invalidateQueries({ queryKey: ['chatClients'] });
-
+        if (payload.eventType === 'INSERT') {
+          const newMessage = payload.new as any;
           if (newMessage.receiver_email === guestEmail) {
             const audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
             audio.play().catch(() => {});
@@ -236,8 +259,6 @@ export default function Chat() {
 
     try {
       setUploading(true);
-      
-      // Use your existing GitHub storage helper functionality
       const downloadUrl = await uploadToGitHubStorage(file);
       
       if (!downloadUrl) {
@@ -249,7 +270,7 @@ export default function Chat() {
     } catch (error) {
       console.error("Upload error:", error);
       alert("Failed to upload file to storage. Please try again.");
-    } finally {
+    } final {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
@@ -267,13 +288,19 @@ export default function Chat() {
   const isImageMessage = (text: string) => {
     if (!text.startsWith("http")) return false;
     const lowerText = text.toLowerCase();
+    
+    // Check purely for image variants without false classification on regular files
     return (
       lowerText.endsWith(".png") || 
       lowerText.endsWith(".jpg") || 
       lowerText.endsWith(".jpeg") || 
       lowerText.endsWith(".gif") || 
       lowerText.endsWith(".webp") ||
-      lowerText.includes("chat-attachments") 
+      lowerText.split('?')[0].endsWith(".png") ||
+      lowerText.split('?')[0].endsWith(".jpg") ||
+      lowerText.split('?')[0].endsWith(".jpeg") ||
+      lowerText.split('?')[0].endsWith(".gif") ||
+      lowerText.split('?')[0].endsWith(".webp")
     );
   };
 
@@ -484,9 +511,9 @@ export default function Chat() {
                   }`}>
                     {isMe ? (isAdmin ? 'SG' : 'ME') : (isAdmin ? 'C' : 'SG')}
                   </div>
-                  <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                  <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} relative group`}>
                     <div 
-                      className={`relative group transition-all duration-200 ${
+                      className={`relative transition-all duration-200 ${
                         isMe 
                           ? 'bg-gradient-to-br from-cyan-600 to-blue-700 text-white rounded-2xl rounded-tr-none' 
                           : 'bg-[#1A1F29] border border-gray-800 text-gray-200 rounded-2xl rounded-tl-none'
@@ -507,22 +534,42 @@ export default function Chat() {
                       ) : isFile ? (
                         <div 
                           onClick={() => window.open(msg.message, '_blank')}
-                          className="flex items-center gap-3 max-w-full sm:max-w-xs cursor-pointer select-none hover:opacity-90 transition-opacity"
+                          className="flex items-center gap-3 w-64 sm:w-72 bg-black/20 border border-white/5 p-3 rounded-xl cursor-pointer select-none hover:bg-black/40 transition-all group/file"
                         >
-                          <div className="w-10 h-10 rounded-xl bg-black/20 flex items-center justify-center flex-shrink-0 text-cyan-400 border border-cyan-500/10">
+                          <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center flex-shrink-0 text-cyan-400 border border-cyan-500/20 group-hover/file:bg-cyan-500/20 transition-colors">
                             <FileText className="w-5 h-5" />
                           </div>
-                          <div className="min-w-0 flex-grow pr-1">
-                            <p className="text-xs font-medium truncate text-gray-200 max-w-[180px]">
+                          <div className="min-w-0 flex-grow">
+                            <p className="text-xs font-semibold truncate text-gray-200">
                               {getFileNameFromUrl(msg.message)}
                             </p>
-                            <p className="text-[10px] text-gray-500 uppercase tracking-wider mt-0.5">Click to view/download</p>
+                            <p className="text-[10px] text-gray-500 uppercase tracking-wider mt-0.5">Click to view / download</p>
                           </div>
-                          <Download className="w-4 h-4 text-gray-500 flex-shrink-0 group-hover:text-cyan-400 transition-colors ml-auto" />
+                          <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0 text-gray-400 group-hover/file:text-cyan-400 group-hover/file:bg-white/10 transition-all">
+                            <Download className="w-4 h-4" />
+                          </div>
                         </div>
                       ) : (
                         <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.message}</p>
                       )}
+
+                      {/* Dropdown / Direct Action Toggle Context Container for Message Deletion */}
+                      <div className={`absolute top-1/2 -translate-y-1/2 ${isMe ? '-left-10' : '-right-10'} opacity-0 group-hover:opacity-100 transition-opacity z-20`}>
+                        {(isMe || isAdmin) && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm("Are you sure you want to delete this message permanently?")) {
+                                deleteMessageMutation.mutate(msg.id);
+                              }
+                            }}
+                            className="p-2 bg-[#1A1F29] border border-gray-800 rounded-lg text-gray-500 hover:text-red-500 hover:border-red-500/30 shadow-md transition-all"
+                            title="Delete Message"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <div className={`flex items-center gap-1.5 mt-1.5 ${isMe ? 'flex-row-reverse' : ''}`}>
                       <span className="text-[10px] text-gray-600 font-medium">{formattedTime}</span>
