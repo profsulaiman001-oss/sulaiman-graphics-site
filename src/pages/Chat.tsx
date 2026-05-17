@@ -321,10 +321,7 @@ export default function Chat() {
         const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
         const voiceFile = new File([audioBlob], `voicenote_${Date.now()}.webm`, { type: "audio/webm" });
         
-        // Directly route the voice file payload straight to your GitHub cloud storage logic
         await handleFileUpload(voiceFile);
-        
-        // Kill audio tracks to cleanly free system microphone hardware access
         stream.getTracks().forEach(track => track.stop());
       };
 
@@ -361,7 +358,8 @@ export default function Chat() {
       lowerText.endsWith(".jpeg") || 
       lowerText.endsWith(".gif") || 
       lowerText.endsWith(".webp") ||
-      lowerText.includes("image")
+      lowerText.includes("image") ||
+      lowerText.includes("image_")
     );
   };
 
@@ -373,7 +371,8 @@ export default function Chat() {
       lowerText.endsWith(".mp3") ||
       lowerText.endsWith(".wav") ||
       lowerText.endsWith(".ogg") ||
-      lowerText.includes("voicenote")
+      lowerText.includes("voicenote") ||
+      lowerText.includes("audio")
     );
   };
 
@@ -605,12 +604,32 @@ export default function Chat() {
                       } ${isImage ? 'p-1.5' : 'px-4 py-3'} shadow-xl`}
                     >
                       {isImage ? (
-                        <div className="relative group/img overflow-hidden rounded-xl">
+                        <div className="relative group/img overflow-hidden rounded-xl max-w-full sm:max-w-sm">
                           <img 
                             src={msg.message} 
                             alt="Attachment" 
-                            className="max-w-full sm:max-w-sm rounded-xl object-cover max-h-72 hover:scale-[1.02] transition-transform cursor-pointer"
+                            className="max-w-full rounded-xl object-cover max-h-72 hover:scale-[1.02] transition-transform cursor-pointer"
                             onClick={() => window.open(msg.message, '_blank')}
+                            onError={(e) => {
+                              const target = e.currentTarget;
+                              target.style.display = 'none';
+                              const parent = target.parentElement;
+                              if (parent) {
+                                const actionBtn = parent.querySelector('.absolute');
+                                if (actionBtn) (actionBtn as HTMLElement).style.opacity = '1';
+                                parent.className = "p-4 bg-red-950/20 text-red-300 border border-red-900/40 rounded-xl text-xs w-64 max-w-full flex flex-col gap-2";
+                                parent.innerHTML = `
+                                  <div class="flex items-center gap-2 font-bold text-red-400">
+                                    <span>⚠️</span>
+                                    <span>PREVIEW BLOCKED BY BROWSER</span>
+                                  </div>
+                                  <p class="opacity-80 leading-normal">Your browser tracking prevention or privacy rules blocked direct media rendering.</p>
+                                  <a href="${msg.message}" target="_blank" rel="noreferrer" class="mt-1 inline-flex items-center justify-center gap-1.5 bg-red-500/20 hover:bg-red-500/40 border border-red-500/30 text-white font-semibold py-2 px-3 rounded-lg transition-colors text-center">
+                                    Open Asset Directly →
+                                  </a>
+                                `;
+                              }
+                            }}
                           />
                           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-3">
                              <button 
@@ -636,11 +655,12 @@ export default function Chat() {
                           </div>
                         </div>
                       ) : isAudio ? (
-                        <div className="p-1 min-w-[240px] sm:min-w-[280px]">
+                        <div className="p-1 min-w-[245px] sm:min-w-[285px] w-full flex items-center">
                           <audio 
                             src={msg.message} 
                             controls 
-                            className="w-full h-9 rounded-lg accent-cyan-500 custom-audio-player"
+                            controlsList="nodownload"
+                            className="w-full h-10 rounded-lg accent-cyan-500 bg-transparent"
                           />
                         </div>
                       ) : isFile ? (
@@ -716,7 +736,7 @@ export default function Chat() {
                 )}
               </button>
               
-              ={isRecording ? (
+              {isRecording ? (
                 <div className="flex-grow flex items-center justify-between px-2 text-sm text-red-500 font-medium animate-pulse">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-red-500" />
