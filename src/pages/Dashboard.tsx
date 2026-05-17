@@ -23,7 +23,6 @@ import { ProjectComments } from "@/components/dashboard/ProjectComments";
 import { ProjectManagement } from "@/components/dashboard/ProjectManagement";
 import WelcomeNameModal from "@/components/dashboard/WelcomeNameModal";
 import { CertificateGenerator } from "./components/certificates/CertificateGenerator";
-import { DashboardNav } from "@/components/dashboard/DashboardNav";
 
 // Page Imports for Client Buttons
 import Questionnaire from "@/pages/Questionnaire";
@@ -67,6 +66,10 @@ export default function Dashboard() {
   const [showWelcome, setShowWelcome] = useState(false);
   const [activeOverlay, setActiveOverlay] = useState<string | null>(null);
 
+  // Notification UI States
+  const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
+  const notificationRef = React.useRef<HTMLDivElement>(null);
+
   const statusColors: { [key: string]: string } = {
     'Pending': 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500',
     'In Progress': 'bg-blue-500/10 border-blue-500/20 text-blue-500',
@@ -90,6 +93,17 @@ export default function Dashboard() {
     initializeDashboard();
   }, []);
 
+  // Close notifications dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setShowNotificationDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   useEffect(() => {
     const channel = supabase
       .channel('realtime-comments')
@@ -98,6 +112,12 @@ export default function Dashboard() {
         { event: 'INSERT', schema: 'public', table: 'comments' },
         (payload) => {
           const newMsg = payload.new;
+          
+          // Generate notification text
+          const senderLabel = newMsg.is_admin ? "Admin" : "Client";
+          const notifyText = `New message from ${senderLabel}: "${newMsg.message.substring(0, 30)}${newMsg.message.length > 30 ? '...' : ''}"`;
+          setNotifications(prev => [notifyText, ...prev]);
+
           if (openCommentsId !== newMsg.project_id) {
             setUnreadCounts(prev => ({
               ...prev,
@@ -120,6 +140,10 @@ export default function Dashboard() {
       supabase.removeChannel(channel); 
     };
   }, [openCommentsId]);
+
+  const clearNotifications = () => {
+    setNotifications([]);
+  };
 
   const fetchProjects = async (currentUser: any, admin: boolean) => {
     setLoading(true);
@@ -413,12 +437,21 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col relative w-full overflow-x-hidden">
+      {/* MOVED NAVIGATION CONTROLS DIRECTLY INTO HEADER CONTAINER INSTANCE */}
       <DashboardHeader 
         userEmail={user?.email || "User"}
         notificationsCount={notifications.length}
         isSettingsOpen={isSettingsOpen}
         setIsSettingsOpen={setIsSettingsOpen}
         SignOutHandler={handleSignOut}
+        notifications={notifications}
+        clearNotifications={clearNotifications}
+        showNotificationDropdown={showNotificationDropdown}
+        setShowNotificationDropdown={setShowNotificationDropdown}
+        notificationRef={notificationRef}
+        activeSection={activeSection}
+        setActiveSection={setActiveSection}
+        isAdmin={isAdmin}
       />
 
       <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl pb-32 w-full">
@@ -426,121 +459,124 @@ export default function Dashboard() {
   
         {isSettingsOpen && <AccountSettings onClose={() => setIsSettingsOpen(false)} userEmail={user?.email} />}
 
-        <div className="mb-8">
-           <AnalyticsDashboard stats={stats} COLORS={COLORS} />
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-3">
-          <div className="md:col-span-2 space-y-6">
-            <ProjectManagement 
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              statusFilter={statusFilter}
-              setStatusFilter={setStatusFilter}
-              newTitle={newTitle}
-              setNewTitle={setNewTitle}
-              newClient={newClient}
-              setNewClient={setNewClient}
-              handleCreateProject={handleCreateProject}
-              isAdmin={isAdmin} 
-            />
-
-            {!isAdmin && (
-              <div className="grid grid-cols-2 gap-4">
-                <button
-                  onClick={() => setActiveOverlay('questionnaire')}
-                  className="flex items-center justify-center gap-2 p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-xl hover:bg-cyan-500/20 transition-all text-cyan-400 font-bold text-sm"
-                >
-                  <ClipboardList size={18} />
-                  Fill Questionnaire
-                </button>
-                <button
-                  onClick={() => setActiveOverlay('agreement')}
-                  className="flex items-center justify-center gap-2 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl hover:bg-blue-500/20 transition-all text-blue-400 font-bold text-sm"
-                >
-                  <Award size={18} />
-                  Sign Agreement
-                </button>
-              </div>
-            )}
-
-            {isAdmin && (
-              <OnboardClient 
-                inviteEmail={inviteEmail}
-                setInviteEmail={setInviteEmail}
-                handleInviteClient={handleInviteClient}
-                loading={inviteLoading}
-              />
-            )}
-          </div>
-
-          {isAdmin && (
-            <div>
-              <div className="bg-card/30 border border-border/50 p-4 rounded-2xl">
-                <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Quick Actions</h2>
-                <AdminNav 
-                  setLocation={setLocation} 
-                  setIsCertOpen={setIsCertOpen} 
-                  setActiveOverlay={setActiveOverlay} 
-                />
-              </div>
-            </div>
-          )}
-        </div>
-
+        {/* PROJECTS SECTION INTERACTIVE WORKSPACE VIEW */}
         {activeSection === "projects" && (
-          <div className="mt-12 w-full">
-            <h2 className="text-xl font-bold tracking-tight mb-6">
-              {isAdmin ? "Project Status Workspace" : "Your Active Projects"}
-            </h2>
-            {filteredProjects.length === 0 ? (
-              <div className="text-center py-16 border border-dashed border-border rounded-2xl bg-card/40">
-                <ClipboardList className="mx-auto text-muted-foreground mb-4" size={32} />
-                <h3 className="text-sm font-bold text-foreground">No Projects Found</h3>
+          <>
+            <div className="mb-8">
+               <AnalyticsDashboard stats={stats} COLORS={COLORS} />
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-3">
+              <div className="md:col-span-2 space-y-6">
+                <ProjectManagement 
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                  statusFilter={statusFilter}
+                  setStatusFilter={setStatusFilter}
+                  newTitle={newTitle}
+                  setNewTitle={setNewTitle}
+                  newClient={newClient}
+                  setNewClient={setNewClient}
+                  handleCreateProject={handleCreateProject}
+                  isAdmin={isAdmin} 
+                />
+
+                {!isAdmin && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <button
+                      onClick={() => setActiveOverlay('questionnaire')}
+                      className="flex items-center justify-center gap-2 p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-xl hover:bg-cyan-500/20 transition-all text-cyan-400 font-bold text-sm"
+                    >
+                      <ClipboardList size={18} />
+                      Fill Questionnaire
+                    </button>
+                    <button
+                      onClick={() => setActiveOverlay('agreement')}
+                      className="flex items-center justify-center gap-2 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl hover:bg-blue-500/20 transition-all text-blue-400 font-bold text-sm"
+                    >
+                      <Award size={18} />
+                      Sign Agreement
+                    </button>
+                  </div>
+                )}
+
+                {isAdmin && (
+                  <OnboardClient 
+                    inviteEmail={inviteEmail}
+                    setInviteEmail={setInviteEmail}
+                    handleInviteClient={handleInviteClient}
+                    loading={inviteLoading}
+                  />
+                )}
               </div>
-            ) : (
-              /* REMOVED PREVIOUS MAX-W CONSTRAINTS ON WRAPPER CARDS; SYSTEM NATIVELY DOCK-STRETCHES GRIDS EQUALLY */
-              <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 justify-center items-stretch w-full">
-                {filteredProjects.map((project: any) => (
-                  <div key={project.id} className="w-full flex flex-col">
-                    <ProjectCard 
-                      project={project}
-                      isAdmin={isAdmin}
-                      editingId={editingId}
-                      editTitle={editTitle}
-                      setEditTitle={setEditTitle}
-                      startEdit={startEdit}
-                      saveEdit={saveEdit}
-                      setEditingId={setEditingId}
-                      updateStatus={updateStatus}
-                      assignUser={assignUser}
-                      handleDelete={handleDelete}
-                      handleFileUpload={handleFileUpload}
-                      toggleComments={toggleComments}
-                      openCommentsId={openCommentsId}
-                      comments={commentsMap[project.id] || []}
-                      versions={versionsMap[project.id] || []}
-                      mockups={mockupsMap[project.id] || []}
-                      handleMockupUpload={handleMockupUpload}
-                      handleDeleteVersion={handleDeleteVersion}
-                      newComment={newComment}
-                      setNewComment={setNewComment}
-                      sendingComment={sendingComment}
-                      sendComment={sendComment}
-                      unreadCounts={unreadCounts}
-                      clientEmails={clientEmails}
-                      downloadFile={downloadFile}
-                      statusColors={statusColors}
+
+              {isAdmin && (
+                <div>
+                  <div className="bg-card/30 border border-border/50 p-4 rounded-2xl">
+                    <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Quick Actions</h2>
+                    <AdminNav 
+                      setLocation={setLocation} 
+                      setIsCertOpen={setIsCertOpen} 
+                      setActiveOverlay={setActiveOverlay} 
                     />
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-12 w-full">
+              <h2 className="text-xl font-bold tracking-tight mb-6">
+                {isAdmin ? "Project Status Workspace" : "Your Active Projects"}
+              </h2>
+              {filteredProjects.length === 0 ? (
+                <div className="text-center py-16 border border-dashed border-border rounded-2xl bg-card/40">
+                  <ClipboardList className="mx-auto text-muted-foreground mb-4" size={32} />
+                  <h3 className="text-sm font-bold text-foreground">No Projects Found</h3>
+                </div>
+              ) : (
+                <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 justify-center items-stretch w-full">
+                  {filteredProjects.map((project: any) => (
+                    <div key={project.id} className="w-full flex flex-col">
+                      <ProjectCard 
+                        project={project}
+                        isAdmin={isAdmin}
+                        editingId={editingId}
+                        editTitle={editTitle}
+                        setEditTitle={setEditTitle}
+                        startEdit={startEdit}
+                        saveEdit={saveEdit}
+                        setEditingId={setEditingId}
+                        updateStatus={updateStatus}
+                        assignUser={assignUser}
+                        handleDelete={handleDelete}
+                        handleFileUpload={handleFileUpload}
+                        toggleComments={toggleComments}
+                        openCommentsId={openCommentsId}
+                        comments={commentsMap[project.id] || []}
+                        versions={versionsMap[project.id] || []}
+                        mockups={mockupsMap[project.id] || []}
+                        handleMockupUpload={handleMockupUpload}
+                        handleDeleteVersion={handleDeleteVersion}
+                        newComment={newComment}
+                        setNewComment={setNewComment}
+                        sendingComment={sendingComment}
+                        sendComment={sendComment}
+                        unreadCounts={unreadCounts}
+                        clientEmails={clientEmails}
+                        downloadFile={downloadFile}
+                        statusColors={statusColors}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
         )}
 
+        {/* ACCOUNT SETTINGS SECTION INDEPENDENT TAB VIEW */}
         {activeSection === "settings" && user && (
-          <div className="mt-12">
+          <div className="mt-6">
              <AccountSettings onClose={() => setActiveSection("projects")} userEmail={user.email} />
           </div>
         )}
@@ -590,13 +626,6 @@ export default function Dashboard() {
       </footer>
       
       {isCertOpen && <CertificateGenerator onClose={() => setIsCertOpen(false)} />}
-
-      {/* DASHBOARD NAVIGATION MENU BUTTON COMPONENT */}
-      <DashboardNav 
-        activeSection={activeSection} 
-        setActiveSection={setActiveSection} 
-        isAdmin={isAdmin} 
-      />
     </div>
   );
 }
