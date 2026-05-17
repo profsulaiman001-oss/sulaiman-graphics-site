@@ -24,8 +24,10 @@ export async function uploadToGitHubStorage(file: File | Blob, customFileName?: 
       originalName = customFileName || `voicenote_${Date.now()}.webm`;
     }
 
-    // Sanitize file name to prevent invalid URL breaking paths
-    const cleanFileName = originalName.replace(/[^a-zA-Z0-9.]/g, "_");
+    // Sanitize file name completely to prevent invalid URL paths or broken downloads
+    const cleanFileName = originalName
+      .replace(/\s+/g, "_") // Replace spaces with underscores safely
+      .replace(/[^a-zA-Z0-9._-]/g, ""); // Remove unsafe symbols entirely
     
     // Ensure accurate extension handling for audio blobs
     let uniquePath = `chat-attachments/${Date.now()}_${cleanFileName}`;
@@ -48,7 +50,8 @@ export async function uploadToGitHubStorage(file: File | Blob, customFileName?: 
     const contentBase64 = await base64Promise;
 
     // Fire request to the GitHub repository contents endpoint
-    const url = `https://api.github.com/repos/${owner}/${repo}/contents/${uniquePath}`;
+    // Encode individual components to handle unsafe characters perfectly inside API routes
+    const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(uniquePath)}`;
     
     const response = await fetch(url, {
       method: "PUT",
