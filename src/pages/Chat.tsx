@@ -312,11 +312,7 @@ export default function Chat() {
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
         const voiceFile = new File([audioBlob], `voicenote_${Date.now()}.webm`, { type: "audio/webm" });
-        
-        // Directly route the voice file payload straight to your GitHub cloud storage logic
         await handleFileUpload(voiceFile);
-        
-        // Kill audio tracks to cleanly free system microphone hardware access
         stream.getTracks().forEach(track => track.stop());
       };
 
@@ -381,18 +377,45 @@ export default function Chat() {
       const lastPart = parts[parts.length - 1];
       return lastPart.split('?')[0];
     } catch {
-      return "Download File Attachment";
+      return "attachment_file";
     }
   };
 
-  const handleDownloadFile = (url: string) => {
-    const link = document.createElement("a");
-    link.href = url;
-    link.target = "_blank";
-    link.setAttribute("download", getFileNameFromUrl(url));
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  // High-performance view and download layout identical to dashboard build pattern
+  const handleViewAndDownloadFile = async (url: string) => {
+    try {
+      // 1. Immediately launch viewport tab tracking
+      window.open(url, '_blank');
+
+      // 2. Fetch file content as a direct binary configuration blob stream
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("File stream read failure.");
+      
+      const fileBlob = await response.blob();
+      const localizedBlobUrl = window.URL.createObjectURL(fileBlob);
+      
+      // 3. Mount temporary local link element to automate standard folder download destination
+      const downloadAnchor = document.createElement("a");
+      downloadAnchor.href = localizedBlobUrl;
+      downloadAnchor.setAttribute("download", getFileNameFromUrl(url));
+      document.body.appendChild(downloadAnchor);
+      
+      downloadAnchor.click();
+      
+      // 4. Memory management garbage collection routine
+      document.body.removeChild(downloadAnchor);
+      window.URL.revokeObjectURL(localizedBlobUrl);
+    } catch (error) {
+      console.error("View & download engine exception:", error);
+      // Clean fallback configuration if fetch headers fail
+      const baselineAnchor = document.createElement("a");
+      baselineAnchor.href = url;
+      baselineAnchor.target = "_blank";
+      baselineAnchor.setAttribute("download", getFileNameFromUrl(url));
+      document.body.appendChild(baselineAnchor);
+      baselineAnchor.click();
+      document.body.removeChild(baselineAnchor);
+    }
   };
 
   return (
@@ -602,26 +625,16 @@ export default function Chat() {
                             src={msg.message} 
                             alt="Attachment" 
                             className="max-w-full sm:max-w-sm rounded-xl object-cover max-h-72 hover:scale-[1.02] transition-transform cursor-pointer"
-                            onClick={() => window.open(msg.message, '_blank')}
+                            onClick={() => handleViewAndDownloadFile(msg.message)}
                           />
                           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-3">
                              <button 
                                onClick={(e) => {
                                  e.stopPropagation();
-                                 window.open(msg.message, '_blank');
+                                 handleViewAndDownloadFile(msg.message);
                                }}
-                               className="p-2.5 bg-white/10 backdrop-blur-md rounded-xl text-white hover:bg-white/20 transition-colors"
-                               title="View Full Size"
-                             >
-                               <ArrowRight className="w-5 h-5 -rotate-45" />
-                             </button>
-                             <button 
-                               onClick={(e) => {
-                                 e.stopPropagation();
-                                 handleDownloadFile(msg.message);
-                               }}
-                               className="p-2.5 bg-cyan-500 text-black rounded-xl hover:bg-cyan-400 transition-colors"
-                               title="Download Image"
+                               className="p-2.5 bg-cyan-500 text-black rounded-xl hover:bg-cyan-400 transition-colors flex items-center justify-center"
+                               title="View & Download Image"
                              >
                                <Download className="w-5 h-5" />
                              </button>
@@ -637,7 +650,7 @@ export default function Chat() {
                         </div>
                       ) : isFile ? (
                         <div 
-                          onClick={() => handleDownloadFile(msg.message)}
+                          onClick={() => handleViewAndDownloadFile(msg.message)}
                           className="flex items-center gap-3 w-64 sm:w-72 bg-black/20 border border-white/5 p-3 rounded-xl cursor-pointer select-none hover:bg-black/40 transition-all group/file"
                         >
                           <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center flex-shrink-0 text-cyan-400 border border-cyan-500/20 group-hover/file:bg-cyan-500/20 transition-colors">
@@ -647,7 +660,7 @@ export default function Chat() {
                             <p className="text-xs font-semibold truncate text-gray-200">
                               {getFileNameFromUrl(msg.message)}
                             </p>
-                            <p className="text-[10px] text-gray-500 uppercase tracking-wider mt-0.5">Click to view / download</p>
+                            <p className="text-[10px] text-gray-500 uppercase tracking-wider mt-0.5">Click to view & download</p>
                           </div>
                           <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0 text-gray-400 group-hover/file:text-cyan-400 group-hover/file:bg-white/10 transition-all">
                             <Download className="w-4 h-4" />
