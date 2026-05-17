@@ -357,7 +357,13 @@ export default function Chat() {
       lowerText.endsWith(".jpeg") || 
       lowerText.endsWith(".gif") || 
       lowerText.endsWith(".webp") ||
-      lowerText.includes("image")
+      lowerText.includes("chat-attachments/") && (
+        lowerText.includes(".png") || 
+        lowerText.includes(".jpg") || 
+        lowerText.includes(".jpeg") || 
+        lowerText.includes(".gif") || 
+        lowerText.includes(".webp")
+      )
     );
   };
 
@@ -369,7 +375,9 @@ export default function Chat() {
       lowerText.endsWith(".mp3") ||
       lowerText.endsWith(".wav") ||
       lowerText.endsWith(".ogg") ||
-      lowerText.includes("voicenote")
+      lowerText.includes("voicenote") ||
+      lowerText.includes(".webm") ||
+      lowerText.includes(".mp3")
     );
   };
 
@@ -383,7 +391,16 @@ export default function Chat() {
       const decodedUrl = decodeURIComponent(url);
       const parts = decodedUrl.split('/');
       const lastPart = parts[parts.length - 1];
-      return lastPart.split('?')[0];
+      const nameWithoutParams = lastPart.split('?')[0];
+      
+      // Clean up the unique timestamp prefix if visible to improve layout readability
+      if (nameWithoutParams.includes('_')) {
+        const structuralFragments = nameWithoutParams.split('_');
+        if (!isNaN(Number(structuralFragments[0]))) {
+          return structuralFragments.slice(1).join('_');
+        }
+      }
+      return nameWithoutParams;
     } catch {
       return "Download File Attachment";
     }
@@ -636,6 +653,7 @@ export default function Chat() {
                           <audio 
                             src={msg.message} 
                             controls 
+                            preload="metadata"
                             className="w-full h-9 rounded-lg accent-cyan-500 custom-audio-player"
                           />
                         </div>
