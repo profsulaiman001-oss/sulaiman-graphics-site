@@ -366,7 +366,10 @@ export default function Dashboard() {
 
   const downloadFile = async (url: string, filename: string) => {
     try {
-      // Secure stream wrapper bypassing proxy failures or content render issues
+      // 1. Instantly open the file path in a new browser tab for preview/viewing
+      window.open(url, '_blank');
+
+      // 2. Simultaneously handle the automated programmatic background download stream
       const response = await fetch(url);
       if (!response.ok) throw new Error("Network response error during download");
       const blob = await response.blob();
@@ -380,7 +383,7 @@ export default function Dashboard() {
       window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
       console.error("Secure download sequence fallback triggered:", error);
-      window.open(url, '_blank');
+      // Fallback is already handled by window.open at the top if fetch fails
     }
   };
 
