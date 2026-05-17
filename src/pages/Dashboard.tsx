@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
 import { motion, AnimatePresence } from "framer-motion";
@@ -437,7 +437,6 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col relative w-full overflow-x-hidden">
-      {/* MOVED NAVIGATION CONTROLS DIRECTLY INTO HEADER CONTAINER INSTANCE */}
       <DashboardHeader 
         userEmail={user?.email || "User"}
         notificationsCount={notifications.length}
@@ -459,7 +458,6 @@ export default function Dashboard() {
   
         {isSettingsOpen && <AccountSettings onClose={() => setIsSettingsOpen(false)} userEmail={user?.email} />}
 
-        {/* PROJECTS SECTION INTERACTIVE WORKSPACE VIEW */}
         {activeSection === "projects" && (
           <>
             <div className="mb-8">
@@ -574,7 +572,6 @@ export default function Dashboard() {
           </>
         )}
 
-        {/* ACCOUNT SETTINGS SECTION INDEPENDENT TAB VIEW */}
         {activeSection === "settings" && user && (
           <div className="mt-6">
              <AccountSettings onClose={() => setActiveSection("projects")} userEmail={user.email} />
