@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react"; 
+import { useState } from "react";
 import { 
   Edit3, Trash2, Save, XCircle, CheckCircle, Clock, Loader2, Download, 
   MessageSquare, HardDrive, Send, Plus, Smartphone, Image as ImageIcon, X 
@@ -32,7 +32,6 @@ interface ProjectCardProps {
   downloadFile: (url: string, filename: string) => void;
   statusColors: { [key: string]: string };
   mockups: any[];
-  // UPDATED: Now accepts FileList for multiple uploads
   handleMockupUpload: (id: string, files: FileList) => void;
   handleDeleteVersion: (versionId: string) => void;
 }
@@ -67,7 +66,7 @@ export function ProjectCard({
   handleDeleteVersion
 }: ProjectCardProps) {
 
-  const [showGallery, setShowGallery] = useState(false); 
+  const [showGallery, setShowGallery] = useState(false);
 
   const getProgress = (status: string) => {
     if (status === "Completed") return 100;
@@ -359,7 +358,6 @@ export function ProjectCard({
                       <button 
                         onClick={async () => {
                           if(confirm("Delete this mockup?")) {
-                            // Note: Hooked into GitHub/DB delete handler via your implementation wrapper
                             await supabase.from("project_mockups").delete().eq("id", m.id);
                             alert("Mockup deleted.");
                           }
