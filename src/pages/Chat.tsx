@@ -271,18 +271,21 @@ export default function Chat() {
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement> | File) => {
     let file: File | undefined;
+    let customName: string | undefined;
     
     if (e instanceof File) {
       file = e;
+      customName = file.name;
     } else {
       file = e.target.files?.[0];
+      if (file) customName = file.name;
     }
 
     if (!file || !activeClientEmail) return;
 
     try {
       setUploading(true);
-      const downloadUrl = await uploadToGitHubStorage(file);
+      const downloadUrl = await uploadToGitHubStorage(file, customName);
       
       if (!downloadUrl) {
         throw new Error("Failed to receive download URL from storage server.");
@@ -303,7 +306,7 @@ export default function Chat() {
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -317,10 +320,7 @@ export default function Chat() {
         const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
         const voiceFile = new File([audioBlob], `voicenote_${Date.now()}.webm`, { type: "audio/webm" });
         
-        // Directly route the voice file payload straight to your GitHub cloud storage logic
         await handleFileUpload(voiceFile);
-        
-        // Kill audio tracks to cleanly free system microphone hardware access
         stream.getTracks().forEach(track => track.stop());
       };
 
@@ -357,13 +357,13 @@ export default function Chat() {
       lowerText.endsWith(".jpeg") || 
       lowerText.endsWith(".gif") || 
       lowerText.endsWith(".webp") ||
-      lowerText.includes("chat-attachments/") && (
+      (lowerText.includes("chat-attachments/") && (
         lowerText.includes(".png") || 
         lowerText.includes(".jpg") || 
         lowerText.includes(".jpeg") || 
         lowerText.includes(".gif") || 
         lowerText.includes(".webp")
-      )
+      ))
     );
   };
 
@@ -393,7 +393,6 @@ export default function Chat() {
       const lastPart = parts[parts.length - 1];
       const nameWithoutParams = lastPart.split('?')[0];
       
-      // Clean up the unique timestamp prefix if visible to improve layout readability
       if (nameWithoutParams.includes('_')) {
         const structuralFragments = nameWithoutParams.split('_');
         if (!isNaN(Number(structuralFragments[0]))) {
