@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-import { uploadToGitHubStorage } from "@/utils/uploader.ts";
+import { uploadToGitHubStorage } from "@/utils/uploader.ts"; 
 import { 
   Search, 
   Send, 
@@ -287,7 +287,6 @@ export default function Chat() {
     try {
       setUploading(true);
       const downloadUrl = await uploadToGitHubStorage(file);
-      
       if (!downloadUrl) {
         throw new Error("Failed to receive download URL from storage server.");
       }
@@ -310,7 +309,6 @@ export default function Chat() {
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
-
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
@@ -662,12 +660,13 @@ export default function Chat() {
                         <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.message}</p>
                       )}
 
+                      {/* Hover / Trigger Block option for every message element */}
                       <div className={`absolute top-1/2 -translate-y-1/2 ${isMe ? '-left-10' : '-right-10'} opacity-0 group-hover:opacity-100 transition-opacity z-20`}>
                         {(isMe || isAdmin) && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (confirm("Are you sure you want to delete this message permanently?")) {
+                              if (window.confirm("Are you sure you want to delete this message permanently?")) {
                                 deleteMessageMutation.mutate(msg.id);
                               }
                             }}
