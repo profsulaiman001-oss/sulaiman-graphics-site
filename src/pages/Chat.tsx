@@ -56,12 +56,11 @@ export default function Chat() {
     const savedName = sessionStorage.getItem("chat_name");
     
     if (savedEmail && savedName) {
-      const formattedEmail = savedEmail.trim().toLowerCase();
-      setGuestEmail(formattedEmail);
+      setGuestEmail(savedEmail);
       setGuestName(savedName);
       setShowIdentityPopup(false);
       
-      if (formattedEmail === "profsulaiman001@gmail.com") {
+      if (savedEmail === "profsulaiman001@gmail.com") {
         setIsAdmin(true);
       } else {
         setIsAdmin(false);
@@ -84,9 +83,6 @@ export default function Chat() {
     const formattedEmail = guestEmail.trim().toLowerCase();
     sessionStorage.setItem("chat_email", formattedEmail);
     sessionStorage.setItem("chat_name", guestName.trim());
-
-    setGuestEmail(formattedEmail);
-    setGuestName(guestName.trim());
 
     if (formattedEmail === "profsulaiman001@gmail.com") {
       setIsAdmin(true);
@@ -117,7 +113,7 @@ export default function Chat() {
     if (isAdmin && clients?.length && !activeClientEmail) {
       setActiveClientEmail(clients[0].email);
     }
-  }, [clients, isAdmin, activeClientEmail]);
+  }, [clients, isAdmin]);
 
   const addClientMutation = useMutation({
     mutationFn: async (email: string) => {
@@ -190,9 +186,9 @@ export default function Chat() {
   };
 
   const { data: chatMessages } = useQuery({
-    queryKey: ['messages', activeClientEmail, guestEmail, isAdmin],
+    queryKey: ['messages', activeClientEmail],
     queryFn: async () => {
-      if (!activeClientEmail || !guestEmail) return [];
+      if (!activeClientEmail) return [];
       
       const adminEmail = "profsulaiman001@gmail.com";
       const targetEmail = isAdmin ? activeClientEmail : adminEmail;
@@ -215,7 +211,7 @@ export default function Chat() {
   }, [chatMessages]);
 
   useEffect(() => {
-    if (!guestEmail || !activeClientEmail) return;
+    if (!guestEmail) return;
 
     const channel = supabase
       .channel('schema-db-changes')
@@ -271,21 +267,18 @@ export default function Chat() {
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement> | File) => {
     let file: File | undefined;
-    let customName: string | undefined;
     
     if (e instanceof File) {
       file = e;
-      customName = file.name;
     } else {
       file = e.target.files?.[0];
-      if (file) customName = file.name;
     }
 
     if (!file || !activeClientEmail) return;
 
     try {
       setUploading(true);
-      const downloadUrl = await uploadToGitHubStorage(file, customName);
+      const downloadUrl = await uploadToGitHubStorage(file);
       
       if (!downloadUrl) {
         throw new Error("Failed to receive download URL from storage server.");
@@ -306,7 +299,7 @@ export default function Chat() {
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -320,7 +313,10 @@ export default function Chat() {
         const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
         const voiceFile = new File([audioBlob], `voicenote_${Date.now()}.webm`, { type: "audio/webm" });
         
+        // Directly route the voice file payload straight to your GitHub cloud storage logic
         await handleFileUpload(voiceFile);
+        
+        // Kill audio tracks to cleanly free system microphone hardware access
         stream.getTracks().forEach(track => track.stop());
       };
 
@@ -357,11 +353,7 @@ export default function Chat() {
       lowerText.endsWith(".jpeg") || 
       lowerText.endsWith(".gif") || 
       lowerText.endsWith(".webp") ||
-      lowerText.includes(".png") || 
-      lowerText.includes(".jpg") || 
-      lowerText.includes(".jpeg") || 
-      lowerText.includes(".gif") || 
-      lowerText.includes(".webp")
+      lowerText.includes("image")
     );
   };
 
@@ -373,9 +365,7 @@ export default function Chat() {
       lowerText.endsWith(".mp3") ||
       lowerText.endsWith(".wav") ||
       lowerText.endsWith(".ogg") ||
-      lowerText.includes("voicenote") ||
-      lowerText.includes(".webm") ||
-      lowerText.includes(".mp3")
+      lowerText.includes("voicenote")
     );
   };
 
@@ -389,15 +379,7 @@ export default function Chat() {
       const decodedUrl = decodeURIComponent(url);
       const parts = decodedUrl.split('/');
       const lastPart = parts[parts.length - 1];
-      const nameWithoutParams = lastPart.split('?')[0];
-      
-      if (nameWithoutParams.includes('_')) {
-        const structuralFragments = nameWithoutParams.split('_');
-        if (!isNaN(Number(structuralFragments[0]))) {
-          return structuralFragments.slice(1).join('_');
-        }
-      }
-      return nameWithoutParams;
+      return lastPart.split('?')[0];
     } catch {
       return "Download File Attachment";
     }
@@ -650,7 +632,6 @@ export default function Chat() {
                           <audio 
                             src={msg.message} 
                             controls 
-                            preload="metadata"
                             className="w-full h-9 rounded-lg accent-cyan-500 custom-audio-player"
                           />
                         </div>
