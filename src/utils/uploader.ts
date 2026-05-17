@@ -54,15 +54,9 @@ export async function uploadToGitHubStorage(file: File): Promise<string | null> 
       throw new Error(errorData.message || "Failed to commit chunk stream to GitHub.");
     }
 
-    const data = await response.json();
-
-    // Route audio directly through raw.githubusercontent to allow timeline buffering
-    // Route images/files through jsDelivr to avoid canvas/DOM image CORS errors
-    if (file.type.startsWith("audio/") || file.name.includes("voicenote")) {
-      return data.content.download_url; // Direct raw URL for pristine audio streaming
-    } else {
-      return `https://cdn.jsdelivr.net/gh/${owner}/${repo}@main/${uniquePath}`; // High-perf CDN for images/files
-    }
+    // Bypass jsDelivr entirely for all file formats to ensure absolute availability
+    // and route all requests through the reliable raw.githubusercontent path structure
+    return `https://raw.githubusercontent.com/${owner}/${repo}/main/${uniquePath}`;
 
   } catch (error) {
     console.error("Error inside uploadToGitHubStorage utility:", error);
