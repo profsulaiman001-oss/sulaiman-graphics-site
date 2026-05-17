@@ -499,10 +499,10 @@ export default function Dashboard() {
                 <h3 className="text-sm font-bold text-foreground">No Projects Found</h3>
               </div>
             ) : (
-              /* UPDATED FOR PERFECT GRID LAYOUT CENTERING ON MOBILE/DESKTOP */
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 justify-items-center justify-center mx-auto w-full">
+              /* REMOVED PREVIOUS MAX-W CONSTRAINTS ON WRAPPER CARDS; SYSTEM NATIVELY DOCK-STRETCHES GRIDS EQUALLY */
+              <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 justify-center items-stretch w-full">
                 {filteredProjects.map((project: any) => (
-                  <div key={project.id} className="flex flex-col gap-3 w-full max-w-sm md:max-w-none">
+                  <div key={project.id} className="w-full flex flex-col">
                     <ProjectCard 
                       project={project}
                       isAdmin={isAdmin}
