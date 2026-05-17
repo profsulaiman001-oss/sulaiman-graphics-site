@@ -353,7 +353,8 @@ export default function Chat() {
       lowerText.endsWith(".jpeg") || 
       lowerText.endsWith(".gif") || 
       lowerText.endsWith(".webp") ||
-      lowerText.includes("image")
+      lowerText.endsWith(".svg") ||
+      lowerText.includes("chat-attachments/")
     );
   };
 
@@ -400,7 +401,7 @@ export default function Chat() {
       
       <input 
         type="file" 
-        accept="*" 
+        accept="image/*,audio/*,application/pdf,text/*" 
         ref={fileInputRef} 
         onChange={handleFileUpload} 
         className="hidden" 
