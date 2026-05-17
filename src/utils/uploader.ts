@@ -3,7 +3,7 @@
  * Powered by Vite Environment Variables
  */
 
-export async function uploadToGitHubStorage(file: File): Promise<string | null> {
+export async function uploadToGitHubStorage(file: File | Blob, customFileName?: string): Promise<string | null> {
   // Read the newly defined Vite environment variables securely
   const token = import.meta.env.VITE_GITHUB_STORAGE_TOKEN;
   const owner = import.meta.env.VITE_GITHUB_STORAGE_OWNER;
@@ -16,15 +16,24 @@ export async function uploadToGitHubStorage(file: File): Promise<string | null> 
   }
 
   try {
+    // Safely deduce the correct filename from File property or custom metadata defaults
+    let originalName = "";
+    if (file instanceof File) {
+      originalName = file.name;
+    } else {
+      originalName = customFileName || `voice_note_${Date.now()}.webm`;
+    }
+
     // Generate a clean, unique file path using timestamping to prevent overrides
-    const cleanFileName = file.name.replace(/[^a-zA-Z0-9.]/g, "_");
+    const cleanFileName = originalName.replace(/[^a-zA-Z0-9.]/g, "_");
     const uniquePath = `chat-attachments/${Date.now()}_${cleanFileName}`;
 
     // Convert file buffer to base64 stream string for the GitHub API delivery
     const reader = new FileReader();
     const base64Promise = new Promise<string>((resolve, reject) => {
       reader.onload = () => {
-        const base64String = (reader.result as string).split(",")[1];
+        const resultString = reader.result as string;
+        const base64String = resultString.split(",")[1];
         resolve(base64String);
       };
       reader.onerror = (error) => reject(error);
@@ -43,7 +52,7 @@ export async function uploadToGitHubStorage(file: File): Promise<string | null> 
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        message: `Upload chat attachment: ${file.name}`,
+        message: `Upload chat attachment: ${originalName}`,
         content: contentBase64,
         branch: "main" // Direct target branch
       }),
@@ -56,7 +65,8 @@ export async function uploadToGitHubStorage(file: File): Promise<string | null> 
 
     // Bypass jsDelivr entirely for all file formats to ensure absolute availability
     // and route all requests through the reliable raw.githubusercontent path structure
-    return `https://raw.githubusercontent.com/${owner}/${repo}/main/${uniquePath}`;
+    // Adding encodeURI to make sure unusual characters never yield a 404 URL route breakdown
+    return `https://raw.githubusercontent.com/${owner}/${repo}/main/${encodeURIComponent(uniquePath)}`;
 
   } catch (error) {
     console.error("Error inside uploadToGitHubStorage utility:", error);
