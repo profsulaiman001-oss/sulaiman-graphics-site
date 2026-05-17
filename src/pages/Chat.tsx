@@ -350,21 +350,26 @@ export default function Chat() {
 
   const isImageMessage = (text: string) => {
     if (!text || typeof text !== "string" || !text.startsWith("http")) return false;
-    const lowerText = text.toLowerCase().split('?')[0];
-    return (
-      lowerText.endsWith(".png") || 
-      lowerText.endsWith(".jpg") || 
-      lowerText.endsWith(".jpeg") || 
-      lowerText.endsWith(".gif") || 
-      lowerText.endsWith(".webp") ||
-      (lowerText.includes("chat-attachments/") && (
-        lowerText.includes(".png") || 
-        lowerText.includes(".jpg") || 
-        lowerText.includes(".jpeg") || 
-        lowerText.includes(".gif") || 
-        lowerText.includes(".webp")
-      ))
-    );
+    try {
+      const parsedUrl = new URL(text);
+      const pathSegments = parsedUrl.pathname.toLowerCase();
+      return (
+        pathSegments.endsWith(".png") ||
+        pathSegments.endsWith(".jpg") ||
+        pathSegments.endsWith(".jpeg") ||
+        pathSegments.endsWith(".gif") ||
+        pathSegments.endsWith(".webp")
+      );
+    } catch {
+      const cleanLower = text.toLowerCase().split('?')[0];
+      return (
+        cleanLower.endsWith(".png") ||
+        cleanLower.endsWith(".jpg") ||
+        cleanLower.endsWith(".jpeg") ||
+        cleanLower.endsWith(".gif") ||
+        cleanLower.endsWith(".webp")
+      );
+    }
   };
 
   const isAudioMessage = (text: string) => {
@@ -491,9 +496,7 @@ export default function Chat() {
                 >
                   <UserPlus className="w-4 h-4" />
                 </button>
-              </form>
-
-              <div className="relative">
+              </form>              <div className="relative">
                 <Search className="absolute left-3 top-3 w-4 h-4 text-gray-500" />
                 <input 
                   type="text" 
