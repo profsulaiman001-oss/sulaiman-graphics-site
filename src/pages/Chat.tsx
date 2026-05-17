@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-import { uploadToGitHubStorage } from "@/utils/uploader.ts"; 
+import { uploadToGitHubStorage } from "@/utils/uploader.ts";
 import { 
   Search, 
   Send, 
@@ -275,7 +275,6 @@ export default function Chat() {
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement> | File) => {
     let file: File | undefined;
-    
     if (e instanceof File) {
       file = e;
     } else {
@@ -283,7 +282,6 @@ export default function Chat() {
     }
 
     if (!file || !activeClientEmail) return;
-
     try {
       setUploading(true);
       const downloadUrl = await uploadToGitHubStorage(file);
@@ -563,6 +561,7 @@ export default function Chat() {
                 </div>
               </div>
             </div>
+ 
             <div className="flex items-center gap-2">
                <button className="hidden sm:flex p-2.5 hover:bg-[#1A1F29] rounded-xl border border-gray-800 text-gray-400 transition-colors">
                 <Search className="w-5 h-5" />
@@ -648,7 +647,7 @@ export default function Chat() {
                           </div>
                           <div className="min-w-0 flex-grow">
                             <p className="text-xs font-semibold truncate text-gray-200">
-                              {getFileNameFromUrl(msg.message)}
+                               {getFileNameFromUrl(msg.message)}
                             </p>
                             <p className="text-[10px] text-gray-500 uppercase tracking-wider mt-0.5">Click to view / download</p>
                           </div>
@@ -660,8 +659,8 @@ export default function Chat() {
                         <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.message}</p>
                       )}
 
-                      {/* Hover / Trigger Block option for every message element */}
-                      <div className={`absolute top-1/2 -translate-y-1/2 ${isMe ? '-left-10' : '-right-10'} opacity-0 group-hover:opacity-100 transition-opacity z-20`}>
+                      {/* Hover Trigger Block option for deleting a message */}
+                      <div className={`absolute top-1/2 -translate-y-1/2 ${isMe ? '-left-12' : '-right-12'} opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20`}>
                         {(isMe || isAdmin) && (
                           <button
                             onClick={(e) => {
@@ -670,10 +669,10 @@ export default function Chat() {
                                 deleteMessageMutation.mutate(msg.id);
                               }
                             }}
-                            className="p-2 bg-[#1A1F29] border border-gray-800 rounded-lg text-gray-500 hover:text-red-500 hover:border-red-500/30 shadow-md transition-all"
+                            className="p-2 bg-[#1A1F29] border border-gray-800 rounded-xl text-gray-500 hover:text-red-500 hover:border-red-500/50 shadow-2xl transition-all"
                             title="Delete Message"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         )}
                       </div>
