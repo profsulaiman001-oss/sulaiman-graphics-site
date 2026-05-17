@@ -16,17 +16,22 @@ export async function uploadToGitHubStorage(file: File | Blob, customFileName?: 
   }
 
   try {
-    // Safely deduce the correct filename from File property or custom metadata defaults
+    // Determine the original filename securely
     let originalName = "";
     if (file instanceof File) {
       originalName = file.name;
     } else {
-      originalName = customFileName || `voice_note_${Date.now()}.webm`;
+      originalName = customFileName || `voicenote_${Date.now()}.webm`;
     }
 
-    // Generate a clean, unique file path using timestamping to prevent overrides
+    // Sanitize file name to prevent invalid URL breaking paths
     const cleanFileName = originalName.replace(/[^a-zA-Z0-9.]/g, "_");
-    const uniquePath = `chat-attachments/${Date.now()}_${cleanFileName}`;
+    
+    // Ensure accurate extension handling for audio blobs
+    let uniquePath = `chat-attachments/${Date.now()}_${cleanFileName}`;
+    if (!(file instanceof File) && !uniquePath.toLowerCase().endsWith(".webm")) {
+      uniquePath += ".webm";
+    }
 
     // Convert file buffer to base64 stream string for the GitHub API delivery
     const reader = new FileReader();
@@ -54,7 +59,7 @@ export async function uploadToGitHubStorage(file: File | Blob, customFileName?: 
       body: JSON.stringify({
         message: `Upload chat attachment: ${originalName}`,
         content: contentBase64,
-        branch: "main" // Direct target branch
+        branch: "main"
       }),
     });
 
@@ -63,10 +68,8 @@ export async function uploadToGitHubStorage(file: File | Blob, customFileName?: 
       throw new Error(errorData.message || "Failed to commit chunk stream to GitHub.");
     }
 
-    // Bypass jsDelivr entirely for all file formats to ensure absolute availability
-    // and route all requests through the reliable raw.githubusercontent path structure
-    // Adding encodeURI to make sure unusual characters never yield a 404 URL route breakdown
-    return `https://raw.githubusercontent.com/${owner}/${repo}/main/${encodeURIComponent(uniquePath)}`;
+    // Return clean URL path structure using precise URL coding to avoid 404s
+    return `https://raw.githubusercontent.com/${owner}/${repo}/main/${uniquePath}`;
 
   } catch (error) {
     console.error("Error inside uploadToGitHubStorage utility:", error);
