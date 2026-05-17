@@ -274,7 +274,7 @@ export default function Dashboard() {
 
   const updateStatus = async (id: string, status: string) => {
     if (!isAdmin) return;
-    const { error } = await supabase.from("projects").update({ status }).eq("id", id);
+    const { error = null } = await supabase.from("projects").update({ status }).eq("id", id);
     if (!error) fetchProjects(user, isAdmin);
   };
 
@@ -383,7 +383,6 @@ export default function Dashboard() {
       window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
       console.error("Secure download sequence fallback triggered:", error);
-      // Fallback is already handled by window.open at the top if fetch fails
     }
   };
 
@@ -413,7 +412,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col relative">
+    <div className="min-h-screen bg-background text-foreground flex flex-col relative w-full overflow-x-hidden">
       <DashboardHeader 
         userEmail={user?.email || "User"}
         notificationsCount={notifications.length}
@@ -422,7 +421,7 @@ export default function Dashboard() {
         SignOutHandler={handleSignOut}
       />
 
-      <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl pb-32">
+      <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl pb-32 w-full">
         {showWelcome && <WelcomeNameModal onClose={() => setShowWelcome(false)} userName={isAdmin ? "Sulaiman" : "Client"} />}
   
         {isSettingsOpen && <AccountSettings onClose={() => setIsSettingsOpen(false)} userEmail={user?.email} />}
@@ -490,7 +489,7 @@ export default function Dashboard() {
         </div>
 
         {activeSection === "projects" && (
-          <div className="mt-12">
+          <div className="mt-12 w-full">
             <h2 className="text-xl font-bold tracking-tight mb-6">
               {isAdmin ? "Project Status Workspace" : "Your Active Projects"}
             </h2>
@@ -500,9 +499,10 @@ export default function Dashboard() {
                 <h3 className="text-sm font-bold text-foreground">No Projects Found</h3>
               </div>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              /* UPDATED FOR PERFECT GRID LAYOUT CENTERING ON MOBILE/DESKTOP */
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 justify-items-center justify-center mx-auto w-full">
                 {filteredProjects.map((project: any) => (
-                  <div key={project.id} className="flex flex-col gap-3">
+                  <div key={project.id} className="flex flex-col gap-3 w-full max-w-sm md:max-w-none">
                     <ProjectCard 
                       project={project}
                       isAdmin={isAdmin}
