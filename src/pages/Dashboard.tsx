@@ -23,7 +23,7 @@ import { ProjectComments } from "@/components/dashboard/ProjectComments";
 import { ProjectManagement } from "@/components/dashboard/ProjectManagement";
 import WelcomeNameModal from "@/components/dashboard/WelcomeNameModal";
 import { CertificateGenerator } from "./components/certificates/CertificateGenerator";
-import { DashboardNav } from "@/components/dashboard/DashboardNav"; 
+import { DashboardNav } from "@/components/dashboard/DashboardNav";
 
 // Page Imports for Client Buttons
 import Questionnaire from "@/pages/Questionnaire";
@@ -32,7 +32,7 @@ import Agreement from "@/pages/Agreement";
 // Fixed imports for Admin usage
 import Receipt from "./Receipt";
 import Invoice from "./Invoice";
-import ViewQuestionnaires from "./ViewQuestionnaires"; 
+import ViewQuestionnaires from "./ViewQuestionnaires";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
@@ -44,7 +44,6 @@ export default function Dashboard() {
   const [projects, setProjects] = useState<any[]>([]);
   const [clientEmails, setClientEmails] = useState<string[]>([]);
   const [commentsMap, setCommentsMap] = useState<{ [key: string]: any[] }>({});
-  const [comMap, setVersionsMap] = useState<{ [key: string]: any[] }>({});
   const [versionsMap, setVersionsMapState] = useState<{ [key: string]: any[] }>({});
   const [mockupsMap, setMockupsMap] = useState<{ [key: string]: any[] }>({});
   const [notifications, setNotifications] = useState<string[]>([]);
@@ -117,7 +116,9 @@ export default function Dashboard() {
       )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => { 
+      supabase.removeChannel(channel); 
+    };
   }, [openCommentsId]);
 
   const fetchProjects = async (currentUser: any, admin: boolean) => {
@@ -216,7 +217,7 @@ export default function Dashboard() {
       is_admin: isAdmin,
       message: newComment.trim(),
       user_id: user.id
-     }]);
+    }]);
     if (!error) {
       setNewComment("");
     }
@@ -308,10 +309,10 @@ export default function Dashboard() {
     try {
       setLoading(true);
       
-      // 1. Fire file payload into your 100GB secure GitHub cluster stream
+      // Upload via GitHub Custom Pipeline Strategy
       const directCdnUrl = await uploadToGitHubStorage(file, 'deliverables');
       
-      // 2. Insert link into your database records
+      // Track upload entries directly in data tables
       const { error: versionError } = await supabase.from("project_versions").insert([{
         project_id: id,
         file_url: directCdnUrl,
@@ -326,6 +327,7 @@ export default function Dashboard() {
       if (dbError) throw dbError;
       
       fetchProjects(user, isAdmin);
+      alert("Deliverable file successfully committed to GitHub Storage array!");
     } catch (err: any) {
       console.error("Upload failed:", err.message);
       alert("Error uploading file to storage array: " + err.message);
@@ -339,7 +341,7 @@ export default function Dashboard() {
     try {
       setLoading(true);
       
-      // Map arrays into async streams sending components sequentially to Vercel/GitHub
+      // Maps component sets into sequential async streaming operations straight to GitHub
       const uploadPromises = Array.from(files).map(async (file) => {
         const directCdnUrl = await uploadToGitHubStorage(file, 'products');
         return supabase.from("project_mockups").insert([{
@@ -347,7 +349,6 @@ export default function Dashboard() {
           file_url: directCdnUrl
         }]);
       });
-      
       await Promise.all(uploadPromises);
       fetchMockups(id);
       alert(`${files.length} mockups uploaded successfully to GitHub storage!`);
@@ -365,8 +366,9 @@ export default function Dashboard() {
 
   const downloadFile = async (url: string, filename: string) => {
     try {
-      window.open(url, '_blank');
+      // Secure stream wrapper bypassing proxy failures or content render issues
       const response = await fetch(url);
+      if (!response.ok) throw new Error("Network response error during download");
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -377,13 +379,8 @@ export default function Dashboard() {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
-      console.error("Download failed:", error);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', filename);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      console.error("Secure download sequence fallback triggered:", error);
+      window.open(url, '_blank');
     }
   };
 
