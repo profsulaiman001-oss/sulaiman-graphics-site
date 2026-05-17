@@ -56,11 +56,12 @@ export default function Chat() {
     const savedName = sessionStorage.getItem("chat_name");
     
     if (savedEmail && savedName) {
-      setGuestEmail(savedEmail);
+      const formattedEmail = savedEmail.trim().toLowerCase();
+      setGuestEmail(formattedEmail);
       setGuestName(savedName);
       setShowIdentityPopup(false);
       
-      if (savedEmail === "profsulaiman001@gmail.com") {
+      if (formattedEmail === "profsulaiman001@gmail.com") {
         setIsAdmin(true);
       } else {
         setIsAdmin(false);
@@ -83,6 +84,9 @@ export default function Chat() {
     const formattedEmail = guestEmail.trim().toLowerCase();
     sessionStorage.setItem("chat_email", formattedEmail);
     sessionStorage.setItem("chat_name", guestName.trim());
+
+    setGuestEmail(formattedEmail);
+    setGuestName(guestName.trim());
 
     if (formattedEmail === "profsulaiman001@gmail.com") {
       setIsAdmin(true);
@@ -113,7 +117,7 @@ export default function Chat() {
     if (isAdmin && clients?.length && !activeClientEmail) {
       setActiveClientEmail(clients[0].email);
     }
-  }, [clients, isAdmin]);
+  }, [clients, isAdmin, activeClientEmail]);
 
   const addClientMutation = useMutation({
     mutationFn: async (email: string) => {
@@ -186,9 +190,9 @@ export default function Chat() {
   };
 
   const { data: chatMessages } = useQuery({
-    queryKey: ['messages', activeClientEmail],
+    queryKey: ['messages', activeClientEmail, guestEmail, isAdmin],
     queryFn: async () => {
-      if (!activeClientEmail) return [];
+      if (!activeClientEmail || !guestEmail) return [];
       
       const adminEmail = "profsulaiman001@gmail.com";
       const targetEmail = isAdmin ? activeClientEmail : adminEmail;
@@ -211,7 +215,7 @@ export default function Chat() {
   }, [chatMessages]);
 
   useEffect(() => {
-    if (!guestEmail) return;
+    if (!guestEmail || !activeClientEmail) return;
 
     const channel = supabase
       .channel('schema-db-changes')
