@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, Settings, LogOut } from 'lucide-react';
+import { Bell, Settings, LogOut, FolderHeart, LayoutDashboard } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface DashboardHeaderProps {
@@ -8,12 +8,16 @@ interface DashboardHeaderProps {
   isSettingsOpen: boolean;
   setIsSettingsOpen: (open: boolean) => void;
   SignOutHandler: () => void;
-  // Added notification props
   notifications: string[];
   clearNotifications: () => void;
   showNotificationDropdown: boolean;
   setShowNotificationDropdown: (open: boolean) => void;
   notificationRef: React.RefObject<HTMLDivElement>;
+  
+  // Navigation Props passed into Header controls
+  activeSection: string;
+  setActiveSection: (section: string) => void;
+  isAdmin: boolean;
 }
 
 export function DashboardHeader({
@@ -27,24 +31,66 @@ export function DashboardHeader({
   showNotificationDropdown,
   setShowNotificationDropdown,
   notificationRef,
+  activeSection,
+  setActiveSection,
+  isAdmin,
 }: DashboardHeaderProps) {
   return (
     <header className="border-b border-border bg-background/95 backdrop-blur sticky top-0 z-50 w-full">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-cyan-500/20">
-            S
-          </div>
-          <div>
-            <h1 className="font-bold text-sm tracking-tight text-foreground sm:text-base">
+        
+        {/* LEFT SIDE: "S" Logo replaced with functional Cyan Navigation Buttons */}
+        <div className="flex items-center gap-1 sm:gap-2">
+          {/* Projects Workspace Tab Button */}
+          <button
+            onClick={() => setActiveSection("projects")}
+            className={`p-2 rounded-xl border flex items-center justify-center transition-all duration-200 relative ${
+              activeSection === "projects"
+                ? "bg-cyan-500/10 border-cyan-500/30 text-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.15)]"
+                : "bg-background border-border/50 text-muted-foreground hover:text-cyan-400 hover:border-cyan-500/20"
+            }`}
+          >
+            <FolderHeart size={18} />
+            {activeSection === "projects" && (
+              <motion.div
+                layoutId="activeHeaderNav"
+                className="absolute -bottom-[17px] left-0 right-0 h-[2px] bg-cyan-400 rounded-full"
+                transition={{ type: "spring", stiffness: 380, damping: 30 }}
+              />
+            )}
+          </button>
+
+          {/* Account Settings Tab Button */}
+          <button
+            onClick={() => setActiveSection("settings")}
+            className={`p-2 rounded-xl border flex items-center justify-center transition-all duration-200 relative ${
+              activeSection === "settings"
+                ? "bg-cyan-500/10 border-cyan-500/30 text-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.15)]"
+                : "bg-background border-border/50 text-muted-foreground hover:text-cyan-400 hover:border-cyan-500/20"
+            }`}
+          >
+            <LayoutDashboard size={18} />
+            {activeSection === "settings" && (
+              <motion.div
+                layoutId="activeHeaderNav"
+                className="absolute -bottom-[17px] left-0 right-0 h-[2px] bg-cyan-400 rounded-full"
+                transition={{ type: "spring", stiffness: 380, damping: 30 }}
+              />
+            )}
+          </button>
+
+          {/* Core App Labels */}
+          <div className="ml-1 sm:ml-2">
+            <h1 className="font-bold text-xs sm:text-sm tracking-tight text-foreground leading-none">
               Sulaiman Graphics
             </h1>
-            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
-              Studio Portal
+            <p className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider mt-0.5">
+              {isAdmin ? "Admin Portal" : "Studio Portal"}
             </p>
           </div>
         </div>
 
+        {/* RIGHT SIDE: System Controls & User Configuration Utilities */}
         <div className="flex items-center gap-2 sm:gap-4">
           <div className="hidden md:flex flex-col items-end mr-2">
             <span className="text-[10px] text-muted-foreground uppercase font-semibold tracking-tighter">Account</span>
