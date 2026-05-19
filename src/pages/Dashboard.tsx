@@ -445,15 +445,15 @@ export default function Dashboard() {
         isAdmin={isAdmin}
       />
 
-      {/* pb-36 padding keeps layout content from getting blocked by floating bottom navigation elements */}
-      <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl pb-36 w-full">
+      {/* Main content wrapper */}
+      <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl w-full">
         {showWelcome && <WelcomeNameModal onClose={() => setShowWelcome(false)} userName={isAdmin ? "Sulaiman" : "Client"} />}
   
         {isSettingsOpen && <AccountSettings onClose={() => setIsSettingsOpen(false)} userEmail={user?.email} />}
 
         {/* SECTION ONE: PROJECTS HUD */}
         {activeSection === "projects" && (
-          <>
+          <div className="pb-24">
             <div className="mb-8">
                <AnalyticsDashboard stats={stats} COLORS={COLORS} />
             </div>
@@ -563,19 +563,21 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
-          </>
+          </div>
         )}
 
-        {/* SECTION TWO: PREMIUM LIVE CUSTOM CHAT PAGE COMPONENT */}
+        {/* SECTION TWO: PREMIUM LIVE CUSTOM CHAT PAGE COMPONENT - Safe Layout Container */}
         {activeSection === "chat" && (
-          <div className="w-full min-h-[50vh] bg-card/10 border border-border/50 rounded-2xl overflow-hidden p-2">
-            <ChatPage />
+          <div className="w-full pb-32 animate-fadeIn">
+            <div className="w-full min-h-[70vh] bg-card/10 border border-border/50 rounded-2xl overflow-hidden p-2">
+              <ChatPage />
+            </div>
           </div>
         )}
 
         {/* SECTION THREE: PAYMENTS HUB */}
         {activeSection === "billing" && (
-          <div className="min-h-[50vh] border border-dashed border-border/60 bg-card/20 rounded-2xl flex flex-col items-center justify-center p-6 text-center">
+          <div className="min-h-[50vh] pb-24 border border-dashed border-border/60 bg-card/20 rounded-2xl flex flex-col items-center justify-center p-6 text-center">
             <BarChart3 size={36} className="text-cyan-400 mb-2 animate-pulse" />
             <h3 className="text-base font-bold text-foreground">Ledger & Statements Panel</h3>
             <p className="text-xs text-muted-foreground max-w-xs mt-1">
@@ -622,7 +624,7 @@ export default function Dashboard() {
         )}
       </AnimatePresence>
 
-      <footer className="border-t border-border py-6 mt-auto">
+      <footer className="border-t border-border py-6 mt-auto pb-28 md:pb-6">
         <div className="container mx-auto px-4 text-center text-xs text-muted-foreground">
           © {new Date().getFullYear()} Sulaiman Graphics. All rights reserved.
         </div>
