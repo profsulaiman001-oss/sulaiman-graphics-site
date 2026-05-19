@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, MessageSquare, CreditCard } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface NavProps {
@@ -12,7 +12,7 @@ export function DashboardNav({ activeSection, setActiveSection, isAdmin }: NavPr
   const navItems = [
     { id: 'projects', label: 'Projects', icon: LayoutDashboard },
     { id: 'chat', label: 'Chat Room', icon: MessageSquare },
-    { id: 'billing', label: 'Payments', icon: CreditCard },
+    { id: 'billing', label: 'Account', icon: User },
   ];
 
   return (
