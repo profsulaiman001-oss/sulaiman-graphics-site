@@ -23,6 +23,10 @@ import { ProjectComments } from "@/components/dashboard/ProjectComments";
 import { ProjectManagement } from "@/components/dashboard/ProjectManagement";
 import WelcomeNameModal from "@/components/dashboard/WelcomeNameModal";
 import { CertificateGenerator } from "./components/certificates/CertificateGenerator";
+import { DashboardNav } from "@/components/dashboard/DashboardNav";
+
+// Premium Chat Application Page Route Import
+import ChatPage from "@/pages/chat";
 
 // Page Imports for Client Buttons
 import Questionnaire from "@/pages/Questionnaire";
@@ -93,7 +97,6 @@ export default function Dashboard() {
     initializeDashboard();
   }, []);
 
-  // Close notifications dropdown on click outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
@@ -112,8 +115,6 @@ export default function Dashboard() {
         { event: 'INSERT', schema: 'public', table: 'comments' },
         (payload) => {
           const newMsg = payload.new;
-          
-          // Generate notification text
           const senderLabel = newMsg.is_admin ? "Admin" : "Client";
           const notifyText = `New message from ${senderLabel}: "${newMsg.message.substring(0, 30)}${newMsg.message.length > 30 ? '...' : ''}"`;
           setNotifications(prev => [notifyText, ...prev]);
@@ -332,11 +333,7 @@ export default function Dashboard() {
     const versionName = prompt("Enter a name for this version (e.g., Draft 1, Final):") || "New Version";
     try {
       setLoading(true);
-      
-      // Upload via GitHub Custom Pipeline Strategy
       const directCdnUrl = await uploadToGitHubStorage(file, 'deliverables');
-      
-      // Track upload entries directly in data tables
       const { error: versionError } = await supabase.from("project_versions").insert([{
         project_id: id,
         file_url: directCdnUrl,
@@ -364,8 +361,6 @@ export default function Dashboard() {
     if (!isAdmin) return;
     try {
       setLoading(true);
-      
-      // Maps component sets into sequential async streaming operations straight to GitHub
       const uploadPromises = Array.from(files).map(async (file) => {
         const directCdnUrl = await uploadToGitHubStorage(file, 'products');
         return supabase.from("project_mockups").insert([{
@@ -390,10 +385,7 @@ export default function Dashboard() {
 
   const downloadFile = async (url: string, filename: string) => {
     try {
-      // 1. Instantly open the file path in a new browser tab for preview/viewing
       window.open(url, '_blank');
-
-      // 2. Simultaneously handle the automated programmatic background download stream
       const response = await fetch(url);
       if (!response.ok) throw new Error("Network response error during download");
       const blob = await response.blob();
@@ -453,11 +445,13 @@ export default function Dashboard() {
         isAdmin={isAdmin}
       />
 
-      <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl pb-32 w-full">
+      {/* pb-36 padding keeps layout content from getting blocked by floating bottom navigation elements */}
+      <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl pb-36 w-full">
         {showWelcome && <WelcomeNameModal onClose={() => setShowWelcome(false)} userName={isAdmin ? "Sulaiman" : "Client"} />}
   
         {isSettingsOpen && <AccountSettings onClose={() => setIsSettingsOpen(false)} userEmail={user?.email} />}
 
+        {/* SECTION ONE: PROJECTS HUD */}
         {activeSection === "projects" && (
           <>
             <div className="mb-8">
@@ -572,9 +566,21 @@ export default function Dashboard() {
           </>
         )}
 
-        {activeSection === "settings" && user && (
-          <div className="mt-6">
-             <AccountSettings onClose={() => setActiveSection("projects")} userEmail={user.email} />
+        {/* SECTION TWO: PREMIUM LIVE CUSTOM CHAT PAGE COMPONENT */}
+        {activeSection === "chat" && (
+          <div className="w-full min-h-[50vh] bg-card/10 border border-border/50 rounded-2xl overflow-hidden p-2">
+            <ChatPage />
+          </div>
+        )}
+
+        {/* SECTION THREE: PAYMENTS HUB */}
+        {activeSection === "billing" && (
+          <div className="min-h-[50vh] border border-dashed border-border/60 bg-card/20 rounded-2xl flex flex-col items-center justify-center p-6 text-center">
+            <BarChart3 size={36} className="text-cyan-400 mb-2 animate-pulse" />
+            <h3 className="text-base font-bold text-foreground">Ledger & Statements Panel</h3>
+            <p className="text-xs text-muted-foreground max-w-xs mt-1">
+              Your billing logs, payment tokens, and invoice balance processing sheets are managed securely here.
+            </p>
           </div>
         )}
       </main>
@@ -623,6 +629,13 @@ export default function Dashboard() {
       </footer>
       
       {isCertOpen && <CertificateGenerator onClose={() => setIsCertOpen(false)} />}
+
+      {/* BOTTOM FIXED RECTANGULAR NAVIGATION COMPONENT */}
+      <DashboardNav 
+        activeSection={activeSection} 
+        setActiveSection={setActiveSection} 
+        isAdmin={isAdmin} 
+      />
     </div>
   );
 }
