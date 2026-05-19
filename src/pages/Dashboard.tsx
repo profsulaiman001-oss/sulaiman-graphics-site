@@ -26,7 +26,7 @@ import { CertificateGenerator } from "./components/certificates/CertificateGener
 import { DashboardNav } from "@/components/dashboard/DashboardNav";
 
 // Premium Chat Application Page Route Import
-import ChatPage from "@/pages/chat.tsx";
+import ChatPage from "@/pages/Chat.tsx";
 
 // Page Imports for Client Buttons
 import Questionnaire from "@/pages/Questionnaire";
