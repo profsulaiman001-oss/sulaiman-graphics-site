@@ -35,7 +35,7 @@ export function DashboardNav({ activeSection, setActiveSection, isAdmin }: Dashb
     }
 
     fetchProfileData();
-  }, [isOpen]); // Re-fetch on open to keep synchronizations instantaneous
+  }, [isOpen]);
 
   const navigationItems = [
     { id: "projects", label: "Project Core", icon: Briefcase, desc: "Active workspace matrices" },
@@ -45,10 +45,10 @@ export function DashboardNav({ activeSection, setActiveSection, isAdmin }: Dashb
 
   return (
     <>
-      {/* HIGH-END FIXED NAVIGATION CONTROLLER TRIGGER */}
+      {/* HIGH-END FIXED NAVIGATION CONTROLLER TRIGGER - REPOSITIONED TO TOP LEFT */}
       <button 
         onClick={() => setIsOpen(true)}
-        className="fixed top-3.5 right-4 z-[110] w-10 h-10 bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 rounded-xl shadow-[0_0_20px_rgba(6,182,212,0.3)] flex items-center justify-center text-black active:scale-95 transition-all md:top-6 md:right-6 md:w-12 md:h-12 border border-cyan-300/30 group"
+        className="fixed top-3.5 left-4 z-[110] w-10 h-10 bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 rounded-xl shadow-[0_0_20px_rgba(6,182,212,0.3)] flex items-center justify-center text-black active:scale-95 transition-all md:top-6 md:left-6 md:w-12 md:h-12 border border-cyan-300/30 group"
       >
         <span className="absolute inset-0 bg-white/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
         <Layers size={18} className="animate-pulse md:w-5 md:h-5" />
@@ -66,7 +66,7 @@ export function DashboardNav({ activeSection, setActiveSection, isAdmin }: Dashb
               className="fixed inset-0 bg-background/60 backdrop-blur-md z-[200]"
             />
 
-            {/* PREMIUM SIDEBAR CONTROL DRAWER */}
+            {/* PREMIUM SIDEBAR CONTROL DRAWER - ANCHORED LEFT */}
             <motion.div 
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
