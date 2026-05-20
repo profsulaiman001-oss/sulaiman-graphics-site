@@ -44,18 +44,16 @@ export function DashboardHeader({
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         
         {/* LEFT SIDE: INLINE NAVBAR BUTTON & STUDIO TITLES */}
-        <div className="flex items-center gap-3.5 transition-all">
+        <div className="flex items-center gap-4 transition-all">
           <DashboardNav 
             activeSection={activeSection} 
             setActiveSection={setActiveSection} 
             isAdmin={isAdmin} 
           />
           <div className="flex flex-col">
-            <span className="text-sm font-black uppercase tracking-widest bg-gradient-to-r from-white via-neutral-200 to-neutral-400 bg-clip-text text-transparent">
+            {/* Ultra-thick, bold, high-contrast typography with clean letter spacing */}
+            <span className="text-base md:text-xl font-black uppercase tracking-normal text-white">
               Sulaiman Graphics
-            </span>
-            <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
-              {isAdmin ? "Studio Management Desk" : "Client Operations Suite"}
             </span>
           </div>
         </div>
