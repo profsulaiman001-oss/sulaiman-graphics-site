@@ -25,6 +25,9 @@ import WelcomeNameModal from "@/components/dashboard/WelcomeNameModal";
 import { CertificateGenerator } from "./components/certificates/CertificateGenerator";
 import { DashboardNav } from "@/components/dashboard/DashboardNav";
 
+// Client Account Setup View Component Import
+import { ClientAccountSettings } from "@/components/dashboard/ClientAccountSettings";
+
 // Premium Chat Application Page Route Import
 import ChatPage from "@/pages/Chat.tsx";
 
@@ -566,24 +569,19 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* SECTION TWO: PREMIUM LIVE CUSTOM CHAT PAGE COMPONENT - Safe Layout Container */}
+        {/* SECTION TWO: PREMIUM LIVE CUSTOM CHAT PAGE COMPONENT */}
+        {/* Added dynamic inline override to safety push the chat internal input fields above navbar boundaries */}
         {activeSection === "chat" && (
-          <div className="w-full pb-32 animate-fadeIn">
+          <div className="w-full pb-36 animate-fadeIn [&_footer]:mb-24 [&_form]:mb-24 [&_.chat-input-bar]:mb-24">
             <div className="w-full min-h-[70vh] bg-card/10 border border-border/50 rounded-2xl overflow-hidden p-2">
               <ChatPage />
             </div>
           </div>
         )}
 
-        {/* SECTION THREE: PAYMENTS HUB */}
+        {/* SECTION THREE: CLIENT RE-BRANDED PERSONAL PORTAL HUB */}
         {activeSection === "billing" && (
-          <div className="min-h-[50vh] pb-24 border border-dashed border-border/60 bg-card/20 rounded-2xl flex flex-col items-center justify-center p-6 text-center">
-            <BarChart3 size={36} className="text-cyan-400 mb-2 animate-pulse" />
-            <h3 className="text-base font-bold text-foreground">Ledger & Statements Panel</h3>
-            <p className="text-xs text-muted-foreground max-w-xs mt-1">
-              Your billing logs, payment tokens, and invoice balance processing sheets are managed securely here.
-            </p>
-          </div>
+          <ClientAccountSettings userEmail={user?.email} />
         )}
       </main>
 
