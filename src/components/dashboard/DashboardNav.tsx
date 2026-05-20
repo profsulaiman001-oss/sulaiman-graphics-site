@@ -45,13 +45,13 @@ export function DashboardNav({ activeSection, setActiveSection, isAdmin }: Dashb
 
   return (
     <>
-      {/* HIGH-END FIXED NAVIGATION CONTROLLER TRIGGER - REPOSITIONED TO TOP LEFT */}
+      {/* PINNED INLINE NAVIGATION TRIGGER - FLUID PADDING FRAME */}
       <button 
         onClick={() => setIsOpen(true)}
-        className="fixed top-3.5 left-4 z-[110] w-10 h-10 bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 rounded-xl shadow-[0_0_20px_rgba(6,182,212,0.3)] flex items-center justify-center text-black active:scale-95 transition-all md:top-6 md:left-6 md:w-12 md:h-12 border border-cyan-300/30 group"
+        className="w-10 h-10 bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 rounded-xl shadow-[0_0_15px_rgba(6,182,212,0.25)] flex items-center justify-center text-black active:scale-95 transition-all border border-cyan-300/30 group relative flex-shrink-0"
       >
         <span className="absolute inset-0 bg-white/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-        <Layers size={18} className="animate-pulse md:w-5 md:h-5" />
+        <Layers size={18} className="animate-pulse" />
       </button>
 
       <AnimatePresence>
