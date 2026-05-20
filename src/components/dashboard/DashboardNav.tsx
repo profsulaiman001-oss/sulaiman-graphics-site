@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import { 
   X, Briefcase, MessageSquare, CreditCard, 
-  User, Shield, Layers, ChevronRight, Sparkles 
+  User, Shield, Layers, ChevronRight, Settings, Sparkles 
 } from "lucide-react";
 
 interface DashboardNavProps {
@@ -40,8 +40,8 @@ export function DashboardNav({ activeSection, setActiveSection, isAdmin }: Dashb
 
   const navigationItems = [
     { id: "projects", label: "Project Core", icon: Briefcase, desc: "Active workspace matrices" },
-    { id: "chat", label: "Live Nexus", icon: MessageSquare, desc: "Secure operational channel" },
-    { id: "billing", label: "Ledger Desk", icon: CreditCard, desc: "Statements & balances" },
+    { id: "chat", label: "Chat Room", icon: MessageSquare, desc: "Message and send direct feedback" },
+    { id: "billing", label: "Account Settings", icon: Settings, desc: "Update your profile and business info" },
   ];
 
   return (
