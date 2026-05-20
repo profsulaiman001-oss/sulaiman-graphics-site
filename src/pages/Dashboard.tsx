@@ -39,6 +39,9 @@ import Receipt from "./Receipt";
 import Invoice from "./Invoice";
 import ViewQuestionnaires from "./ViewQuestionnaires";
 
+// Realtime Native Home Screen Push Notification Engine Import
+import { NotificationEngine } from "@/components/dashboard/NotificationEngine";
+
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [user, setUser] = useState<any>(null);
@@ -432,6 +435,9 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col relative w-full overflow-x-hidden">
       
+      {/* SILENT REALTIME NATIVE HOME SCREEN PUSH NOTIFICATION ENGINE INITIALIZATION */}
+      <NotificationEngine userId={user?.id} userEmail={user?.email} />
+
       {/* PINNED HEADER FRAME TO STOP SCROLL GAP DISAPPEARANCE */}
       <div className="fixed top-0 left-0 right-0 z-[50] bg-background border-b border-border shadow-sm">
         <DashboardHeader 
