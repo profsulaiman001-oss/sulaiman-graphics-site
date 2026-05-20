@@ -23,7 +23,6 @@ import { ProjectComments } from "@/components/dashboard/ProjectComments";
 import { ProjectManagement } from "@/components/dashboard/ProjectManagement";
 import WelcomeNameModal from "@/components/dashboard/WelcomeNameModal";
 import { CertificateGenerator } from "./components/certificates/CertificateGenerator";
-import { DashboardNav } from "@/components/dashboard/DashboardNav";
 
 // Client Account Setup View Component Import
 import { ClientAccountSettings } from "@/components/dashboard/ClientAccountSettings";
@@ -628,13 +627,6 @@ export default function Dashboard() {
       </footer>
       
       {isCertOpen && <CertificateGenerator onClose={() => setIsCertOpen(false)} />}
-
-      {/* BOTTOM FIXED RECTANGULAR NAVIGATION COMPONENT */}
-      <DashboardNav 
-        activeSection={activeSection} 
-        setActiveSection={setActiveSection} 
-        isAdmin={isAdmin} 
-      />
     </div>
   );
 }
