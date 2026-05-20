@@ -71,7 +71,6 @@ export default function Dashboard() {
   const [isCertOpen, setIsCertOpen] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
   const [activeOverlay, setActiveOverlay] = useState<string | null>(null);
-
   // Notification UI States
   const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
   const notificationRef = React.useRef<HTMLDivElement>(null);
@@ -293,6 +292,7 @@ export default function Dashboard() {
   };
 
   const startEdit = (project: any) => { if(isAdmin) { setEditingId(project.id); setEditTitle(project.title); } };
+  
   const saveEdit = async () => {
     if (!editingId || !isAdmin) return;
     const { error } = await supabase.from("projects").update({ title: editTitle }).eq("id", editingId);
@@ -431,24 +431,28 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col relative w-full overflow-x-hidden">
-      <DashboardHeader 
-        userEmail={user?.email || "User"}
-        notificationsCount={notifications.length}
-        isSettingsOpen={isSettingsOpen}
-        setIsSettingsOpen={setIsSettingsOpen}
-        SignOutHandler={handleSignOut}
-        notifications={notifications}
-        clearNotifications={clearNotifications}
-        showNotificationDropdown={showNotificationDropdown}
-        setShowNotificationDropdown={setShowNotificationDropdown}
-        notificationRef={notificationRef}
-        activeSection={activeSection}
-        setActiveSection={setActiveSection}
-        isAdmin={isAdmin}
-      />
+      
+      {/* PINNED HEADER FRAME TO STOP SCROLL GAP DISAPPEARANCE */}
+      <div className="fixed top-0 left-0 right-0 z-[50] bg-background border-b border-border shadow-sm">
+        <DashboardHeader 
+          userEmail={user?.email || "User"}
+          notificationsCount={notifications.length}
+          isSettingsOpen={isSettingsOpen}
+          setIsSettingsOpen={setIsSettingsOpen}
+          SignOutHandler={handleSignOut}
+          notifications={notifications}
+          clearNotifications={clearNotifications}
+          showNotificationDropdown={showNotificationDropdown}
+          setShowNotificationDropdown={setShowNotificationDropdown}
+          notificationRef={notificationRef}
+          activeSection={activeSection}
+          setActiveSection={setActiveSection}
+          isAdmin={isAdmin}
+        />
+      </div>
 
-      {/* Main content wrapper */}
-      <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl w-full">
+      {/* Main content wrapper WITH TOP OFFSET FOR PINNED TRACK */}
+      <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl w-full pt-[110px]">
         {showWelcome && <WelcomeNameModal onClose={() => setShowWelcome(false)} userName={isAdmin ? "Sulaiman" : "Client"} />}
   
         {isSettingsOpen && <AccountSettings onClose={() => setIsSettingsOpen(false)} userEmail={user?.email} />}
