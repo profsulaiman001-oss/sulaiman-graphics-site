@@ -57,85 +57,83 @@ export function DashboardNav({ activeSection, setActiveSection, isAdmin }: Dashb
       <AnimatePresence>
         {isOpen && (
           <>
-            {/* AMBIENT GLASS BACKDROP OVERLAY */}
+            {/* AMBIENT BLACK INSULATING OVERLAY */}
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsOpen(false)}
-              className="fixed inset-0 bg-black/80 backdrop-blur-md z-[200]"
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200]"
             />
 
-            {/* PREMIUM SIDEBAR CONTROL DRAWER - SOLID NON-TRANSPARENT BACKGROUND */}
+            {/* PREMIUM SIDEBAR CONTROL DRAWER - SOLID TRUE BLACK BACKGROUND */}
             <motion.div 
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", damping: 24, stiffness: 180 }}
-              className="fixed inset-y-0 left-0 w-full max-w-[320px] bg-neutral-950 border-r border-neutral-800 z-[201] flex flex-col justify-between p-6 shadow-[10px_0_50px_rgba(0,0,0,0.9)]"
+              className="fixed inset-y-0 left-0 w-full max-w-[320px] bg-black border-r border-neutral-900 z-[201] flex flex-col justify-between p-6 shadow-[10px_0_50px_rgba(0,0,0,0.9)]"
             >
               <div>
                 {/* DRAWER TOP BAR CONTROLLER */}
                 <div className="flex items-center justify-between mb-8">
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-                    <span className="text-xs font-bold tracking-widest text-cyan-400 uppercase">System Navigation</span>
+                    <div className="w-2 h-2 rounded-full bg-cyan-400" />
+                    <span className="text-xs font-black tracking-widest text-white uppercase">
+                      Navigation
+                    </span>
                   </div>
                   <button 
                     onClick={() => setIsOpen(false)}
-                    className="w-8 h-8 rounded-lg bg-neutral-900 border border-neutral-800 flex items-center justify-center text-neutral-400 hover:text-white hover:border-neutral-700 active:scale-90 transition-all"
+                    className="w-8 h-8 rounded-full bg-neutral-900 hover:bg-neutral-800 flex items-center justify-center text-white transition-all"
                   >
                     <X size={16} />
                   </button>
                 </div>
 
-                {/* ADVANCED PROFILE BRANDING HUB ELEMENT */}
-                <div className="p-4 rounded-xl bg-neutral-900 border border-neutral-800 mb-8 relative overflow-hidden group shadow-lg">
-                  <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-30 transition-opacity">
-                    <Sparkles size={40} className="text-cyan-400" />
-                  </div>
-                  
-                  <div className="flex items-center gap-3.5 relative z-10">
+                {/* ORIGINAL DESIGN HIGH-CONTRAST PROFILE INFOBAR BRANDING */}
+                <div className="mb-8 relative overflow-hidden">
+                  <div className="flex items-center gap-3.5">
                     <div className="relative">
                       {profile?.avatar_url ? (
                         <img 
                           src={profile.avatar_url} 
                           alt="Identity Anchor" 
-                          className="w-12 h-12 rounded-xl object-cover border-2 border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.2)]"
+                          className="w-12 h-12 rounded-xl object-cover border border-neutral-800"
                         />
                       ) : (
-                        <div className="w-12 h-12 rounded-xl bg-neutral-800 border border-neutral-700 flex items-center justify-center text-cyan-400">
-                          <User size={20} />
+                        <div className="w-12 h-12 rounded-xl bg-neutral-900 flex items-center justify-center text-white font-black border border-neutral-800">
+                          U
                         </div>
                       )}
                       {isAdmin && (
-                        <div className="absolute -bottom-1 -right-1 bg-cyan-500 text-black rounded-md p-0.5 border border-neutral-950 shadow-lg">
+                        <div className="absolute -bottom-1 -right-1 bg-white text-black rounded-md p-0.5 shadow-lg">
                           <Shield size={10} strokeWidth={3} />
                         </div>
                       )}
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-bold text-white truncate tracking-tight">
+                      <h4 className="text-base font-black text-white truncate uppercase tracking-wide">
                         {profile?.full_name || "Synchronizing..."}
                       </h4>
-                      <p className="text-xs text-neutral-300 truncate font-medium">
-                        {profile?.business_name || (isAdmin ? "Master Administration" : "Studio Partner")}
+                      <p className="text-xs font-bold text-neutral-400 truncate uppercase tracking-wider">
+                        {profile?.business_name || (isAdmin ? "Master Admin" : "Studio Partner")}
                       </p>
                     </div>
                   </div>
 
-                  {/* Status metadata pill */}
-                  <div className="mt-3 pt-3 border-t border-neutral-800/80 flex items-center justify-between text-[10px]">
-                    <span className="text-neutral-400 font-bold uppercase">Access Clearance</span>
-                    <span className={`px-2 py-0.5 rounded-md font-bold tracking-wider uppercase ${isAdmin ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40' : 'bg-blue-500/20 text-blue-400 border border-blue-500/40'}`}>
-                      {isAdmin ? "Root Admin" : "Verified Client"}
+                  {/* Operational Tier Label Badge */}
+                  <div className="mt-4 flex items-center gap-2">
+                    <span className="text-[10px] font-black tracking-widest text-neutral-500 uppercase">Tier:</span>
+                    <span className="text-[10px] font-black tracking-widest text-white uppercase bg-neutral-900 px-2 py-0.5 rounded border border-neutral-800">
+                      {isAdmin ? "Root Administrator" : "Verified Client"}
                     </span>
                   </div>
                 </div>
 
                 {/* MODERNIZE HIGH-END INTERACTIVE LINK GRID */}
-                <div className="space-y-2.5">
+                <div className="space-y-2">
                   {navigationItems.map((item) => {
                     const IconComponent = item.icon;
                     const isSelected = activeSection === item.id;
@@ -147,27 +145,25 @@ export function DashboardNav({ activeSection, setActiveSection, isAdmin }: Dashb
                           setActiveSection(item.id);
                           setIsOpen(false);
                         }}
-                        className={`w-full text-left p-3 rounded-xl flex items-center justify-between group transition-all relative ${
+                        className={`w-full text-left p-4 rounded-xl flex items-center justify-between group transition-all ${
                           isSelected 
-                            ? "bg-neutral-900 border border-cyan-500/40 text-cyan-400 shadow-[0_4px_20px_rgba(0,0,0,0.5)]" 
-                            : "bg-neutral-900/60 hover:bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white"
+                            ? "bg-white text-black font-black shadow-lg" 
+                            : "hover:bg-neutral-900 text-neutral-400 hover:text-white"
                         }`}
                       >
-                        <div className="flex items-center gap-3.5 min-w-0">
-                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
-                            isSelected ? "bg-cyan-500/20 text-cyan-400" : "bg-neutral-950 text-neutral-400 group-hover:text-white group-hover:bg-neutral-800"
-                          }`}>
-                            <IconComponent size={18} />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-bold tracking-tight">{item.label}</p>
-                            <p className="text-[11px] text-neutral-400 truncate transition-colors">{item.desc}</p>
-                          </div>
+                        <div className="flex items-center gap-4 min-w-0">
+                          <IconComponent 
+                            size={20} 
+                            className={isSelected ? "text-black" : "text-neutral-400 group-hover:text-white"} 
+                          />
+                          <span className="text-sm uppercase tracking-widest font-black">
+                            {item.label}
+                          </span>
                         </div>
                         <ChevronRight 
-                          size={14} 
-                          className={`transform transition-transform duration-300 ${
-                            isSelected ? "text-cyan-400 translate-x-0" : "text-neutral-500 group-hover:translate-x-1 group-hover:text-white"
+                          size={16} 
+                          className={`transform transition-transform ${
+                            isSelected ? "text-black translate-x-0" : "text-neutral-600 group-hover:translate-x-1 group-hover:text-white"
                           }`} 
                         />
                       </button>
@@ -177,9 +173,8 @@ export function DashboardNav({ activeSection, setActiveSection, isAdmin }: Dashb
               </div>
 
               {/* DRAWER SIGNATURE FOOTER */}
-              <div className="pt-4 border-t border-neutral-900 flex flex-col gap-1 text-[10px] tracking-widest uppercase font-bold text-neutral-500">
-                <span>Sulaiman Graphics Studio</span>
-                <span className="text-[9px] font-medium tracking-normal text-neutral-600 text-left lowercase font-mono">v2.4.0 // node_stable</span>
+              <div className="pt-4 border-t border-neutral-900 text-[10px] tracking-widest uppercase font-black text-neutral-600">
+                Sulaiman Graphics Studio
               </div>
             </motion.div>
           </>
