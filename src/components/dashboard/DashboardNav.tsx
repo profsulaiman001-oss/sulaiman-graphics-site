@@ -45,13 +45,13 @@ export function DashboardNav({ activeSection, setActiveSection, isAdmin }: Dashb
 
   return (
     <>
-      {/* HIGH-END FIXED NAVIGATION CONTROLLER TRIGGER */}
+      {/* PINNED INLINE NAVIGATION TRIGGER - HIGH VISIBILITY GRADIENT GLOW */}
       <button 
         onClick={() => setIsOpen(true)}
-        className="fixed top-3.5 right-4 z-[110] w-10 h-10 bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 rounded-xl shadow-[0_0_20px_rgba(6,182,212,0.3)] flex items-center justify-center text-black active:scale-95 transition-all md:top-6 md:right-6 md:w-12 md:h-12 border border-cyan-300/30 group"
+        className="w-10 h-10 bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 rounded-xl shadow-[0_0_15px_rgba(6,182,212,0.3)] flex items-center justify-center text-black active:scale-95 transition-all border border-cyan-300/40 group relative flex-shrink-0"
       >
         <span className="absolute inset-0 bg-white/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-        <Layers size={18} className="animate-pulse md:w-5 md:h-5" />
+        <Layers size={18} strokeWidth={2.5} />
       </button>
 
       <AnimatePresence>
@@ -66,13 +66,13 @@ export function DashboardNav({ activeSection, setActiveSection, isAdmin }: Dashb
               className="fixed inset-0 bg-background/60 backdrop-blur-md z-[200]"
             />
 
-            {/* PREMIUM SIDEBAR CONTROL DRAWER */}
+            {/* PREMIUM SIDEBAR CONTROL DRAWER - CHANGED TO SOLID TRUE BLACK BACKGROUND */}
             <motion.div 
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", damping: 24, stiffness: 180 }}
-              className="fixed inset-y-0 left-0 w-full max-w-[320px] bg-neutral-950/95 border-r border-cyan-500/10 z-[201] flex flex-col justify-between p-6 shadow-[5px_0_50px_rgba(0,0,0,0.8)] backdrop-blur-xl"
+              className="fixed inset-y-0 left-0 w-full max-w-[320px] bg-black border-r border-cyan-500/10 z-[201] flex flex-col justify-between p-6 shadow-[5px_0_50px_rgba(0,0,0,0.8)]"
             >
               <div>
                 {/* DRAWER TOP BAR CONTROLLER */}
