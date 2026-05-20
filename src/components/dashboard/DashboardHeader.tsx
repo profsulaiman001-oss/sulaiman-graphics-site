@@ -1,6 +1,7 @@
 import React from 'react';
 import { Bell, LogOut, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { DashboardNav } from './DashboardNav';
 
 interface DashboardHeaderProps {
   userEmail: string | undefined;
@@ -16,6 +17,10 @@ interface DashboardHeaderProps {
   // Triggers Profile Sidebar Panel Display inside Main Wrapper Layout
   isSettingsOpen: boolean;
   setIsSettingsOpen: (open: boolean) => void;
+
+  // Added Props to pass down into nested Menu Component Inline
+  activeSection: string;
+  setActiveSection: (section: string) => void;
 }
 
 export function DashboardHeader({
@@ -30,14 +35,21 @@ export function DashboardHeader({
   isAdmin,
   isSettingsOpen,
   setIsSettingsOpen,
+  activeSection,
+  setActiveSection,
 }: DashboardHeaderProps) {
 
   return (
     <header className="border-b border-border bg-background/95 backdrop-blur sticky top-0 z-50 w-full">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         
-        {/* LEFT SIDE: BRANDING TITLES (Padded for premium floating button on the left) */}
-        <div className="flex items-center gap-3 pl-14 md:pl-20 transition-all">
+        {/* LEFT SIDE: INLINE NAVBAR BUTTON & STUDIO TITLES */}
+        <div className="flex items-center gap-3.5 transition-all">
+          <DashboardNav 
+            activeSection={activeSection} 
+            setActiveSection={setActiveSection} 
+            isAdmin={isAdmin} 
+          />
           <div className="flex flex-col">
             <span className="text-sm font-black uppercase tracking-widest bg-gradient-to-r from-white via-neutral-200 to-neutral-400 bg-clip-text text-transparent">
               Sulaiman Graphics
