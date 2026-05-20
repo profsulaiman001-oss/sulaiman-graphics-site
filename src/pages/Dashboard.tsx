@@ -456,7 +456,7 @@ export default function Dashboard() {
 
         {/* SECTION ONE: PROJECTS HUD */}
         {activeSection === "projects" && (
-          <div className="pb-24">
+          <div className="pb-12">
             <div className="mb-8">
                <AnalyticsDashboard stats={stats} COLORS={COLORS} />
             </div>
@@ -570,9 +570,8 @@ export default function Dashboard() {
         )}
 
         {/* SECTION TWO: PREMIUM LIVE CUSTOM CHAT PAGE COMPONENT */}
-        {/* Added dynamic inline override to safety push the chat internal input fields above navbar boundaries */}
         {activeSection === "chat" && (
-          <div className="w-full pb-36 animate-fadeIn [&_footer]:mb-24 [&_form]:mb-24 [&_.chat-input-bar]:mb-24">
+          <div className="w-full pb-12 animate-fadeIn">
             <div className="w-full min-h-[70vh] bg-card/10 border border-border/50 rounded-2xl overflow-hidden p-2">
               <ChatPage />
             </div>
@@ -622,7 +621,7 @@ export default function Dashboard() {
         )}
       </AnimatePresence>
 
-      <footer className="border-t border-border py-6 mt-auto pb-28 md:pb-6">
+      <footer className="border-t border-border py-6 mt-auto pb-12 md:pb-6">
         <div className="container mx-auto px-4 text-center text-xs text-muted-foreground">
           © {new Date().getFullYear()} Sulaiman Graphics. All rights reserved.
         </div>
