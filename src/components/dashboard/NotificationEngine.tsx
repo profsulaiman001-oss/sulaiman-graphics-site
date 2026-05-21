@@ -36,13 +36,12 @@ export function NotificationEngine({ userId, userEmail }: NotificationEngineProp
         }
 
         // 4. Secure subscription key allocation wrapper configuration
-        // Replace publicVapidKey with your real VAPID public key string when deploying push service routes
-        const publicVapidKey = "YOUR_VAPID_PUBLIC_KEY_HERE"; 
+        const publicVapidKey = "BNqLSL8l78QTaYEGi5CtCDHJzU4y3f8VlCYmsCWIVG3Izap6ZcD7RHYKMoaNr5nBiZrJ-iDxcTzcumRPDYEkeHU"; 
         
         // Check if an active endpoint registration already exists on this device layout
         let subscription = await registration.pushManager.getSubscription();
         
-        if (!subscription && publicVapidKey !== "YOUR_VAPID_PUBLIC_KEY_HERE") {
+        if (!subscription) {
           // Register a fresh sync subscription payload endpoint matrix
           subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
