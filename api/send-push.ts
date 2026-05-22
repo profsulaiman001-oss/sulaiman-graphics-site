@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import webpush from "web-push";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
-// 1. Synchronized Environment Keys (Reading your new VITE_ prefixes)
+// 1. Configure cryptographic VAPID keys reading directly from your VITE_ environment variables
 const VAPID_PUBLIC_KEY = 
   process.env.VITE_VAPID_PUBLIC_KEY || 
   process.env.VAPID_PUBLIC_KEY || 
@@ -14,7 +14,6 @@ const VAPID_PRIVATE_KEY =
   process.env.VITE_VAPID_PRIVATE_KEY || 
   process.env.VAPID_PRIVATE_KEY;
 
-// Initialize Web Push details securely if private key is present
 if (VAPID_PRIVATE_KEY) {
   webpush.setVapidDetails(
     "mailto:profsulaiman001@gmail.com",
@@ -23,15 +22,8 @@ if (VAPID_PRIVATE_KEY) {
   );
 }
 
-// 2. Initialize Authorized Supabase client 
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
-// Using service role key allows your backend to lookup profiles flawlessly
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || "";
-
-const supabaseClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Enable CORS layout handshakes
+  // Enable CORS cross-origin handshakes
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Headers", "authorization, x-client-info, apikey, content-type");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -45,59 +37,117 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { type, record } = req.body;
+    // 2. Initialize authorized Supabase Client using your secret service key
+    const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "";
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Extract the webhook payload data from Supabase table monitoring
+    const { record, table, type } = req.body;
 
     if (!type || !record) {
       return res.status(400).json({ error: "Missing webhook record parameters" });
     }
 
-    if (!VAPID_PRIVATE_KEY) {
-      console.error("VAPID_PRIVATE_KEY is missing from environment variables.");
-      return res.status(500).json({ error: "Server authentication setup incomplete: Missing private VAPID key" });
-    }
-
-    let targetUserId = null;
+    let targetUserId = "";
     let notificationTitle = "Sulaiman Graphics";
-    let notificationBody = "You have a new project update.";
+    let notificationBody = "You have a new workspace update.";
     let targetUrl = "/dashboard";
 
-    // 3. Evaluate table insert data matching the chat channels
-    if (type === "INSERT" && record.chat_id) {
+    // ACTION 1: Direct Chat Messages (The live Chat Page)
+    if (table === "chat_messages" && type === "INSERT") {
       const { data: project } = await supabaseClient
         .from("projects")
         .select("user_id, business_name")
-        .eq("id", record.chat_id)
+        .eq("id", record.chat_id || record.project_id)
         .single();
 
       if (project) {
         if (record.is_admin) {
-          // If admin sent it, notify the customer client
-          targetUserId = project.user_id; 
+          // Admin sent a message -> Route straight to Client's system phone tray
+          targetUserId = project.user_id;
+          notificationTitle = "Sulaiman Graphics (Admin)";
+          notificationBody = record.message;
         } else {
-          // If a client sent it, locate your Admin profile via email
+          // Client sent a message -> Route straight to your Admin phone tray
           const { data: adminProfile } = await supabaseClient
             .from("profiles")
             .select("id")
             .eq("email", "profsulaiman001@gmail.com")
             .single();
           
-          if (adminProfile) {
-            targetUserId = adminProfile.id;
-          }
+          if (adminProfile) targetUserId = adminProfile.id;
+          notificationTitle = project.business_name || "New Client Message";
+          notificationBody = record.message;
         }
-        
-        notificationTitle = record.is_admin ? (project.business_name || "Sulaiman Graphics") : "New Client Message";
-        notificationBody = record.message.length > 60 ? `${record.message.substring(0, 57)}...` : record.message;
-        targetUrl = `/dashboard/chat?id=${record.chat_id}`;
+        targetUrl = `/dashboard/chat?id=${record.chat_id || record.project_id}`;
       }
     }
 
-    // Stop execution safely if no recipient profile can be resolved
+    // ACTION 2: Project Discussion Comments Feed
+    if (table === "comments" && type === "INSERT") {
+      const { data: project } = await supabaseClient
+        .from("projects")
+        .select("title, client_email, user_id, business_name")
+        .eq("id", record.project_id)
+        .single();
+
+      if (project) {
+        if (record.is_admin) {
+          // Admin commented -> Notify Client
+          const { data: clientProfile } = await supabaseClient
+            .from("profiles")
+            .select("id")
+            .eq("email", project.client_email)
+            .single();
+          if (clientProfile) targetUserId = clientProfile.id;
+          notificationTitle = "New Admin Comment";
+        } else {
+          // Client commented -> Notify Admin
+          const { data: adminProfile } = await supabaseClient
+            .from("profiles")
+            .select("id")
+            .eq("email", "profsulaiman001@gmail.com")
+            .single();
+          if (adminProfile) targetUserId = adminProfile.id;
+          notificationTitle = `Feedback: ${project.business_name || "Client"}`;
+        }
+        notificationBody = record.message;
+        targetUrl = `/dashboard/project/${record.project_id}`;
+      }
+    }
+
+    // ACTION 3: Direct Design Asset / Image Uploads
+    if (table === "project_versions" && type === "INSERT") {
+      const { data: project } = await supabaseClient
+        .from("projects")
+        .select("title, client_email, business_name")
+        .eq("id", record.project_id)
+        .single();
+
+      if (project && project.client_email) {
+        // Design uploaded by Admin -> Notify Client automatically
+        const { data: clientProfile } = await supabaseClient
+          .from("profiles")
+          .select("id")
+          .eq("email", project.client_email)
+          .single();
+
+        if (clientProfile) {
+          targetUserId = clientProfile.id;
+          notificationTitle = "Your Design is Ready! 🎉";
+          notificationBody = `A new design file [${record.version_name || "v1"}] has been uploaded for ${project.title}. Tap to view!`;
+          targetUrl = "/dashboard";
+        }
+      }
+    }
+
+    // Exit safely if no destination user profile was matched
     if (!targetUserId) {
       return res.status(200).json({ status: "No target push recipient identified" });
     }
 
-    // 4. Retrieve the destination user's active JSON subscription token
+    // 3. Query the target user's system device push token from profiles
     const { data: profile } = await supabaseClient
       .from("profiles")
       .select("push_subscription_token")
@@ -105,9 +155,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .single();
 
     if (profile && profile.push_subscription_token) {
-      // Parse token format regardless of whether DB casts it as string or JSON object natively
-      const subscription = typeof profile.push_subscription_token === "string" 
-        ? JSON.parse(profile.push_subscription_token) 
+      // Safely parse JSON structure regardless of database format definitions
+      const subscription = typeof profile.push_subscription_token === "string"
+        ? JSON.parse(profile.push_subscription_token)
         : profile.push_subscription_token;
 
       const pushPayload = JSON.stringify({
@@ -118,16 +168,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         badge: "/favicon.ico"
       });
 
-      // 5. Fire packet out securely via web push protocol specifications
+      // 4. Send the push packet straight to Google/Apple/Mozilla system servers
       await webpush.sendNotification(subscription, pushPayload);
       
-      return res.status(200).json({ success: true, message: "Push notification transmitted successfully" });
+      return res.status(200).json({ success: true, message: "System push notification transmitted successfully" });
     }
 
-    return res.status(200).json({ status: "Recipient device token not registered yet" });
+    return res.status(200).json({ status: "Recipient device token not registered in system" });
 
   } catch (error: any) {
-    console.error("Push dispatcher route crashed:", error);
+    console.error("Push dispatcher engine error:", error);
     return res.status(500).json({ error: error.message });
   }
-    }
+   }
