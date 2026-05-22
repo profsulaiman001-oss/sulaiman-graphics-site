@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import webpush from "web-push";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
-// 1. Configure cryptographic VAPID keys reading directly from your new VITE_ environment variables
+// 1. Configure cryptographic VAPID keys reading directly from your VITE_ environment variables
 const VAPID_PUBLIC_KEY = 
   process.env.VITE_VAPID_PUBLIC_KEY || 
   process.env.VAPID_PUBLIC_KEY || 
@@ -37,7 +37,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // 2. Initialize authorized Supabase Client using synchronized environment prefix keys
+    // 2. Initialize authorized Supabase Client using your secret service key
     const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "";
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
