@@ -55,16 +55,22 @@ export function NotificationEngine({ userId, userEmail }: NotificationEngineProp
 
         // 4. Securely save or update the user's browser device push subscription channel token inside Supabase
         if (subscription) {
-          await supabase
+          const { error } = await supabase
             .from("profiles")
             .update({
               push_subscription_token: subscription.toJSON(),
               device_registered_at: new Date().toISOString()
             })
             .eq("id", userId);
+
+          if (error) {
+            window.alert(`Supabase Row Update Error: ${error.message}`);
+          }
         }
 
-      } catch (err) {
+      } catch (err: any) {
+        // This trap will catch any service worker, network, or push subscription exceptions immediately
+        window.alert(`Push Engine Exception: ${err?.message || err}`);
         console.error("Failed to safely establish web push sync parameters for user identity token:", err);
       }
     }
@@ -85,4 +91,4 @@ export function NotificationEngine({ userId, userEmail }: NotificationEngineProp
   }
 
   return null; // Silent structural background engine tracker wrapper
-  }
+    }
