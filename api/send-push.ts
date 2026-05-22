@@ -1,210 +1,196 @@
 // api/send-push.ts
-// Secure Serverless Web Push Notification Route for Vercel
-
-// ==========================================
-// EMERGENCY INLINE TYPES FOR COMPILER ISOLATION
-// ==========================================
-declare module 'web-push' {
-  const webpush: any;
-  export default webpush;
-}
-
-declare module '@vercel/node' {
-  import { IncomingMessage, ServerResponse } from 'http';
-  export interface VercelRequest extends IncomingMessage {
-    query: { [key: string]: string | string[] };
-    cookies: { [key: string]: string };
-    body: any;
-  }
-  export interface VercelResponse extends ServerResponse {
-    send: (body: any) => VercelResponse;
-    json: (jsonBody: any) => VercelResponse;
-    status: (statusCode: number) => VercelResponse;
-    redirect: (statusOrUrl: string | number, url?: string) => VercelResponse;
-  }
-}
-
-// ==========================================
-// CORE APP LAYER LOGIC ENGINE
-// ==========================================
+// Dual-Engine Notification Gateway for Sulaiman Graphics
+// Admin alerts via Telegram | Client alerts via Email
 import { createClient } from "@supabase/supabase-js";
-import webpush from "web-push";
-import type { VercelRequest, VercelResponse } from "@vercel/node";
+import nodemailer from "nodemailer";
 
-// 1. Configure cryptographic VAPID keys reading directly from your VITE_ environment variables
-const VAPID_PUBLIC_KEY = 
-  process.env.VITE_VAPID_PUBLIC_KEY || 
-  process.env.VAPID_PUBLIC_KEY || 
-  "BNqLSL8l78QTaYEGi5CtCDHJzU4y3f8VlCYmsCWIVG3Izap6ZcD7RHYKMoaNr5nBiZrJ-iDxcTzcumRPDYEkeHU";
+// Emergency Inline Module Bypass for Vercel Type Analyzer
+declare module '@supabase/supabase-js';
+declare module 'nodemailer';
 
-const VAPID_PRIVATE_KEY = 
-  process.env.VITE_VAPID_PRIVATE_KEY || 
-  process.env.VAPID_PRIVATE_KEY;
-
-if (VAPID_PRIVATE_KEY) {
-  webpush.setVapidDetails(
-    "mailto:profsulaiman001@gmail.com",
-    VAPID_PUBLIC_KEY,
-    VAPID_PRIVATE_KEY
-  );
-}
-
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Enable CORS cross-origin handshakes
+export default async function handler(req: any, res: any) {
+  // Cross-Origin Resource Sharing Handshake Headers
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Headers", "authorization, x-client-info, apikey, content-type");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
 
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
-
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+  if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
-    // 2. Initialize authorized Supabase Client using your secret service key
+    // Initialize authorized Database Client
     const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "";
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Extract the webhook payload data from Supabase table monitoring
+    // Read Notification Gateways Keys
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    const chatId = process.env.TELEGRAM_CHAT_ID;
+    
+    const emailUser = process.env.EMAIL_USER || "profsulaiman001@gmail.com";
+    const emailPass = process.env.EMAIL_PASS;
+
+    // Parse the data packet incoming from Supabase Webhook Triggers
     const { record, table, type } = req.body;
+    if (!type || !record) return res.status(400).json({ error: "Missing webhook record payload" });
 
-    if (!type || !record) {
-      return res.status(400).json({ error: "Missing webhook record parameters" });
-    }
-
-    let targetUserId = "";
-    let notificationTitle = "Sulaiman Graphics";
-    let notificationBody = "You have a new workspace update.";
-    let targetUrl = "/dashboard";
-
-    // ACTION 1: Direct Chat Messages (The live Chat Page)
+    // ==========================================
+    // CASE 1: REAL-TIME CHET MESSAGES
+    // ==========================================
     if (table === "chat_messages" && type === "INSERT") {
       const { data: project } = await supabaseClient
         .from("projects")
-        .select("user_id, business_name")
+        .select("business_name, client_email")
         .eq("id", record.chat_id || record.project_id)
         .single();
 
-      if (project) {
-        if (record.is_admin) {
-          // Admin sent a message -> Route straight to Client's system phone tray
-          targetUserId = project.user_id;
-          notificationTitle = "Sulaiman Graphics (Admin)";
-          notificationBody = record.message;
-        } else {
-          // Client sent a message -> Route straight to your Admin phone tray
-          const { data: adminProfile } = await supabaseClient
-            .from("profiles")
-            .select("id")
-            .eq("email", "profsulaiman001@gmail.com")
-            .single();
-          
-          if (adminProfile) targetUserId = adminProfile.id;
-          notificationTitle = project.business_name || "New Client Message";
-          notificationBody = record.message;
+      if (!record.is_admin) {
+        // A. CLIENT SENT A MESSAGE -> Alert Sulaiman's phone immediately via Telegram
+        if (botToken && chatId) {
+          const studioName = project?.business_name || "New Client";
+          const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
+          await fetch(telegramUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: `💬 *New Client Message*\n\n*Studio:* ${studioName}\n*Message:* ${record.message}`,
+              parse_mode: "Markdown"
+            })
+          });
+          return res.status(200).json({ success: true, target: "Admin Telegram" });
         }
-        targetUrl = `/dashboard/chat?id=${record.chat_id || record.project_id}`;
+      } else {
+        // B. ADMIN (YOU) SENT A MESSAGE -> Send a professional email alert to the Client's inbox
+        if (project && project.client_email && emailPass) {
+          const transporter = nodemailer.createTransport({
+            service: "gmail",
+            auth: { user: emailUser, pass: emailPass }
+          });
+
+          await transporter.sendMail({
+            from: `"Sulaiman Graphics" <${emailUser}>`,
+            to: project.client_email,
+            subject: `New message in your design workspace! 💬`,
+            html: `
+              <div style="font-family: sans-serif; padding: 20px; color: #333;">
+                <h2 style="color: #FFD700;">New Workspace Message</h2>
+                <p>Hello,</p>
+                <p>You have received a new update regarding your project with <strong>Sulaiman Graphics</strong>:</p>
+                <blockquote style="background: #f9f9f9; border-left: 4px solid #FFD700; padding: 10px 20px; margin: 20px 0;">
+                  "${record.message}"
+                </blockquote>
+                <p>Please log into your client dashboard portal to reply directly.</p>
+                <br />
+                <p>Best regards,<br /><strong>Sulaiman Graphics Team</strong></p>
+              </div>
+            `
+          });
+          return res.status(200).json({ success: true, target: "Client Email Notification" });
+        }
       }
     }
 
-    // ACTION 2: Project Discussion Comments Feed
+    // ==========================================
+    // CASE 2: PROJECT COLLABORATION COMMENTS
+    // ==========================================
     if (table === "comments" && type === "INSERT") {
       const { data: project } = await supabaseClient
         .from("projects")
-        .select("title, client_email, user_id, business_name")
+        .select("business_name, client_email")
         .eq("id", record.project_id)
         .single();
 
-      if (project) {
-        if (record.is_admin) {
-          // Admin commented -> Notify Client
-          const { data: clientProfile } = await supabaseClient
-            .from("profiles")
-            .select("id")
-            .eq("email", project.client_email)
-            .single();
-          if (clientProfile) targetUserId = clientProfile.id;
-          notificationTitle = "New Admin Comment";
-        } else {
-          // Client commented -> Notify Admin
-          const { data: adminProfile } = await supabaseClient
-            .from("profiles")
-            .select("id")
-            .eq("email", "profsulaiman001@gmail.com")
-            .single();
-          if (adminProfile) targetUserId = adminProfile.id;
-          notificationTitle = `Feedback: ${project.business_name || "Client"}`;
+      if (!record.is_admin) {
+        // A. CLIENT COMMENTED -> Push alert straight to Sulaiman's Telegram
+        if (botToken && chatId) {
+          const studioName = project?.business_name || "Client Workspace";
+          const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
+          await fetch(telegramUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: `📝 *New Project Feedback*\n\n*From:* ${studioName}\n*Comment:* ${record.message}`,
+              parse_mode: "Markdown"
+            })
+          });
+          return res.status(200).json({ success: true, target: "Admin Telegram" });
         }
-        notificationBody = record.message;
-        targetUrl = `/dashboard/project/${record.project_id}`;
+      } else {
+        // B. ADMIN COMMENTED -> Dispatch update email to Client's inbox
+        if (project && project.client_email && emailPass) {
+          const transporter = nodemailer.createTransport({
+            service: "gmail",
+            auth: { user: emailUser, pass: emailPass }
+          });
+
+          await transporter.sendMail({
+            from: `"Sulaiman Graphics" <${emailUser}>`,
+            to: project.client_email,
+            subject: `New structural feedback on your design draft! 📝`,
+            html: `
+              <div style="font-family: sans-serif; padding: 20px; color: #333;">
+                <h2 style="color: #FFD700;">New Design Feedback Added</h2>
+                <p>Hi there,</p>
+                <p>An official design comment has been posted onto your asset version tracker:</p>
+                <blockquote style="background: #f9f9f9; border-left: 4px solid #FFD700; padding: 10px 20px; margin: 20px 0;">
+                  "${record.message}"
+                </blockquote>
+                <p>Tap your project panel profile to view changes.</p>
+                <br />
+                <p>Best regards,<br /><strong>Sulaiman Graphics Team</strong></p>
+              </div>
+            `
+          });
+          return res.status(200).json({ success: true, target: "Client Email Notification" });
+        }
       }
     }
 
-    // ACTION 3: Direct Design Asset / Image Uploads
+    // ==========================================
+    // CASE 3: GRAPHIC ASSET VERSION UPLOADS
+    // ==========================================
     if (table === "project_versions" && type === "INSERT") {
       const { data: project } = await supabaseClient
         .from("projects")
-        .select("title, client_email, business_name")
+        .select("title, client_email")
         .eq("id", record.project_id)
         .single();
 
-      if (project && project.client_email) {
-        // Design uploaded by Admin -> Notify Client automatically
-        const { data: clientProfile } = await supabaseClient
-          .from("profiles")
-          .select("id")
-          .eq("email", project.client_email)
-          .single();
+      // Design assets are strictly uploaded by you, so this always notifies the client
+      if (project && project.client_email && emailPass) {
+        const transporter = nodemailer.createTransport({
+          service: "gmail",
+          auth: { user: emailUser, pass: emailPass }
+        });
 
-        if (clientProfile) {
-          targetUserId = clientProfile.id;
-          notificationTitle = "Your Design is Ready! 🎉";
-          notificationBody = `A new design file [${record.version_name || "v1"}] has been uploaded for ${project.title}. Tap to view!`;
-          targetUrl = "/dashboard";
-        }
+        await transporter.sendMail({
+          from: `"Sulaiman Graphics" <${emailUser}>`,
+          to: project.client_email,
+          subject: `Your New Design is Ready! 🎉 - ${project.title || "Studio Update"}`,
+          html: `
+            <div style="font-family: sans-serif; padding: 20px; color: #333;">
+              <h2 style="color: #FFD700; text-align: center;">Design Asset Uploaded 🎉</h2>
+              <p>Great news!</p>
+              <p>A brand new structural design layout iteration <strong>[${record.version_name || "v1"}]</strong> has been uploaded to your secure graphics folder for <strong>${project.title || "your review"}</strong>.</p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="https://www.sulaimangraphics.com.ng/dashboard" style="background-color: #FFD700; color: #000; padding: 12px 25px; text-decoration: none; font-weight: bold; border-radius: 5px; display: inline-block;">Open Client Workspace Dashboard</a>
+              </div>
+              <p>Click the secure button above to view full high-resolution image renders, leave markup flags, or directly approve the master copy file.</p>
+              <br />
+              <p>Best regards,<br /><strong>Sulaiman Graphics Studio</strong></p>
+            </div>
+          `
+        });
+        return res.status(200).json({ success: true, target: "Client Version Upload Email" });
       }
     }
 
-    // Exit safely if no destination user profile was matched
-    if (!targetUserId) {
-      return res.status(200).json({ status: "No target push recipient identified" });
-    }
-
-    // 3. Query the target user's system device push token from profiles
-    const { data: profile } = await supabaseClient
-      .from("profiles")
-      .select("push_subscription_token")
-      .eq("id", targetUserId)
-      .single();
-
-    if (profile && profile.push_subscription_token) {
-      // Safely parse JSON structure regardless of database format definitions
-      const subscription = typeof profile.push_subscription_token === "string"
-        ? JSON.parse(profile.push_subscription_token)
-        : profile.push_subscription_token;
-
-      const pushPayload = JSON.stringify({
-        title: notificationTitle,
-        body: notificationBody,
-        url: targetUrl,
-        icon: "/favicon.ico",
-        badge: "/favicon.ico"
-      });
-
-      // 4. Send the push packet straight to Google/Apple/Mozilla system servers
-      await webpush.sendNotification(subscription, pushPayload);
-      
-      return res.status(200).json({ success: true, message: "System push notification transmitted successfully" });
-    }
-
-    return res.status(200).json({ status: "Recipient device token not registered in system" });
+    return res.status(200).json({ status: "No notification trigger targets were hit safely" });
 
   } catch (error: any) {
-    console.error("Push dispatcher engine error:", error);
+    console.error("Central notification router crash:", error);
     return res.status(500).json({ error: error.message });
   }
 }
