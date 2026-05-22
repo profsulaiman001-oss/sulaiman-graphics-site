@@ -69,7 +69,7 @@ export function NotificationEngine({ userId, userEmail }: NotificationEngineProp
         }
 
       } catch (err: any) {
-        // This trap will catch any service worker, network, or push subscription exceptions immediately
+        // This trap catches any service worker registration errors
         window.alert(`Push Engine Exception: ${err?.message || err}`);
         console.error("Failed to safely establish web push sync parameters for user identity token:", err);
       }
@@ -91,4 +91,4 @@ export function NotificationEngine({ userId, userEmail }: NotificationEngineProp
   }
 
   return null; // Silent structural background engine tracker wrapper
-    }
+}
