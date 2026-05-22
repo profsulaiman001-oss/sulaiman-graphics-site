@@ -35,7 +35,7 @@ export default async function handler(req: any, res: any) {
     if (!type || !record) return res.status(400).json({ error: "Missing webhook record payload" });
 
     // ==========================================
-    // CASE 1: REAL-TIME CHET MESSAGES
+    // CASE 1: REAL-TIME CHAT MESSAGES
     // ==========================================
     if (table === "chat_messages" && type === "INSERT") {
       const { data: project } = await supabaseClient
@@ -73,16 +73,19 @@ export default async function handler(req: any, res: any) {
             to: project.client_email,
             subject: `New message in your design workspace! 💬`,
             html: `
-              <div style="font-family: sans-serif; padding: 20px; color: #333;">
-                <h2 style="color: #FFD700;">New Workspace Message</h2>
-                <p>Hello,</p>
-                <p>You have received a new update regarding your project with <strong>Sulaiman Graphics</strong>:</p>
-                <blockquote style="background: #f9f9f9; border-left: 4px solid #FFD700; padding: 10px 20px; margin: 20px 0;">
+              <div style="font-family: sans-serif; padding: 30px; background-color: #000000; color: #ffffff; max-width: 600px; margin: 0 auto; border-radius: 8px;">
+                <h2 style="color: #0070f3; margin-top: 0; font-size: 24px; border-bottom: 1px solid #222222; padding-bottom: 15px;">New Workspace Message</h2>
+                <p style="color: #ffffff; font-size: 16px;">Hello,</p>
+                <p style="color: #cccccc; font-size: 15px; line-height: 1.6;">You have received a new live chat update regarding your running project setup with <strong>Sulaiman Graphics</strong>:</p>
+                <blockquote style="background: #111111; border-left: 4px solid #0070f3; padding: 15px 20px; margin: 25px 0; color: #ffffff; font-style: italic; border-radius: 0 4px 4px 0;">
                   "${record.message}"
                 </blockquote>
-                <p>Please log into your client dashboard portal to reply directly.</p>
-                <br />
-                <p>Best regards,<br /><strong>Sulaiman Graphics Team</strong></p>
+                <p style="color: #cccccc; font-size: 14px;">Please log into your official studio customer dashboard portal workspace to reply directly.</p>
+                <div style="text-align: center; margin: 30px 0;">
+                  <a href="https://www.sulaimangraphics.com.ng/dashboard" style="background-color: #0070f3; color: #ffffff; padding: 12px 30px; text-decoration: none; font-weight: bold; border-radius: 5px; display: inline-block; font-size: 15px; box-shadow: 0 4px 12px rgba(0, 112, 243, 0.3);">Reply inside Dashboard</a>
+                </div>
+                <hr style="border: 0; border-top: 1px solid #222222; margin-top: 30px;" />
+                <p style="color: #888888; font-size: 13px; margin-bottom: 0;">Best regards,<br /><strong style="color: #ffffff;">Sulaiman Graphics Team</strong></p>
               </div>
             `
           });
@@ -130,16 +133,18 @@ export default async function handler(req: any, res: any) {
             to: project.client_email,
             subject: `New structural feedback on your design draft! 📝`,
             html: `
-              <div style="font-family: sans-serif; padding: 20px; color: #333;">
-                <h2 style="color: #FFD700;">New Design Feedback Added</h2>
-                <p>Hi there,</p>
-                <p>An official design comment has been posted onto your asset version tracker:</p>
-                <blockquote style="background: #f9f9f9; border-left: 4px solid #FFD700; padding: 10px 20px; margin: 20px 0;">
+              <div style="font-family: sans-serif; padding: 30px; background-color: #000000; color: #ffffff; max-width: 600px; margin: 0 auto; border-radius: 8px;">
+                <h2 style="color: #0070f3; margin-top: 0; font-size: 24px; border-bottom: 1px solid #222222; padding-bottom: 15px;">Design Feedback Added</h2>
+                <p style="color: #ffffff; font-size: 16px;">Hi there,</p>
+                <p style="color: #cccccc; font-size: 15px; line-height: 1.6;">An official design update annotation has been added onto your asset version tracker asset timeline:</p>
+                <blockquote style="background: #111111; border-left: 4px solid #0070f3; padding: 15px 20px; margin: 25px 0; color: #ffffff; font-style: italic; border-radius: 0 4px 4px 0;">
                   "${record.message}"
                 </blockquote>
-                <p>Tap your project panel profile to view changes.</p>
-                <br />
-                <p>Best regards,<br /><strong>Sulaiman Graphics Team</strong></p>
+                <div style="text-align: center; margin: 30px 0;">
+                  <a href="https://www.sulaimangraphics.com.ng/dashboard" style="background-color: #0070f3; color: #ffffff; padding: 12px 30px; text-decoration: none; font-weight: bold; border-radius: 5px; display: inline-block; font-size: 15px; box-shadow: 0 4px 12px rgba(0, 112, 243, 0.3);">View Layout Review</a>
+                </div>
+                <hr style="border: 0; border-top: 1px solid #222222; margin-top: 30px;" />
+                <p style="color: #888888; font-size: 13px; margin-bottom: 0;">Best regards,<br /><strong style="color: #ffffff;">Sulaiman Graphics Team</strong></p>
               </div>
             `
           });
@@ -170,16 +175,18 @@ export default async function handler(req: any, res: any) {
           to: project.client_email,
           subject: `Your New Design is Ready! 🎉 - ${project.title || "Studio Update"}`,
           html: `
-            <div style="font-family: sans-serif; padding: 20px; color: #333;">
-              <h2 style="color: #FFD700; text-align: center;">Design Asset Uploaded 🎉</h2>
-              <p>Great news!</p>
-              <p>A brand new structural design layout iteration <strong>[${record.version_name || "v1"}]</strong> has been uploaded to your secure graphics folder for <strong>${project.title || "your review"}</strong>.</p>
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="https://www.sulaimangraphics.com.ng/dashboard" style="background-color: #FFD700; color: #000; padding: 12px 25px; text-decoration: none; font-weight: bold; border-radius: 5px; display: inline-block;">Open Client Workspace Dashboard</a>
+            <div style="font-family: sans-serif; padding: 30px; background-color: #000000; color: #ffffff; max-width: 600px; margin: 0 auto; border-radius: 8px;">
+              <h2 style="color: #0070f3; text-align: center; margin-top: 0; font-size: 26px; font-weight: bold;">Design Asset Uploaded 🎉</h2>
+              <p style="color: #ffffff; font-size: 16px;">Great news!</p>
+              <p style="color: #cccccc; font-size: 15px; line-height: 1.6;">A brand new structural design layout iteration <strong style="color: #ffffff;">[${record.version_name || "v1"}]</strong> has been successfully uploaded to your secure graphics dashboard folder for <strong style="color: #ffffff;">${project.title || "your review"}</strong>.</p>
+              
+              <div style="text-align: center; margin: 35px 0;">
+                <a href="https://www.sulaimangraphics.com.ng/dashboard" style="background-color: #0070f3; color: #ffffff; padding: 14px 28px; text-decoration: none; font-weight: bold; border-radius: 5px; display: inline-block; font-size: 16px; box-shadow: 0 4px 14px rgba(0, 112, 243, 0.4);">Open Client Workspace Dashboard</a>
               </div>
-              <p>Click the secure button above to view full high-resolution image renders, leave markup flags, or directly approve the master copy file.</p>
-              <br />
-              <p>Best regards,<br /><strong>Sulaiman Graphics Studio</strong></p>
+              
+              <p style="color: #aaaaaa; font-size: 14px; line-height: 1.5; text-align: center;">Click the secure workspace link button above to instantly view full high-resolution image renders, leave markup feedback pins, or directly download approved copy files.</p>
+              <hr style="border: 0; border-top: 1px solid #222222; margin-top: 30px;" />
+              <p style="color: #888888; font-size: 13px; margin-bottom: 0;">Best regards,<br /><strong style="color: #ffffff;">Sulaiman Graphics Studio</strong></p>
             </div>
           `
         });
