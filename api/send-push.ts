@@ -1,5 +1,32 @@
 // api/send-push.ts
 // Secure Serverless Web Push Notification Route for Vercel
+
+// ==========================================
+// EMERGENCY INLINE TYPES FOR COMPILER ISOLATION
+// ==========================================
+declare module 'web-push' {
+  const webpush: any;
+  export default webpush;
+}
+
+declare module '@vercel/node' {
+  import { IncomingMessage, ServerResponse } from 'http';
+  export interface VercelRequest extends IncomingMessage {
+    query: { [key: string]: string | string[] };
+    cookies: { [key: string]: string };
+    body: any;
+  }
+  export interface VercelResponse extends ServerResponse {
+    send: (body: any) => VercelResponse;
+    json: (jsonBody: any) => VercelResponse;
+    status: (statusCode: number) => VercelResponse;
+    redirect: (statusOrUrl: string | number, url?: string) => VercelResponse;
+  }
+}
+
+// ==========================================
+// CORE APP LAYER LOGIC ENGINE
+// ==========================================
 import { createClient } from "@supabase/supabase-js";
 import webpush from "web-push";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
