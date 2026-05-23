@@ -68,7 +68,7 @@ export function BillingPage() {
     }
 
     // Paste your real pk_live_... or pk_test_... key inside these quotes below
-    const paystackKey = "pk_test_YOUR_PAYSTACK_PUBLIC_KEY_HERE"; 
+    const paystackKey = "pk_live_7737ed534a3b0b40274888d55c68b1e1ae4f072b"; 
 
     // Prevent running if the template string is still set to placeholder text
     if (paystackKey === "pk_test_YOUR_PAYSTACK_PUBLIC_KEY_HERE") {
