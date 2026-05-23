@@ -41,6 +41,7 @@ export function DashboardNav({ activeSection, setActiveSection, isAdmin }: Dashb
   const navigationItems = [
     { id: "projects", label: "Project Core", icon: Briefcase, desc: "Active workspace matrices" },
     { id: "chat", label: "Chat Room", icon: MessageSquare, desc: "Message and send direct feedback" },
+    { id: "payments", label: "Payments", icon: CreditCard, desc: "Transactions & premium invoices" },
     { id: "billing", label: "Account Settings", icon: Settings, desc: "Update your profile and business info" },
   ];
 
