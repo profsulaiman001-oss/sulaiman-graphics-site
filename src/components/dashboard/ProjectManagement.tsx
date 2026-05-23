@@ -10,6 +10,8 @@ interface ProjectManagementProps {
   setNewTitle: (val: string) => void;
   newClient: string;
   setNewClient: (val: string) => void;
+  newPrice: string;
+  setNewPrice: (val: string) => void;
   handleCreateProject: (e: React.FormEvent) => void;
   isAdmin: boolean;
 }
@@ -23,6 +25,8 @@ export function ProjectManagement({
   setNewTitle,
   newClient,
   setNewClient,
+  newPrice,
+  setNewPrice,
   handleCreateProject,
   isAdmin
 }: ProjectManagementProps) {
@@ -62,7 +66,7 @@ export function ProjectManagement({
       {isAdmin && (
         <form onSubmit={handleCreateProject} className="bg-card/40 border border-border/40 p-5 rounded-2xl backdrop-blur-sm">
           <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">Add New Project</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
             <div>
               <label className="block text-[10px] font-bold uppercase text-muted-foreground mb-2">Project Title</label>
               <input
@@ -82,6 +86,17 @@ export function ProjectManagement({
                 value={newClient}
                 onChange={(e) => setNewClient(e.target.value)}
                 placeholder="e.g. Client Name"
+                className="w-full px-4 py-2.5 text-xs bg-background border border-border/50 rounded-xl focus:outline-none focus:border-cyan-500 text-foreground"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold uppercase text-muted-foreground mb-2">Project Price (₦)</label>
+              <input
+                type="number"
+                required
+                value={newPrice}
+                onChange={(e) => setNewPrice(e.target.value)}
+                placeholder="e.g. 50000"
                 className="w-full px-4 py-2.5 text-xs bg-background border border-border/50 rounded-xl focus:outline-none focus:border-cyan-500 text-foreground"
               />
             </div>
