@@ -70,7 +70,7 @@ export function BillingPage() {
     // @ts-ignore
     const handler = PaystackPop.setup({
       // Paste your real pk_live_... public key from Paystack here for production
-      key: "pk_test_YOUR_PAYSTACK_PUBLIC_KEY_HERE", 
+      key: "pk_live_7737ed534a3b0b40274888d55c68b1e1ae4f072b", 
       email: userEmail,
       amount: totalAmountKobo,
       currency: "NGN",
