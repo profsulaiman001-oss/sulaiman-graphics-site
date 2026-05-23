@@ -29,20 +29,22 @@ export function BillingPage() {
   }, []);
 
   const handlePaystackCheckout = (project: any) => {
-    if (!project.amount || project.amount <= 0) {
+    // Fallback lookups ensuring it scans both amount and price column namespaces
+    const accurateAmount = project.amount !== undefined && project.amount !== null ? project.amount : (project.price || 0);
+
+    if (!accurateAmount || accurateAmount <= 0) {
       alert("No pending invoice balance assigned to this project asset yet.");
       return;
     }
 
     // Prompt user for payment option (Full or Partial deposit)
     const paymentChoice = prompt(
-      `Your total remaining balance is ₦${project.amount.toLocaleString()}.\n\nType "FULL" to pay everything at once, or enter a specific custom amount you wish to deposit right now (e.g., 20000):`,
+      `Your total remaining balance is ₦${accurateAmount.toLocaleString()}.\n\nType "FULL" to pay everything at once, or enter a specific custom amount you wish to deposit right now (e.g., 20000):`,
       "FULL"
     );
-
     if (!paymentChoice) return;
 
-    let finalAmountToChargeNaira = project.amount;
+    let finalAmountToChargeNaira = accurateAmount;
 
     if (paymentChoice.trim().toUpperCase() !== "FULL") {
       const customAmount = parseInt(paymentChoice.replace(/[^0-9]/g, ""));
@@ -50,8 +52,8 @@ export function BillingPage() {
         alert("Invalid numerical amount entered. Order terminal cancelled.");
         return;
       }
-      if (customAmount > project.amount) {
-        alert(`You cannot pay more than your remaining balance of ₦${project.amount.toLocaleString()}.`);
+      if (customAmount > accurateAmount) {
+        alert(`You cannot pay more than your remaining balance of ₦${accurateAmount.toLocaleString()}.`);
         return;
       }
       finalAmountToChargeNaira = customAmount;
@@ -59,7 +61,6 @@ export function BillingPage() {
 
     // Paystack processes figures in Kobo subunit strings
     const totalAmountKobo = finalAmountToChargeNaira * 100;
-
     // @ts-ignore
     const handler = PaystackPop.setup({
       key: "pk_test_YOUR_PAYSTACK_PUBLIC_KEY_HERE", // Paste your official Paystack Public Key here
@@ -69,19 +70,21 @@ export function BillingPage() {
       metadata: {
         projectId: project.id,
         projectTitle: project.title,
-        isPartialPayment: finalAmountToChargeNaira < project.amount
+        isPartialPayment: finalAmountToChargeNaira < accurateAmount
       },
       callback: async function (response: any) {
         alert(`Payment captured successfully! Reference ID: ${response.reference}`);
         
         // Compute updated pricing metrics array
-        const newRemainingBalance = project.amount - finalAmountToChargeNaira;
+        const newRemainingBalance = accurateAmount - finalAmountToChargeNaira;
         const targetStatus = newRemainingBalance <= 0 ? "In Progress" : project.status;
 
+        // Updates both amount and price properties across matching schema structures
         await supabase
           .from("projects")
           .update({ 
             amount: newRemainingBalance,
+            price: newRemainingBalance,
             status: targetStatus 
           })
           .eq("id", project.id);
@@ -131,37 +134,42 @@ export function BillingPage() {
             <p className="text-xs font-medium text-muted-foreground">No active project sheets assigned to your account statement.</p>
           </div>
         ) : (
-          projects.map((project) => (
-            <div key={project.id} className="p-5 rounded-xl bg-neutral-900/40 border border-neutral-900/60 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:border-neutral-800">
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-                  Project Asset Sheet
-                </span>
-                <h4 className="text-sm font-bold text-neutral-200 tracking-tight">{project.title}</h4>
-                <p className="text-xs text-muted-foreground">
-                  Status Matrix: <span className="text-cyan-400 font-medium">{project.status}</span>
-                </p>
-              </div>
-
-              <div className="flex items-center justify-between md:justify-end gap-6 border-t md:border-t-0 pt-3 md:pt-0 border-neutral-900">
-                <div className="text-left md:text-right">
-                  <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Outstanding Invoice Balance</p>
-                  <p className="text-base font-black text-emerald-400 mt-0.5">
-                    ₦{project.amount ? project.amount.toLocaleString() : "0"}
+          projects.map((project) => {
+            // Compute value safely during the iteration loop
+            const clientDisplayAmount = project.amount !== undefined && project.amount !== null ? project.amount : (project.price || 0);
+            
+            return (
+              <div key={project.id} className="p-5 rounded-xl bg-neutral-900/40 border border-neutral-900/60 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:border-neutral-800">
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+                    Project Asset Sheet
+                  </span>
+                  <h4 className="text-sm font-bold text-neutral-200 tracking-tight">{project.title}</h4>
+                  <p className="text-xs text-muted-foreground">
+                    Status Matrix: <span className="text-cyan-400 font-medium">{project.status}</span>
                   </p>
                 </div>
 
-                <button
-                  onClick={() => handlePaystackCheckout(project)}
-                  disabled={!project.amount || project.amount <= 0}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-neutral-100 hover:bg-white text-black font-black text-xs uppercase tracking-wider rounded-xl transition-all transform active:scale-95 disabled:opacity-20 disabled:cursor-not-allowed disabled:transform-none shadow-sm"
-                >
-                  Settle Bill
-                  <ArrowUpRight size={12} strokeWidth={2.5} />
-                </button>
+                <div className="flex items-center justify-between md:justify-end gap-6 border-t md:border-t-0 pt-3 md:pt-0 border-neutral-900">
+                  <div className="text-left md:text-right">
+                    <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Outstanding Invoice Balance</p>
+                    <p className="text-base font-black text-emerald-400 mt-0.5">
+                      ₦{clientDisplayAmount.toLocaleString()}
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => handlePaystackCheckout(project)}
+                    disabled={clientDisplayAmount === 0}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-neutral-100 hover:bg-white text-black font-black text-xs uppercase tracking-wider rounded-xl transition-all transform active:scale-95 disabled:opacity-20 disabled:cursor-not-allowed disabled:transform-none shadow-sm"
+                  >
+                    Settle Bill
+                    <ArrowUpRight size={12} strokeWidth={2.5} />
+                  </button>
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>
