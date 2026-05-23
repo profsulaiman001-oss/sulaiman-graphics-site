@@ -27,6 +27,9 @@ import { CertificateGenerator } from "./components/certificates/CertificateGener
 // Client Account Setup View Component Import
 import { ClientAccountSettings } from "@/components/dashboard/ClientAccountSettings";
 
+// Premium Payments View Import
+import { BillingPage } from "@/components/dashboard/BillingPage";
+
 // Premium Chat Application Page Route Import
 import ChatPage from "@/pages/Chat.tsx";
 
@@ -68,6 +71,7 @@ export default function Dashboard() {
   const [editTitle, setEditTitle] = useState("");
   const [newTitle, setNewTitle] = useState("");
   const [newClient, setNewClient] = useState("");
+  const [newAmount, setNewAmount] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteLoading, setInviteLoading] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -261,11 +265,13 @@ export default function Dashboard() {
         title: newTitle.trim(),
         client_email: newClient || null,
         status: "Pending",
+        amount: newAmount ? parseInt(newAmount) : 0,
         user_id: user.id
       }]);
       if (error) throw error;
       setNewTitle("");
       setNewClient("");
+      setNewAmount("");
       fetchProjects(user, isAdmin);
     } catch (err: any) {
       alert("Error: " + err.message);
@@ -481,6 +487,8 @@ export default function Dashboard() {
                   setNewTitle={setNewTitle}
                   newClient={newClient}
                   setNewClient={setNewClient}
+                  newAmount={newAmount}
+                  setNewAmount={setNewAmount}
                   handleCreateProject={handleCreateProject}
                   isAdmin={isAdmin} 
                 />
@@ -569,6 +577,7 @@ export default function Dashboard() {
                         clientEmails={clientEmails}
                         downloadFile={downloadFile}
                         statusColors={statusColors}
+                        refreshWorkspace={() => fetchProjects(user, isAdmin)}
                       />
                     </div>
                   ))}
@@ -587,9 +596,9 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* SECTION THREE: CLIENT RE-BRANDED PERSONAL PORTAL HUB */}
+        {/* SECTION THREE: PREMIUM ISOLATED INVOICING & SETTLEMENT HUB */}
         {activeSection === "billing" && (
-          <ClientAccountSettings userEmail={user?.email} />
+          <BillingPage />
         )}
       </main>
 
