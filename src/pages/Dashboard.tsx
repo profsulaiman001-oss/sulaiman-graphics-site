@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Edit3, Trash2, Save, XCircle, LogOut, CheckCircle, 
   Clock, Loader2, Plus, HardDrive, Download, Settings, X, 
-  MessageSquare, Send, ClipboardList, Award, BarChart3
+  MessageSquare, Send, ClipboardList, Award, BarChart3, CreditCard
 } from "lucide-react";
 
 // Storage Utility Import
@@ -597,8 +597,10 @@ export default function Dashboard() {
         )}
 
         {/* SECTION THREE: PREMIUM ISOLATED INVOICING & SETTLEMENT HUB */}
-        {activeSection === "billing" && (
-          <BillingPage />
+        {(activeSection === "billing" || activeSection === "payments") && (
+          <div className="w-full pb-12 animate-fadeIn">
+            <BillingPage />
+          </div>
         )}
       </main>
 
