@@ -107,7 +107,6 @@ export function BillingPage() {
     const totalAmountKobo = finalAmountToChargeNaira * 100;
 
     try {
-      // Use standard modern explicit instantiation to resolve callback function type checking bugs
       // @ts-ignore
       const paystackInstance = new PaystackPop();
       
@@ -124,9 +123,11 @@ export function BillingPage() {
         onSuccess: async function (response: any) {
           alert(`Payment Authenticated! Reference ID: ${response.reference}`);
           
+          // Calculate the correct remaining balance cleanly in real-time
           const newRemainingBalance = paymentAmount - finalAmountToChargeNaira;
           const targetStatus = newRemainingBalance <= 0 ? "Completed" : project.status;
 
+          // Directly update the row in your Supabase table instantly
           await supabase
             .from("projects")
             .update({ 
@@ -135,6 +136,7 @@ export function BillingPage() {
             })
             .eq("id", project.id);
             
+          // Reload the page layout frames to instantly show the updated ledger balance
           window.location.reload();
         },
         onCancel: function () {
@@ -142,16 +144,27 @@ export function BillingPage() {
         }
       });
     } catch (popupError) {
-      console.log("Falling back to absolute setup handler context structure...");
-      // Alternative ultra-safe signature pattern layout block if constructor matches different API versions
+      // Alternative ultra-safe backup fallback handler block if constructor parameters match fallback API versions
       // @ts-ignore
       PaystackPop.setup({
         key: paystackKey,
         email: userEmail,
         amount: totalAmountKobo,
         currency: "NGN",
-        callback: function (response: any) {
+        callback: async function (response: any) {
           alert(`Payment Authenticated! Reference: ${response.reference}`);
+          
+          const newRemainingBalance = paymentAmount - finalAmountToChargeNaira;
+          const targetStatus = newRemainingBalance <= 0 ? "Completed" : project.status;
+          
+          await supabase
+            .from("projects")
+            .update({ 
+              amount: newRemainingBalance, 
+              status: targetStatus 
+            })
+            .eq("id", project.id);
+
           window.location.reload();
         },
         onClose: function () {
