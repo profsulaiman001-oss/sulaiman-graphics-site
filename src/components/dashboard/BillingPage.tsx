@@ -67,12 +67,12 @@ export function BillingPage() {
       return;
     }
 
-    // Paste your real pk_live_... or pk_test_... key inside these quotes below
+    // 🔴 REPLACE THIS VALUE WITH YOUR ACTUAL PUBLIC KEY FROM PAYSTACK
     const paystackKey = "pk_live_7737ed534a3b0b40274888d55c68b1e1ae4f072b"; 
 
-    // Prevent running if the template string is still set to placeholder text
+    // This alert will ONLY run now if someone clicks "Pay Now" with the placeholder string unchanged
     if (paystackKey === "pk_test_YOUR_PAYSTACK_PUBLIC_KEY_HERE") {
-      alert("Configuration Incomplete: Please grab your Live Public Key from dashboard.paystack.com and replace 'pk_test_YOUR_PAYSTACK_PUBLIC_KEY_HERE' in your code!");
+      alert("Configuration Notice: Replace the template string with your actual Paystack Public Key inside BillingPage.tsx to open the payment terminal.");
       return;
     }
 
