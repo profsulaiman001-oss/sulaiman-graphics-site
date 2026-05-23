@@ -113,7 +113,11 @@ export function ProjectCard({
             <div className="flex flex-col">
               <span className="font-bold text-xs text-foreground truncate">{project.title}</span>
               <span className="text-[9px] text-muted-foreground truncate">{project.client_email || "Unassigned"}</span>
-              {project.price !== undefined && project.price !== null && (
+              {(project.amount !== undefined && project.amount !== null) ? (
+                <span className="text-[10px] text-cyan-400 font-mono mt-0.5 font-bold">
+                  ₦{Number(project.amount).toLocaleString()}
+                </span>
+              ) : (project.price !== undefined && project.price !== null) && (
                 <span className="text-[10px] text-cyan-400 font-mono mt-0.5 font-bold">
                   ₦{Number(project.price).toLocaleString()}
                 </span>
