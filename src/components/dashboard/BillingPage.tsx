@@ -105,6 +105,32 @@ export function BillingPage() {
     }
 
     const totalAmountKobo = finalAmountToChargeNaira * 100;
+
+    // Explicit bound functions to resolve "callback must be a valid function" errors
+    const onPaymentSuccess = async (response: any) => {
+      alert(`Payment Authenticated! Reference ID: ${response.reference}`);
+      
+      const newRemainingBalance = paymentAmount - finalAmountToChargeNaira;
+      const targetStatus = newRemainingBalance <= 0 ? "Completed" : project.status;
+
+      try {
+        await supabase
+          .from("projects")
+          .update({ 
+            amount: newRemainingBalance,
+            status: targetStatus 
+          })
+          .eq("id", project.id);
+          
+        window.location.reload();
+      } catch (err) {
+        console.error("Database sync failed:", err);
+      }
+    };
+
+    const onPaymentClose = () => {
+      console.log("Secure transaction channel aborted by customer.");
+    };
     
     // @ts-ignore
     const handler = PaystackPop.setup({
@@ -117,25 +143,8 @@ export function BillingPage() {
         projectTitle: project.title,
         isPartialPayment: finalAmountToChargeNaira < paymentAmount
       },
-      callback: async function (response: any) {
-        alert(`Payment Authenticated! Reference ID: ${response.reference}`);
-        
-        const newRemainingBalance = paymentAmount - finalAmountToChargeNaira;
-        const targetStatus = newRemainingBalance <= 0 ? "Completed" : project.status;
-
-        await supabase
-          .from("projects")
-          .update({ 
-            amount: newRemainingBalance,
-            status: targetStatus 
-          })
-          .eq("id", project.id);
-          
-        window.location.reload();
-      },
-      onClose: function () {
-        console.log("Secure transaction channel aborted by customer.");
-      }
+      callback: onPaymentSuccess,
+      onClose: onPaymentClose
     });
 
     handler.openIframe();
@@ -315,4 +324,4 @@ export function BillingPage() {
 
     </div>
   );
-}
+  }
