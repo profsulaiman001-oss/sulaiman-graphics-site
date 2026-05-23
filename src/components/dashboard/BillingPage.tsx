@@ -67,11 +67,12 @@ export function BillingPage() {
       return;
     }
 
+    // Paste your real pk_live_... or pk_test_... key inside these quotes below
     const paystackKey = "pk_test_YOUR_PAYSTACK_PUBLIC_KEY_HERE"; 
 
-    // Prevent crashing if the template string is still set to placeholder text
-    if (paystackKey.includes("YOUR_PAYSTACK_PUBLIC_KEY_HERE")) {
-      alert("Configuration Incomplete: Please grab your Live Public Key from dashboard.paystack.com and replace the placeholder key in your BillingPage.tsx code!");
+    // Prevent running if the template string is still set to placeholder text
+    if (paystackKey === "pk_test_YOUR_PAYSTACK_PUBLIC_KEY_HERE") {
+      alert("Configuration Incomplete: Please grab your Live Public Key from dashboard.paystack.com and replace 'pk_test_YOUR_PAYSTACK_PUBLIC_KEY_HERE' in your code!");
       return;
     }
 
