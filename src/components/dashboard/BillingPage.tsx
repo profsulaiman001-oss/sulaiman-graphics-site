@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { 
-  CreditCard, ShieldCheck, ArrowUpRight, Loader2, Receipt, 
-  Wallet, CheckCircle2, AlertCircle, TrendingUp 
+  CreditCard, ShieldCheck, ArrowUpRight, Loader2, 
+  Receipt, Wallet, CheckCircle2, AlertCircle, TrendingUp 
 } from "lucide-react";
 
 export function BillingPage() {
@@ -31,7 +31,7 @@ export function BillingPage() {
     getBillingData();
   }, []);
 
-  // Compute dynamic top metrics from live customer dashboard rows
+  // Calculate live statistical balances for the top banking layout widgets
   const totalOutstanding = projects.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
   const completedProjectsCount = projects.filter(p => p.status === "Completed").length;
   const activeProjectsCount = projects.filter(p => p.status === "In Progress" || p.status === "Pending").length;
@@ -53,7 +53,7 @@ export function BillingPage() {
     let finalAmountToChargeNaira = paymentAmount;
 
     if (paymentChoice.trim().toUpperCase() !== "FULL") {
-      const customAmount = parseInt(paymentChoice.replace(/[^0-9]/g, ""));
+      const customAmount = parseInt(paymentChoice.replace(/[^0-9]/g, ""), 10);
       if (isNaN(customAmount) || customAmount <= 0) {
         alert("Invalid numeral amount specified. Terminal closed.");
         return;
@@ -69,7 +69,7 @@ export function BillingPage() {
     
     // @ts-ignore
     const handler = PaystackPop.setup({
-      key: "pk_test_YOUR_PAYSTACK_PUBLIC_KEY_HERE", // Paste public credentials here
+      key: "pk_live_YOUR_LIVE_PUBLIC_KEY_HERE", // Replace with your production key from Paystack Dashboard
       email: userEmail,
       amount: totalAmountKobo,
       currency: "NGN",
@@ -104,92 +104,86 @@ export function BillingPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
-        <Loader2 className="animate-spin text-emerald-400 mb-3" size={24} />
-        <p className="text-xs font-bold tracking-[0.2em] uppercase text-zinc-400">Loading Secure Ledger...</p>
+      <div className="flex flex-col items-center justify-center py-32 bg-[#06080c] min-h-screen text-muted-foreground">
+        <Loader2 className="animate-spin text-cyan-400 mb-4" size={28} />
+        <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-zinc-500">Securing Ledger Link...</p>
       </div>
     );
   }
 
   return (
-    <div className="w-full space-y-8 text-white animate-fadeIn pb-12">
+    <div className="w-full min-h-screen bg-[#06080c] text-white p-4 md:p-8 font-sans antialiased selection:bg-cyan-500/30">
       
-      {/* HIGH-END APPS HEADER SECTION */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-800/60 pb-6">
+      {/* MOBILE BANK HEADER SUB-BAR */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-900 pb-6 mb-8">
         <div>
-          <h2 className="text-2xl font-black tracking-tight text-white bg-gradient-to-r from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent">
-            Financial Ledger
+          <span className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-cyan-400">Sulaiman Graphics Pay</span>
+          <h2 className="text-2xl font-black tracking-tight text-white mt-0.5">
+            Digital Account Wallet
           </h2>
-          <p className="text-xs text-zinc-400 mt-1">
-            Track allocations, settle active design invoices, and manage secure deposit milestones.
-          </p>
         </div>
-        <div className="flex items-center gap-2 bg-zinc-900/60 border border-zinc-800/80 px-3 py-1.5 rounded-xl shadow-inner">
-          <ShieldCheck size={14} className="text-emerald-400" />
-          <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-300">PCI-DSS Encrypted Channel</span>
+        <div className="flex items-center gap-2 bg-[#0e121a] border border-zinc-800/60 px-3 py-1.5 rounded-full self-start sm:self-auto shadow-lg">
+          <ShieldCheck size={14} className="text-cyan-400 animate-pulse" />
+          <span className="text-[9px] font-black uppercase tracking-wider text-zinc-400">Live Secure Gateway</span>
         </div>
       </div>
 
-      {/* LUXURY FINTECH APP GRID METRICS */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-zinc-900 via-zinc-950 to-zinc-950 border border-zinc-800/60 p-5 shadow-xl group transition-all duration-300">
-          <div className="absolute top-0 right-0 p-4 opacity-10 text-emerald-500 pointer-events-none group-hover:scale-110 transition-transform duration-500">
-            <Wallet size={40} />
+      {/* PREMIUM GRADIENT VIRTUAL CARD */}
+      <div className="max-w-md mx-auto mb-8 transition-transform duration-300 hover:scale-[1.01]">
+        <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-blue-600 via-cyan-500 to-teal-400 p-6 shadow-[0_20px_50px_rgba(6,182,212,0.15)] border border-white/20">
+          
+          {/* Decorative Card Micro-glowing Mesh Overlay */}
+          <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+          <div className="absolute top-4 right-6 text-white/40 text-[10px] font-mono tracking-widest font-bold">
+            STATEMENT LEDGER
           </div>
-          <p className="text-[10px] font-bold tracking-wider text-zinc-400 uppercase">Net Outstanding</p>
-          <p className="text-2xl font-black tracking-tight text-white mt-2 font-mono">
-            ₦{totalOutstanding.toLocaleString()}
-          </p>
-          <div className="flex items-center gap-1.5 mt-3 text-[10px] text-zinc-500 font-medium">
-            <TrendingUp size={12} className="text-emerald-500" />
-            <span>Aggregate workspace debt</span>
-          </div>
-        </div>
 
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-zinc-900 via-zinc-950 to-zinc-950 border border-zinc-800/60 p-5 shadow-xl group transition-all duration-300">
-          <div className="absolute top-0 right-0 p-4 opacity-10 text-cyan-500 pointer-events-none group-hover:scale-110 transition-transform duration-500">
-            <CreditCard size={40} />
+          <div className="space-y-1">
+            <p className="text-[10px] font-bold text-white/80 uppercase tracking-widest">Aggregate Net Balance</p>
+            <p className="text-3xl font-black tracking-tight text-white font-mono drop-shadow-md">
+              ₦{totalOutstanding.toLocaleString()}
+            </p>
           </div>
-          <p className="text-[10px] font-bold tracking-wider text-zinc-400 uppercase">Active Statements</p>
-          <p className="text-2xl font-black tracking-tight text-white mt-2 font-mono">
-            {activeProjectsCount} <span className="text-xs text-zinc-500 font-sans font-normal">In production</span>
-          </p>
-          <div className="flex items-center gap-1.5 mt-3 text-[10px] text-zinc-500 font-medium">
-            <AlertCircle size={12} className="text-cyan-500" />
-            <span>Awaiting digital clearing</span>
-          </div>
-        </div>
 
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-zinc-900 via-zinc-950 to-zinc-950 border border-zinc-800/60 p-5 shadow-xl group transition-all duration-300">
-          <div className="absolute top-0 right-0 p-4 opacity-10 text-zinc-500 pointer-events-none group-hover:scale-110 transition-transform duration-500">
-            <CheckCircle2 size={40} />
+          {/* Simulated Chip and Security Code Space Placement */}
+          <div className="mt-8 flex items-center justify-between">
+            <div className="w-9 h-7 bg-amber-400/20 backdrop-blur-md rounded-md border border-amber-300/30 flex items-center justify-center">
+              <div className="w-5 h-4 border border-amber-300/40 rounded-sm" />
+            </div>
+            <span className="text-xs font-mono tracking-[0.25em] text-white/90">
+              •••• •••• •••• {userEmail ? userEmail.slice(0, 3).toUpperCase() : "SGM"}
+            </span>
           </div>
-          <p className="text-[10px] font-bold tracking-wider text-zinc-400 uppercase">Fully Settled Files</p>
-          <p className="text-2xl font-black tracking-tight text-white mt-2 font-mono">
-            {completedProjectsCount} <span className="text-xs text-zinc-500 font-sans font-normal">Closed cards</span>
-          </p>
-          <div className="flex items-center gap-1.5 mt-3 text-[10px] text-zinc-500 font-medium">
-            <CheckCircle2 size={12} className="text-emerald-500" />
-            <span>Cleared brand investments</span>
+
+          <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-between text-[10px]">
+            <div>
+              <p className="text-white/60 uppercase font-medium tracking-wider">Account Client</p>
+              <p className="font-bold text-white tracking-wide mt-0.5 max-w-[180px] truncate">{userEmail || "Guest User"}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-white/60 uppercase font-medium tracking-wider">Active Files</p>
+              <p className="font-bold text-white mt-0.5 font-mono">{activeProjectsCount} Pending</p>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* RE-ARCHITECTED INVOICES CONTAINER */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-400 flex items-center gap-2">
-            <Receipt size={14} className="text-zinc-500" />
-            Invoice Tracking Sheets
+      {/* RE-ARCHITECTED TRANSACTION LIST SYSTEM */}
+      <div className="max-w-xl mx-auto space-y-4">
+        <div className="flex items-center justify-between px-1">
+          <h3 className="text-[11px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
+            <Receipt size={14} className="text-cyan-400" />
+            Invoice Outstandings
           </h3>
-          <span className="text-[10px] font-medium text-zinc-500">{projects.length} Sheets bound</span>
+          <span className="text-[10px] bg-[#0e121a] border border-zinc-800 px-2 py-0.5 rounded-md font-mono text-zinc-400">
+            {projects.length} Files
+          </span>
         </div>
 
         {projects.length === 0 ? (
-          <div className="text-center py-20 border border-dashed border-zinc-800 rounded-2xl bg-zinc-950/40">
-            <Receipt className="mx-auto text-zinc-700 mb-3" size={32} />
-            <p className="text-xs font-medium text-zinc-400">No invoice records linked to this account card statement.</p>
+          <div className="text-center py-16 border border-dashed border-zinc-800/80 rounded-2xl bg-[#090b0e]">
+            <Receipt className="mx-auto text-zinc-700 mb-3" size={28} />
+            <p className="text-xs font-medium text-zinc-500">No invoice bills assigned to this statement sheet.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -200,37 +194,25 @@ export function BillingPage() {
               return (
                 <div 
                   key={project.id} 
-                  className="group bg-gradient-to-r from-zinc-900/90 to-zinc-950/40 border border-zinc-800/50 rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-5 hover:border-zinc-700/80 transition-all duration-300"
+                  className="bg-[#0b0f17] border border-zinc-900/80 rounded-2xl p-4 flex items-center justify-between gap-4 transition-all duration-200 hover:border-zinc-800 hover:bg-[#0d131f] shadow-sm"
                 >
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2.5">
-                      <span className={`w-1.5 h-1.5 rounded-full ${isCleared ? "bg-zinc-600" : "bg-emerald-500 shadow-glow animate-pulse"}`} />
-                      <h4 className="text-sm font-bold text-zinc-100 tracking-tight group-hover:text-white transition-colors">
+                  <div className="space-y-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isCleared ? "bg-zinc-600" : "bg-cyan-400 animate-pulse shadow-[0_0_8px_#22d3ee]"}`} />
+                      <h4 className="text-xs font-bold text-zinc-100 truncate tracking-tight pr-2">
                         {project.title}
                       </h4>
                     </div>
-                    <div className="flex items-center gap-3 text-[11px] text-zinc-400 font-medium">
-                      <span className="text-zinc-500">
-                        REF: <span className="font-mono text-zinc-400">{project.id.slice(0, 8).toUpperCase()}</span>
-                      </span>
-                      <span className="text-zinc-600">•</span>
-                      <span>
-                        Status Matrix:{" "}
-                        <span className={`font-bold uppercase tracking-wider text-[10px] ml-0.5 ${
-                          project.status === "Completed" ? "text-emerald-400" : "text-amber-400"
-                        }`}>
-                          {project.status}
-                        </span>
-                      </span>
-                    </div>
+                    <p className="text-[10px] text-zinc-500 font-medium font-mono uppercase">
+                      REF: {project.id.slice(0, 8).toUpperCase()} • <span className={project.status === "Completed" ? "text-emerald-400" : "text-amber-400"}>{project.status}</span>
+                    </p>
                   </div>
 
-                  {/* SETTLEMENT ACTIONS INTERFACE */}
-                  <div className="flex items-center justify-between md:justify-end gap-8 border-t md:border-t-0 pt-4 md:pt-0 border-zinc-800/60 w-full md:w-auto">
-                    <div className="text-left md:text-right space-y-0.5">
-                      <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Outstanding Balance</p>
-                      <p className={`text-lg font-black font-mono transition-colors ${
-                        isCleared ? "text-zinc-600 line-through" : "text-emerald-400"
+                  {/* SETTLEMENT RIGHT ALIGNED BANK ACTIONS */}
+                  <div className="flex items-center gap-4 shrink-0">
+                    <div className="text-right">
+                      <p className={`text-sm font-black font-mono tracking-tight ${
+                        isCleared ? "text-zinc-600 line-through" : "text-zinc-100"
                       }`}>
                         ₦{currentAmt.toLocaleString()}
                       </p>
@@ -238,14 +220,15 @@ export function BillingPage() {
 
                     <button
                       onClick={() => handlePaystackCheckout(project)}
-                      className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-200 shadow-md min-w-[125px] justify-center ${
+                      disabled={isCleared}
+                      className={`flex items-center justify-center w-8 h-8 rounded-xl transition-all duration-200 border ${
                         isCleared
-                          ? "bg-zinc-900 border border-zinc-800/80 text-zinc-500 cursor-not-allowed opacity-50"
-                          : "bg-white hover:bg-zinc-100 text-black active:scale-[0.98]"
+                          ? "bg-zinc-900 border-zinc-800 text-zinc-600 cursor-not-allowed opacity-40"
+                          : "bg-white hover:bg-cyan-400 hover:text-black hover:border-cyan-400 text-black border-white active:scale-90"
                       }`}
+                      title={isCleared ? "Fully Settled" : "Settle Bill"}
                     >
-                      <span>{isCleared ? "Fully Settled" : "Settle Bill"}</span>
-                      {!isCleared && <ArrowUpRight size={13} strokeWidth={2.5} className="text-black" />}
+                      <ArrowUpRight size={16} strokeWidth={2.5} />
                     </button>
                   </div>
                 </div>
@@ -254,6 +237,7 @@ export function BillingPage() {
           </div>
         )}
       </div>
+
     </div>
   );
 }
