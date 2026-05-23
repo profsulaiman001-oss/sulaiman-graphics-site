@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { CreditCard, ShieldCheck, DollarSign, ArrowUpRight, Loader2, Receipt } from "lucide-react";
+import { 
+  CreditCard, ShieldCheck, ArrowUpRight, Loader2, Receipt, 
+  Wallet, CheckCircle2, AlertCircle, TrendingUp, HelpCircle 
+} from "lucide-react";
 
 export function BillingPage() {
   const [loading, setLoading] = useState(true);
@@ -28,8 +31,12 @@ export function BillingPage() {
     getBillingData();
   }, []);
 
+  // Compute summary values for the banking dashboard view
+  const totalOutstanding = projects.reduce((sum, p) => sum + (p.amount || 0), 0);
+  const completedProjectsCount = projects.filter(p => p.status === "Completed").length;
+  const activeProjectsCount = projects.filter(p => p.status === "In Progress" || p.status === "Pending").length;
+
   const handlePaystackCheckout = (project: any) => {
-    // Fallback lookups ensuring it scans both amount and price column namespaces
     const accurateAmount = project.amount !== undefined && project.amount !== null ? project.amount : (project.price || 0);
 
     if (!accurateAmount || accurateAmount <= 0) {
@@ -37,7 +44,6 @@ export function BillingPage() {
       return;
     }
 
-    // Prompt user for payment option (Full or Partial deposit)
     const paymentChoice = prompt(
       `Your total remaining balance is ₦${accurateAmount.toLocaleString()}.\n\nType "FULL" to pay everything at once, or enter a specific custom amount you wish to deposit right now (e.g., 20000):`,
       "FULL"
@@ -59,7 +65,6 @@ export function BillingPage() {
       finalAmountToChargeNaira = customAmount;
     }
 
-    // Paystack processes figures in Kobo subunit strings
     const totalAmountKobo = finalAmountToChargeNaira * 100;
     // @ts-ignore
     const handler = PaystackPop.setup({
@@ -75,11 +80,9 @@ export function BillingPage() {
       callback: async function (response: any) {
         alert(`Payment captured successfully! Reference ID: ${response.reference}`);
         
-        // Compute updated pricing metrics array
         const newRemainingBalance = accurateAmount - finalAmountToChargeNaira;
         const targetStatus = newRemainingBalance <= 0 ? "In Progress" : project.status;
 
-        // Updates both amount and price properties across matching schema structures
         await supabase
           .from("projects")
           .update({ 
@@ -101,77 +104,161 @@ export function BillingPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-        <Loader2 className="animate-spin text-cyan-400 mb-2" size={20} />
-        <p className="text-xs font-medium tracking-widest uppercase">Synchronizing Portal Records...</p>
+      <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
+        <Loader2 className="animate-spin text-emerald-400 mb-3" size={24} />
+        <p className="text-xs font-bold tracking-[0.2em] uppercase text-zinc-400">Securing Gateway Instance...</p>
       </div>
     );
   }
 
   return (
-    <div className="w-full space-y-6 text-white animate-fadeIn">
-      <div className="p-6 rounded-2xl bg-gradient-to-br from-neutral-900 via-neutral-900/50 to-transparent border border-neutral-800/60 relative overflow-hidden shadow-xl">
-        <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-          <CreditCard size={140} />
-        </div>
-        <div className="relative z-10">
-          <span className="text-[10px] font-bold tracking-widest text-cyan-400 uppercase bg-cyan-500/10 border border-cyan-500/20 px-2.5 py-1 rounded-md">
-            Secure Settlement Terminal
-          </span>
-          <h2 className="text-2xl font-black tracking-tight mt-3 text-white">
-            Payments & FinOps Portal
+    <div className="w-full space-y-8 text-white animate-fadeIn pb-12">
+      
+      {/* HEADER SECTION */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-800/80 pb-6">
+        <div>
+          <h2 className="text-2xl font-black tracking-tight text-white bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
+            Financial Ledger
           </h2>
-          <p className="text-sm text-muted-foreground mt-2 max-w-2xl leading-relaxed">
-            Review prices assigned by studio administration, make direct full clearing settlements, or submit deposit milestones seamlessly via our secure channel.
+          <p className="text-xs text-zinc-400 mt-1">
+            Manage allocations, clear project invoice balances, and track design production milestones.
           </p>
         </div>
+        <div className="flex items-center gap-2 bg-zinc-900/60 border border-zinc-800 px-3 py-1.5 rounded-xl shadow-inner">
+          <ShieldCheck size={14} className="text-emerald-400" />
+          <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-300">PCI-DSS Compliant Connection</span>
+        </div>
       </div>
 
+      {/* METRIC CARDS GRID CONTAINER */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* CARD 1: OVERALL BALANCE */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-zinc-900 via-zinc-950 to-zinc-950 border border-zinc-800/60 p-5 shadow-xl group hover:border-zinc-700/60 transition-all duration-300">
+          <div className="absolute top-0 right-0 p-4 opacity-10 text-emerald-500 pointer-events-none group-hover:scale-110 transition-transform duration-500">
+            <Wallet size={44} />
+          </div>
+          <p className="text-[10px] font-bold tracking-wider text-zinc-400 uppercase">Total Net Outstanding</p>
+          <p className="text-2xl font-black tracking-tight text-white mt-2 font-mono">
+            ₦{totalOutstanding.toLocaleString()}
+          </p>
+          <div className="flex items-center gap-1.5 mt-3 text-[10px] text-zinc-500 font-medium">
+            <TrendingUp size={12} className="text-emerald-500" />
+            <span>Aggregate billing profile</span>
+          </div>
+        </div>
+
+        {/* CARD 2: ACTIVE PIPELINES */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-zinc-900 via-zinc-950 to-zinc-950 border border-zinc-800/60 p-5 shadow-xl group hover:border-zinc-700/60 transition-all duration-300">
+          <div className="absolute top-0 right-0 p-4 opacity-10 text-cyan-500 pointer-events-none group-hover:scale-110 transition-transform duration-500">
+            <CreditCard size={44} />
+          </div>
+          <p className="text-[10px] font-bold tracking-wider text-zinc-400 uppercase">Active Invoices</p>
+          <p className="text-2xl font-black tracking-tight text-white mt-2 font-mono">
+            {activeProjectsCount} <span className="text-xs text-zinc-500 font-sans font-normal">Pending clearing</span>
+          </p>
+          <div className="flex items-center gap-1.5 mt-3 text-[10px] text-zinc-500 font-medium">
+            <AlertCircle size={12} className="text-cyan-500" />
+            <span>Awaiting creative settlement</span>
+          </div>
+        </div>
+
+        {/* CARD 3: COMPLETED SETTLEMENTS */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-zinc-900 via-zinc-950 to-zinc-950 border border-zinc-800/60 p-5 shadow-xl group hover:border-zinc-700/60 transition-all duration-300">
+          <div className="absolute top-0 right-0 p-4 opacity-10 text-zinc-500 pointer-events-none group-hover:scale-110 transition-transform duration-500">
+            <CheckCircle2 size={44} />
+          </div>
+          <p className="text-[10px] font-bold tracking-wider text-zinc-400 uppercase">Settled Projects</p>
+          <p className="text-2xl font-black tracking-tight text-white mt-2 font-mono">
+            {completedProjectsCount} <span className="text-xs text-zinc-500 font-sans font-normal">Closed files</span>
+          </p>
+          <div className="flex items-center gap-1.5 mt-3 text-[10px] text-zinc-500 font-medium">
+            <CheckCircle2 size={12} className="text-emerald-500" />
+            <span>Fully paid creative assets</span>
+          </div>
+        </div>
+      </div>
+
+      {/* DETAILED STATEMENT SHEET BLOCK */}
       <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-400 flex items-center gap-2">
+            <Receipt size={14} className="text-zinc-500" />
+            Invoice Statement Sheets
+          </h3>
+          <span className="text-[10px] font-medium text-zinc-500">{projects.length} Entries found</span>
+        </div>
+
         {projects.length === 0 ? (
-          <div className="text-center py-16 border border-dashed border-neutral-800 rounded-2xl bg-neutral-900/10">
-            <Receipt className="mx-auto text-neutral-600 mb-3" size={28} />
-            <p className="text-xs font-medium text-muted-foreground">No active project sheets assigned to your account statement.</p>
+          <div className="text-center py-20 border border-dashed border-zinc-800 rounded-2xl bg-zinc-950/40">
+            <Receipt className="mx-auto text-zinc-700 mb-3" size={32} />
+            <p className="text-xs font-medium text-zinc-400">No active project sheets assigned to this account statement.</p>
           </div>
         ) : (
-          projects.map((project) => {
-            // Compute value safely during the iteration loop
-            const clientDisplayAmount = project.amount !== undefined && project.amount !== null ? project.amount : (project.price || 0);
-            
-            return (
-              <div key={project.id} className="p-5 rounded-xl bg-neutral-900/40 border border-neutral-900/60 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:border-neutral-800">
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-                    Project Asset Sheet
-                  </span>
-                  <h4 className="text-sm font-bold text-neutral-200 tracking-tight">{project.title}</h4>
-                  <p className="text-xs text-muted-foreground">
-                    Status Matrix: <span className="text-cyan-400 font-medium">{project.status}</span>
-                  </p>
-                </div>
+          <div className="space-y-3">
+            {projects.map((project) => {
+              const clientDisplayAmount = project.amount !== undefined && project.amount !== null ? project.amount : (project.price || 0);
+              const isPaidOff = clientDisplayAmount <= 0;
 
-                <div className="flex items-center justify-between md:justify-end gap-6 border-t md:border-t-0 pt-3 md:pt-0 border-neutral-900">
-                  <div className="text-left md:text-right">
-                    <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Outstanding Invoice Balance</p>
-                    <p className="text-base font-black text-emerald-400 mt-0.5">
-                      ₦{clientDisplayAmount.toLocaleString()}
-                    </p>
+              return (
+                <div 
+                  key={project.id} 
+                  className="group bg-gradient-to-r from-zinc-900/90 to-zinc-950/40 border border-zinc-800/50 rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-5 hover:border-zinc-700/80 transition-all duration-300 shadow-sm hover:shadow-md"
+                >
+                  {/* PROJECT META */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-glow animate-pulse" />
+                      <h4 className="text-sm font-bold text-zinc-100 tracking-tight group-hover:text-white transition-colors">
+                        {project.title}
+                      </h4>
+                    </div>
+                    <div className="flex items-center gap-3 text-[11px] text-zinc-400 font-medium">
+                      <span className="text-zinc-500">
+                        ID: <span className="font-mono text-zinc-400">{project.id.slice(0, 8).toUpperCase()}</span>
+                      </span>
+                      <span className="text-zinc-600">•</span>
+                      <span>
+                        Status:{" "}
+                        <span className={`font-bold uppercase tracking-wider text-[10px] ml-0.5 ${
+                          project.status === "Completed" ? "text-emerald-400" : "text-amber-400"
+                        }`}>
+                          {project.status}
+                        </span>
+                      </span>
+                    </div>
                   </div>
 
-                  <button
-                    onClick={() => handlePaystackCheckout(project)}
-                    disabled={clientDisplayAmount === 0}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-neutral-100 hover:bg-white text-black font-black text-xs uppercase tracking-wider rounded-xl transition-all transform active:scale-95 disabled:opacity-20 disabled:cursor-not-allowed disabled:transform-none shadow-sm"
-                  >
-                    Settle Bill
-                    <ArrowUpRight size={12} strokeWidth={2.5} />
-                  </button>
+                  {/* SETTLEMENT ACTIONS BLOCK */}
+                  <div className="flex items-center justify-between md:justify-end gap-8 border-t md:border-t-0 pt-4 md:pt-0 border-zinc-800/60">
+                    <div className="text-left md:text-right space-y-0.5">
+                      <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Outstanding Invoice</p>
+                      <p className={`text-lg font-black font-mono transition-colors ${
+                        isPaidOff ? "text-zinc-500 line-through" : "text-emerald-400"
+                      }`}>
+                        ₦{clientDisplayAmount.toLocaleString()}
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => handlePaystackCheckout(project)}
+                      disabled={isPaidOff}
+                      className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-200 shadow-lg ${
+                        isPaidOff
+                          ? "bg-zinc-900 border border-zinc-800/80 text-zinc-600 cursor-not-allowed shadow-none opacity-40"
+                          : "bg-white hover:bg-zinc-100 text-black active:scale-[0.98] hover:shadow-emerald-500/5"
+                      }`}
+                    >
+                      <span>{isPaidOff ? "Cleared" : "Settle Bill"}</span>
+                      {!isPaidOff && <ArrowUpRight size={13} strokeWidth={2.5} className="text-black" />}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            );
-          })
+              );
+            })}
+          </div>
         )}
       </div>
+
     </div>
   );
-}
+  }
