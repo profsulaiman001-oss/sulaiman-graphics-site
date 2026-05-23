@@ -42,12 +42,6 @@ export function ProjectCard({
   project,
   isAdmin,
   editingId,
-  editTitle,
-  setEditTitle,
-  editPrice = "",
-  setEditPrice,
-  startEdit,
-  saveEdit,
   setEditingId,
   updateStatus,
   assignUser,
@@ -71,12 +65,47 @@ export function ProjectCard({
 }: ProjectCardProps) {
 
   const [showGallery, setShowGallery] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // Independent self-contained states to ensure inputs type smoothly without parent constraints
+  const [localTitle, setLocalTitle] = useState(project.title || "");
+  const [localPrice, setLocalPrice] = useState(
+    project.amount !== undefined && project.amount !== null ? project.amount : (project.price || "")
+  );
 
   const getProgress = (status: string) => {
     if (status === "Completed") return 100;
     if (status === "In Progress") return 65;
     return 25;
   };
+
+  const handleInlineSave = async () => {
+    setIsSaving(true);
+    try {
+      const numericPrice = localPrice === "" ? 0 : parseInt(localPrice.toString().replace(/[^0-9]/g, ""));
+      
+      // Update across amount and price simultaneously to eliminate synchronization discrepancies
+      const { error } = await supabase
+        .from("projects")
+        .update({
+          title: localTitle,
+          price: numericPrice,
+          amount: numericPrice
+        })
+        .eq("id", project.id);
+
+      if (error) throw error;
+      
+      setEditingId(null);
+      window.location.reload();
+    } catch (err: any) {
+      alert("Error saving properties: " + err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const displayPrice = project.amount !== undefined && project.amount !== null ? project.amount : (project.price || 0);
 
   return (
     <motion.div 
@@ -93,19 +122,25 @@ export function ProjectCard({
                 type="text"
                 autoFocus
                 placeholder="Project Title"
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
+                value={localTitle}
+                onChange={(e) => setLocalTitle(e.target.value)}
                 className="bg-background border border-border rounded-md px-2 py-1 text-xs focus:border-primary outline-none text-white w-full"
               />
               <div className="flex items-center gap-1">
                 <input
                   type="number"
                   placeholder="Price"
-                  value={editPrice}
-                  onChange={(e) => setEditPrice && setEditPrice(e.target.value)}
+                  value={localPrice}
+                  onChange={(e) => setLocalPrice(e.target.value)}
                   className="bg-background border border-border rounded-md px-2 py-1 text-xs focus:border-primary outline-none text-white w-full"
                 />
-                <button onClick={saveEdit} className="text-primary hover:text-primary/80 transition-colors shrink-0 p-1"><Save size={14} /></button>
+                <button 
+                  onClick={handleInlineSave} 
+                  disabled={isSaving}
+                  className="text-primary hover:text-primary/80 transition-colors shrink-0 p-1"
+                >
+                  {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                </button>
                 <button onClick={() => setEditingId(null)} className="text-red-500 shrink-0 p-1"><XCircle size={14} /></button>
               </div>
             </div>
@@ -113,15 +148,9 @@ export function ProjectCard({
             <div className="flex flex-col">
               <span className="font-bold text-xs text-foreground truncate">{project.title}</span>
               <span className="text-[9px] text-muted-foreground truncate">{project.client_email || "Unassigned"}</span>
-              {(project.amount !== undefined && project.amount !== null) ? (
-                <span className="text-[10px] text-cyan-400 font-mono mt-0.5 font-bold">
-                  ₦{Number(project.amount).toLocaleString()}
-                </span>
-              ) : (project.price !== undefined && project.price !== null) && (
-                <span className="text-[10px] text-cyan-400 font-mono mt-0.5 font-bold">
-                  ₦{Number(project.price).toLocaleString()}
-                </span>
-              )}
+              <span className="text-[10px] text-cyan-400 font-mono mt-0.5 font-bold">
+                ₦{Number(displayPrice).toLocaleString()}
+              </span>
             </div>
           )}
         </div>
@@ -347,7 +376,16 @@ export function ProjectCard({
                     <option value="In Progress">Active</option>
                     <option value="Completed">Done</option>
                   </select>
-                  <button onClick={() => startEdit(project)} className="p-1.5 rounded-lg border border-border text-yellow-500 hover:bg-yellow-500/10 transition-colors"><Edit3 size={12}/></button>
+                  <button 
+                    onClick={() => {
+                      setLocalTitle(project.title || "");
+                      setLocalPrice(project.amount !== undefined && project.amount !== null ? project.amount : (project.price || ""));
+                      setEditingId(project.id);
+                    }} 
+                    className="p-1.5 rounded-lg border border-border text-yellow-500 hover:bg-yellow-500/10 transition-colors"
+                  >
+                    <Edit3 size={12}/>
+                  </button>
                   <button onClick={() => handleDelete(project.id)} className="p-1.5 rounded-lg border border-border text-red-500 hover:bg-red-500/10 transition-colors"><Trash2 size={12}/></button>
                 </>
               )}
