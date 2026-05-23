@@ -9,8 +9,31 @@ export function BillingPage() {
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState<any[]>([]);
   const [userEmail, setUserEmail] = useState<string>("");
+  const [scriptLoaded, setScriptLoaded] = useState(false);
 
   useEffect(() => {
+    // Inject Paystack Inline script dynamically to guarantee initialization
+    const scriptId = "paystack-popup-script";
+    const existingScript = document.getElementById(scriptId);
+
+    if (!existingScript) {
+      const script = document.createElement("script");
+      script.src = "https://js.paystack.co/v1/inline.js";
+      script.id = scriptId;
+      script.async = true;
+      script.onload = () => {
+        setScriptLoaded(true);
+        console.log("Paystack secure engine mounted successfully.");
+      };
+      script.onerror = () => {
+        console.error("Failed to fetch Paystack checkout framework dependencies.");
+      };
+      document.body.appendChild(script);
+    } else {
+      setScriptLoaded(true);
+    }
+
+    // Fetch account project tracking data sheets from Supabase
     async function getBillingData() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -37,6 +60,21 @@ export function BillingPage() {
   const activeProjectsCount = projects.filter(p => p.status === "In Progress" || p.status === "Pending").length;
 
   const handlePaystackCheckout = (project: any) => {
+    // Verify script availability before processing window object frames
+    // @ts-ignore
+    if (!scriptLoaded || typeof PaystackPop === "undefined") {
+      alert("Secure checkout channel initialization is finishing. Please click the button again in 2 seconds.");
+      return;
+    }
+
+    const paystackKey = "pk_test_YOUR_PAYSTACK_PUBLIC_KEY_HERE"; 
+
+    // Prevent crashing if the template string is still set to placeholder text
+    if (paystackKey.includes("YOUR_PAYSTACK_PUBLIC_KEY_HERE")) {
+      alert("Configuration Incomplete: Please grab your Live Public Key from dashboard.paystack.com and replace the placeholder key in your BillingPage.tsx code!");
+      return;
+    }
+
     const paymentAmount = Number(project.amount) || 0;
 
     if (paymentAmount <= 0) {
@@ -69,8 +107,7 @@ export function BillingPage() {
     
     // @ts-ignore
     const handler = PaystackPop.setup({
-      // Paste your real pk_live_... public key from Paystack here for production
-      key: "pk_live_7737ed534a3b0b40274888d55c68b1e1ae4f072b", 
+      key: paystackKey, 
       email: userEmail,
       amount: totalAmountKobo,
       currency: "NGN",
@@ -83,7 +120,7 @@ export function BillingPage() {
         alert(`Payment Authenticated! Reference ID: ${response.reference}`);
         
         const newRemainingBalance = paymentAmount - finalAmountToChargeNaira;
-        const targetStatus = newRemainingBalance <= 0 ? "In Progress" : project.status;
+        const targetStatus = newRemainingBalance <= 0 ? "Completed" : project.status;
 
         await supabase
           .from("projects")
@@ -129,10 +166,10 @@ export function BillingPage() {
         </div>
       </div>
 
-      {/* THREE-COLUMN STATS AND CARD GRID SETUP (Resolves Emptiness) */}
+      {/* THREE-COLUMN STATS AND CARD GRID SETUP */}
       <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
         
-        {/* PREMIUM GRADIENT VIRTUAL CARD (Optimized high-contrast dark gradient structure) */}
+        {/* PREMIUM GRADIENT VIRTUAL CARD */}
         <div className="lg:col-span-2 transition-transform duration-300 hover:scale-[1.005]">
           <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-slate-950 via-blue-950 to-cyan-950 p-6 shadow-xl border border-zinc-800/80 h-full flex flex-col justify-between min-h-[200px]">
             
@@ -146,7 +183,7 @@ export function BillingPage() {
                 </p>
               </div>
               <span className="text-[9px] font-mono tracking-widest font-black text-zinc-500 bg-zinc-900/60 border border-zinc-800/60 px-2 py-0.5 rounded-md">
-                STATEMENT STATEMENT
+                STATEMENT LEDGER
               </span>
             </div>
 
@@ -175,7 +212,7 @@ export function BillingPage() {
           </div>
         </div>
 
-        {/* LOGICAL ANALYTICAL PANEL BAR (Resolves Emptiness) */}
+        {/* LOGICAL ANALYTICAL PANEL BAR */}
         <div className="bg-[#0b0f17] border border-zinc-900/80 rounded-[24px] p-5 flex flex-col justify-between gap-4">
           <div className="flex items-center gap-2 border-b border-zinc-900 pb-3">
             <Activity size={14} className="text-cyan-400" />
