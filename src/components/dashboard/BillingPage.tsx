@@ -106,48 +106,59 @@ export function BillingPage() {
 
     const totalAmountKobo = finalAmountToChargeNaira * 100;
 
-    // Explicit bound functions to resolve "callback must be a valid function" errors
-    const onPaymentSuccess = async (response: any) => {
-      alert(`Payment Authenticated! Reference ID: ${response.reference}`);
+    try {
+      // Use standard modern explicit instantiation to resolve callback function type checking bugs
+      // @ts-ignore
+      const paystackInstance = new PaystackPop();
       
-      const newRemainingBalance = paymentAmount - finalAmountToChargeNaira;
-      const targetStatus = newRemainingBalance <= 0 ? "Completed" : project.status;
-
-      try {
-        await supabase
-          .from("projects")
-          .update({ 
-            amount: newRemainingBalance,
-            status: targetStatus 
-          })
-          .eq("id", project.id);
+      paystackInstance.new({
+        key: paystackKey,
+        email: userEmail,
+        amount: totalAmountKobo,
+        currency: "NGN",
+        metadata: {
+          projectId: project.id,
+          projectTitle: project.title,
+          isPartialPayment: finalAmountToChargeNaira < paymentAmount
+        },
+        onSuccess: async function (response: any) {
+          alert(`Payment Authenticated! Reference ID: ${response.reference}`);
           
-        window.location.reload();
-      } catch (err) {
-        console.error("Database sync failed:", err);
-      }
-    };
+          const newRemainingBalance = paymentAmount - finalAmountToChargeNaira;
+          const targetStatus = newRemainingBalance <= 0 ? "Completed" : project.status;
 
-    const onPaymentClose = () => {
-      console.log("Secure transaction channel aborted by customer.");
-    };
-    
-    // @ts-ignore
-    const handler = PaystackPop.setup({
-      key: paystackKey, 
-      email: userEmail,
-      amount: totalAmountKobo,
-      currency: "NGN",
-      metadata: {
-        projectId: project.id,
-        projectTitle: project.title,
-        isPartialPayment: finalAmountToChargeNaira < paymentAmount
-      },
-      callback: onPaymentSuccess,
-      onClose: onPaymentClose
-    });
-
-    handler.openIframe();
+          await supabase
+            .from("projects")
+            .update({ 
+              amount: newRemainingBalance,
+              status: targetStatus 
+            })
+            .eq("id", project.id);
+            
+          window.location.reload();
+        },
+        onCancel: function () {
+          console.log("Secure transaction channel closed by user.");
+        }
+      });
+    } catch (popupError) {
+      console.log("Falling back to absolute setup handler context structure...");
+      // Alternative ultra-safe signature pattern layout block if constructor matches different API versions
+      // @ts-ignore
+      PaystackPop.setup({
+        key: paystackKey,
+        email: userEmail,
+        amount: totalAmountKobo,
+        currency: "NGN",
+        callback: function (response: any) {
+          alert(`Payment Authenticated! Reference: ${response.reference}`);
+          window.location.reload();
+        },
+        onClose: function () {
+          console.log("Closed.");
+        }
+      }).openIframe();
+    }
   };
 
   if (loading) {
@@ -324,4 +335,4 @@ export function BillingPage() {
 
     </div>
   );
-  }
+}
