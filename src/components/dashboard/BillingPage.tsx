@@ -2,12 +2,13 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { 
   CreditCard, ShieldCheck, ArrowUpRight, Loader2, 
-  Receipt, Wallet, CheckCircle2, AlertCircle, Sparkles, Activity
+  Receipt, Wallet, CheckCircle2, AlertCircle, Sparkles, Activity, Check
 } from "lucide-react";
 
 export function BillingPage() {
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState<any[]>([]);
+  const [payments, setPayments] = useState<any[]>([]);
   const [userEmail, setUserEmail] = useState<string>("");
   const [scriptLoaded, setScriptLoaded] = useState(false);
 
@@ -33,22 +34,35 @@ export function BillingPage() {
       setScriptLoaded(true);
     }
 
-    // Fetch account project tracking data sheets from Supabase
+    // Fetch account project tracking data sheets and past payment receipts
     async function getBillingData() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       
       setUserEmail(user.email || "");
 
-      const { data, error } = await supabase
+      // 1. Fetch live projects/outstanding balances
+      const { data: projectsData, error: projectsError } = await supabase
         .from("projects")
         .select("*")
         .eq("client_email", user.email)
         .order("created_at", { ascending: false });
 
-      if (!error && data) {
-        setProjects(data);
+      if (!projectsError && projectsData) {
+        setProjects(projectsData);
       }
+
+      // 2. Fetch transaction logs for history tracking
+      const { data: paymentsData, error: paymentsError } = await supabase
+        .from("payments")
+        .select("*")
+        .eq("client_email", user.email)
+        .order("created_at", { ascending: false });
+
+      if (!paymentsError && paymentsData) {
+        setPayments(paymentsData);
+      }
+
       setLoading(false);
     }
     getBillingData();
@@ -127,7 +141,7 @@ export function BillingPage() {
           const newRemainingBalance = paymentAmount - finalAmountToChargeNaira;
           const targetStatus = newRemainingBalance <= 0 ? "Completed" : project.status;
 
-          // Directly update the row in your Supabase table instantly
+          // 1. Directly update the row in your Supabase table instantly
           await supabase
             .from("projects")
             .update({ 
@@ -135,8 +149,19 @@ export function BillingPage() {
               status: targetStatus 
             })
             .eq("id", project.id);
+
+          // 2. Log payment directly into the new historical receipts table
+          await supabase
+            .from("payments")
+            .insert({
+              project_id: project.id,
+              client_email: userEmail,
+              project_title: project.title,
+              amount_paid: finalAmountToChargeNaira,
+              reference: response.reference
+            });
             
-          // Reload the page layout frames to instantly show the updated ledger balance
+          // Reload the page layout frames to instantly show updated balance and new receipt log
           window.location.reload();
         },
         onCancel: function () {
@@ -164,6 +189,16 @@ export function BillingPage() {
               status: targetStatus 
             })
             .eq("id", project.id);
+
+          await supabase
+            .from("payments")
+            .insert({
+              project_id: project.id,
+              client_email: userEmail,
+              project_title: project.title,
+              amount_paid: finalAmountToChargeNaira,
+              reference: response.reference
+            });
 
           window.location.reload();
         },
@@ -277,7 +312,7 @@ export function BillingPage() {
       </div>
 
       {/* RE-ARCHITECTED TRANSACTION LIST SYSTEM */}
-      <div className="max-w-5xl mx-auto space-y-4">
+      <div className="max-w-5xl mx-auto space-y-4 mb-12">
         <div className="flex items-center justify-between px-1">
           <h3 className="text-[11px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
             <Receipt size={14} className="text-cyan-400" />
@@ -342,6 +377,58 @@ export function BillingPage() {
                 </div>
               );
             })}
+          </div>
+        )}
+      </div>
+
+      {/* NEW: PREMIUM RECEIPT HISTORY VIEW SECTION */}
+      <div className="max-w-5xl mx-auto space-y-4">
+        <div className="flex items-center justify-between px-1">
+          <h3 className="text-[11px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
+            <CheckCircle2 size={14} className="text-emerald-400" />
+            Payment Receipts History
+          </h3>
+          <span className="text-[10px] bg-[#0e121a] border border-zinc-800 px-2 py-0.5 rounded-md font-mono text-emerald-400">
+            {payments.length} Cleared Logs
+          </span>
+        </div>
+
+        {payments.length === 0 ? (
+          <div className="text-center py-12 border border-dashed border-zinc-900 rounded-2xl bg-zinc-950/20">
+            <Wallet className="mx-auto text-zinc-800 mb-2" size={24} />
+            <p className="text-[10px] text-zinc-600 uppercase font-bold tracking-wider">No transactional updates recorded yet.</p>
+          </div>
+        ) : (
+          <div className="bg-[#0b0f17] border border-zinc-900/80 rounded-2xl overflow-hidden shadow-sm">
+            <div className="divide-y divide-zinc-900/60">
+              {payments.map((payment) => (
+                <div 
+                  key={payment.id} 
+                  className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors duration-150 hover:bg-[#0d131f]"
+                >
+                  <div className="space-y-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1 bg-emerald-500/5 rounded-md border border-emerald-500/10 text-emerald-400 shrink-0">
+                        <Check size={10} />
+                      </div>
+                      <h4 className="text-xs font-bold text-zinc-200 truncate tracking-tight pr-2">
+                        {payment.project_title}
+                      </h4>
+                    </div>
+                    <p className="text-[9px] text-zinc-500 font-mono uppercase">
+                      TRX: {payment.reference} • {new Date(payment.created_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </p>
+                  </div>
+                  
+                  <div className="flex sm:text-right shrink-0 items-center justify-between sm:justify-end border-t sm:border-t-0 pt-1.5 sm:pt-0 border-zinc-900">
+                    <span className="text-[10px] sm:hidden font-bold tracking-wide uppercase text-zinc-500">Amount Deposited</span>
+                    <p className="text-xs font-black font-mono text-emerald-400">
+                      +₦{Number(payment.amount_paid).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
