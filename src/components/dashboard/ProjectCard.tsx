@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Edit3, Trash2, Save, XCircle, CheckCircle, Clock, Loader2, Download, 
   MessageSquare, HardDrive, Send, Plus, Smartphone, Image as ImageIcon, X 
@@ -67,11 +67,15 @@ export function ProjectCard({
   const [showGallery, setShowGallery] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   
-  // Independent self-contained states to ensure inputs type smoothly without parent constraints
+  // Independent dynamic self-handling fields to completely ensure smooth typing actions
   const [localTitle, setLocalTitle] = useState(project.title || "");
-  const [localPrice, setLocalPrice] = useState(
-    project.amount !== undefined && project.amount !== null ? project.amount : (project.price || "")
-  );
+  const [localAmount, setLocalAmount] = useState(project.amount !== undefined && project.amount !== null ? project.amount : "0");
+
+  // Synchronize field states if data properties refresh from root queries
+  useEffect(() => {
+    setLocalTitle(project.title || "");
+    setLocalAmount(project.amount !== undefined && project.amount !== null ? project.amount : "0");
+  }, [project]);
 
   const getProgress = (status: string) => {
     if (status === "Completed") return 100;
@@ -82,15 +86,14 @@ export function ProjectCard({
   const handleInlineSave = async () => {
     setIsSaving(true);
     try {
-      const numericPrice = localPrice === "" ? 0 : parseInt(localPrice.toString().replace(/[^0-9]/g, ""));
+      const parsedAmount = localAmount === "" ? 0 : parseInt(localAmount.toString().replace(/[^0-9]/g, ""));
       
-      // Update across amount and price simultaneously to eliminate synchronization discrepancies
+      // Updates exclusively write to 'amount' to avoid column mismatch cache faults
       const { error } = await supabase
         .from("projects")
         .update({
           title: localTitle,
-          price: numericPrice,
-          amount: numericPrice
+          amount: parsedAmount
         })
         .eq("id", project.id);
 
@@ -105,7 +108,7 @@ export function ProjectCard({
     }
   };
 
-  const displayPrice = project.amount !== undefined && project.amount !== null ? project.amount : (project.price || 0);
+  const displayValue = Number(project.amount) || 0;
 
   return (
     <motion.div 
@@ -113,11 +116,11 @@ export function ProjectCard({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
     >
-      {/* HEADER SECTION */}
+      {/* HEADER ROW CONFIGURATOR */}
       <div className="p-4 border-b border-border flex justify-between items-center bg-muted/10">
         <div className="flex-1 min-w-0">
           {editingId === project.id ? (
-            <div className="flex flex-col gap-1 w-full max-w-[150px]">
+            <div className="flex flex-col gap-1.5 w-full max-w-[160px]">
               <input
                 type="text"
                 autoFocus
@@ -129,9 +132,9 @@ export function ProjectCard({
               <div className="flex items-center gap-1">
                 <input
                   type="number"
-                  placeholder="Price"
-                  value={localPrice}
-                  onChange={(e) => setLocalPrice(e.target.value)}
+                  placeholder="Price Amount"
+                  value={localAmount}
+                  onChange={(e) => setLocalAmount(e.target.value)}
                   className="bg-background border border-border rounded-md px-2 py-1 text-xs focus:border-primary outline-none text-white w-full"
                 />
                 <button 
@@ -149,7 +152,7 @@ export function ProjectCard({
               <span className="font-bold text-xs text-foreground truncate">{project.title}</span>
               <span className="text-[9px] text-muted-foreground truncate">{project.client_email || "Unassigned"}</span>
               <span className="text-[10px] text-cyan-400 font-mono mt-0.5 font-bold">
-                ₦{Number(displayPrice).toLocaleString()}
+                ₦{displayValue.toLocaleString()}
               </span>
             </div>
           )}
@@ -159,7 +162,7 @@ export function ProjectCard({
         </span>
       </div>
 
-      {/* CENTER WORKSPACE */}
+      {/* PREVIEW CONTAINER STAGE */}
       <div className="flex-1 min-h-[220px] flex flex-col items-center justify-center relative overflow-hidden bg-muted/5">
         <AnimatePresence mode="wait">
           {openCommentsId === project.id ? (
@@ -228,7 +231,7 @@ export function ProjectCard({
         </AnimatePresence>
       </div>
 
-      {/* PROGRESS & REVISIONS */}
+      {/* METRICS TRACKING AND REVISIONS */}
       <div className="px-4 py-2">
         <div className="flex justify-between items-center mb-1">
           <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-tighter">Project Status</span>
@@ -243,7 +246,7 @@ export function ProjectCard({
           />
         </div>
 
-        {/* VERSION HISTORY LIST WITH ADMIN DELETE */}
+        {/* VERSION HISTORY BLOCK */}
         {versions && versions.length > 0 && (
           <div className="mt-4 border-t border-border/30 pt-3">
             <h4 className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1.5">
@@ -288,7 +291,7 @@ export function ProjectCard({
         )}
       </div>
 
-      {/* FOOTER ACTIONS */}
+      {/* FOOTER CONTROLS ROW */}
       <div className="p-4 bg-muted/5 border-t border-border">
         <div className="flex flex-col gap-3">
           
@@ -379,7 +382,7 @@ export function ProjectCard({
                   <button 
                     onClick={() => {
                       setLocalTitle(project.title || "");
-                      setLocalPrice(project.amount !== undefined && project.amount !== null ? project.amount : (project.price || ""));
+                      setLocalAmount(project.amount !== undefined && project.amount !== null ? project.amount : "0");
                       setEditingId(project.id);
                     }} 
                     className="p-1.5 rounded-lg border border-border text-yellow-500 hover:bg-yellow-500/10 transition-colors"
@@ -394,7 +397,7 @@ export function ProjectCard({
         </div>
       </div>
 
-      {/* FULL SCREEN GALLERY OVERLAY */}
+      {/* FULL GALLERY MODAL CONTAINER */}
       <AnimatePresence>
         {showGallery && (
           <motion.div 
@@ -446,4 +449,4 @@ export function ProjectCard({
       </AnimatePresence>
     </motion.div>
   );
-}
+  }
