@@ -34,7 +34,7 @@ export function BillingPage() {
       setScriptLoaded(true);
     }
 
-    // Fetch account project tracking data sheets and past payment receipts
+    // Fetch account project tracking data sheets from Supabase
     async function getBillingData() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -52,7 +52,7 @@ export function BillingPage() {
         setProjects(projectsData);
       }
 
-      // 2. Fetch transaction logs for history tracking
+      // 2. Fetch transactional history log entries from your new payments table
       const { data: paymentsData, error: paymentsError } = await supabase
         .from("payments")
         .select("*")
@@ -81,12 +81,12 @@ export function BillingPage() {
       return;
     }
 
-    // 🔴 REPLACE THIS VALUE WITH YOUR ACTUAL PUBLIC KEY FROM PAYSTACK
-    const paystackKey = "pk_live_7737ed534a3b0b40274888d55c68b1e1ae4f072b"; 
+    // 🟢 YOUR ACTUAL SECURE LIVE PUBLIC KEY PRE-CONFIGURED
+    const paystackKey = "pk_live_7737ed534a3b0b40274888d55c68b1e1ae4f072b";
 
-    // This alert will ONLY run now if someone clicks "Pay Now" with the placeholder string unchanged
-    if (paystackKey === "pk_test_YOUR_PAYSTACK_PUBLIC_KEY_HERE") {
-      alert("Configuration Notice: Replace the template string with your actual Paystack Public Key inside BillingPage.tsx to open the payment terminal.");
+    // Direct clean fallback check to make sure keys are properly assigned
+    if (!paystackKey || paystackKey.startsWith("pk_test_YOUR")) {
+      alert("Configuration Incomplete: Please grab your Live Public Key from dashboard.paystack.com and replace the placeholder value inside your code!");
       return;
     }
 
@@ -120,13 +120,12 @@ export function BillingPage() {
 
     const totalAmountKobo = finalAmountToChargeNaira * 100;
 
-    // Direct transaction callback handler logic block
+    // Shared async handler to cleanly execute database write operations
     const processDatabasePaymentUpdate = async (referenceId: string) => {
-      // Calculate the correct remaining balance cleanly in real-time
       const newRemainingBalance = paymentAmount - finalAmountToChargeNaira;
       const targetStatus = newRemainingBalance <= 0 ? "Completed" : project.status;
 
-      // 1. Directly update the row in your Supabase table instantly
+      // 1. Instantly subtract the payment from the remaining balance due
       await supabase
         .from("projects")
         .update({ 
@@ -135,7 +134,7 @@ export function BillingPage() {
         })
         .eq("id", project.id);
 
-      // 2. Log payment directly into the historical receipts table
+      // 2. Automatically record this successful receipt log into the payments table
       await supabase
         .from("payments")
         .insert({
@@ -146,7 +145,6 @@ export function BillingPage() {
           reference: referenceId
         });
         
-      // Reload the page layout frames to instantly show updated balance and new receipt log
       window.location.reload();
     };
 
@@ -173,7 +171,7 @@ export function BillingPage() {
         }
       });
     } catch (popupError) {
-      // Alternative signature layout configuration explicitly using both versions to stop console attributes errors
+      // Safe multi-signature structural arrangement block to address both version parameters smoothly
       // @ts-ignore
       PaystackPop.setup({
         key: paystackKey,
@@ -370,7 +368,7 @@ export function BillingPage() {
         )}
       </div>
 
-      {/* PREMIUM RECEIPT HISTORY VIEW SECTION */}
+      {/* HISTORICAL SUCCESSFUL RECEIPTS SYSTEM SECTION */}
       <div className="max-w-5xl mx-auto space-y-4">
         <div className="flex items-center justify-between px-1">
           <h3 className="text-[11px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
@@ -384,8 +382,8 @@ export function BillingPage() {
 
         {payments.length === 0 ? (
           <div className="text-center py-12 border border-dashed border-zinc-900 rounded-2xl bg-zinc-950/20">
-            <Wallet className="mx-auto text-zinc-800 mb-2" size={24} />
-            <p className="text-[10px] text-zinc-600 uppercase font-bold tracking-wider">No transactional updates recorded yet.</p>
+            <Wallet className="mx-auto text-zinc-700 mb-2" size={24} />
+            <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">No transactional updates recorded yet.</p>
           </div>
         ) : (
           <div className="bg-[#0b0f17] border border-zinc-900/80 rounded-2xl overflow-hidden shadow-sm">
