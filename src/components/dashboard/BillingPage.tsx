@@ -120,6 +120,36 @@ export function BillingPage() {
 
     const totalAmountKobo = finalAmountToChargeNaira * 100;
 
+    // Direct transaction callback handler logic block
+    const processDatabasePaymentUpdate = async (referenceId: string) => {
+      // Calculate the correct remaining balance cleanly in real-time
+      const newRemainingBalance = paymentAmount - finalAmountToChargeNaira;
+      const targetStatus = newRemainingBalance <= 0 ? "Completed" : project.status;
+
+      // 1. Directly update the row in your Supabase table instantly
+      await supabase
+        .from("projects")
+        .update({ 
+          amount: newRemainingBalance,
+          status: targetStatus 
+        })
+        .eq("id", project.id);
+
+      // 2. Log payment directly into the historical receipts table
+      await supabase
+        .from("payments")
+        .insert({
+          project_id: project.id,
+          client_email: userEmail,
+          project_title: project.title,
+          amount_paid: finalAmountToChargeNaira,
+          reference: referenceId
+        });
+        
+      // Reload the page layout frames to instantly show updated balance and new receipt log
+      window.location.reload();
+    };
+
     try {
       // @ts-ignore
       const paystackInstance = new PaystackPop();
@@ -134,75 +164,34 @@ export function BillingPage() {
           projectTitle: project.title,
           isPartialPayment: finalAmountToChargeNaira < paymentAmount
         },
-        onSuccess: async function (response: any) {
+        onSuccess: function (response: any) {
           alert(`Payment Authenticated! Reference ID: ${response.reference}`);
-          
-          // Calculate the correct remaining balance cleanly in real-time
-          const newRemainingBalance = paymentAmount - finalAmountToChargeNaira;
-          const targetStatus = newRemainingBalance <= 0 ? "Completed" : project.status;
-
-          // 1. Directly update the row in your Supabase table instantly
-          await supabase
-            .from("projects")
-            .update({ 
-              amount: newRemainingBalance,
-              status: targetStatus 
-            })
-            .eq("id", project.id);
-
-          // 2. Log payment directly into the new historical receipts table
-          await supabase
-            .from("payments")
-            .insert({
-              project_id: project.id,
-              client_email: userEmail,
-              project_title: project.title,
-              amount_paid: finalAmountToChargeNaira,
-              reference: response.reference
-            });
-            
-          // Reload the page layout frames to instantly show updated balance and new receipt log
-          window.location.reload();
+          processDatabasePaymentUpdate(response.reference);
         },
         onCancel: function () {
           console.log("Secure transaction channel closed by user.");
         }
       });
     } catch (popupError) {
-      // Alternative ultra-safe backup fallback handler block if constructor parameters match fallback API versions
+      // Alternative signature layout configuration explicitly using both versions to stop console attributes errors
       // @ts-ignore
       PaystackPop.setup({
         key: paystackKey,
         email: userEmail,
         amount: totalAmountKobo,
         currency: "NGN",
-        callback: async function (response: any) {
+        callback: function (response: any) {
           alert(`Payment Authenticated! Reference: ${response.reference}`);
-          
-          const newRemainingBalance = paymentAmount - finalAmountToChargeNaira;
-          const targetStatus = newRemainingBalance <= 0 ? "Completed" : project.status;
-          
-          await supabase
-            .from("projects")
-            .update({ 
-              amount: newRemainingBalance, 
-              status: targetStatus 
-            })
-            .eq("id", project.id);
-
-          await supabase
-            .from("payments")
-            .insert({
-              project_id: project.id,
-              client_email: userEmail,
-              project_title: project.title,
-              amount_paid: finalAmountToChargeNaira,
-              reference: response.reference
-            });
-
-          window.location.reload();
+          processDatabasePaymentUpdate(response.reference);
+        },
+        onSuccess: function (response: any) {
+          alert(`Payment Authenticated! Reference: ${response.reference}`);
+          processDatabasePaymentUpdate(response.reference);
         },
         onClose: function () {
+          console.log("Closed.");
+        },
+        onCancel: function () {
           console.log("Closed.");
         }
       }).openIframe();
@@ -381,7 +370,7 @@ export function BillingPage() {
         )}
       </div>
 
-      {/* NEW: PREMIUM RECEIPT HISTORY VIEW SECTION */}
+      {/* PREMIUM RECEIPT HISTORY VIEW SECTION */}
       <div className="max-w-5xl mx-auto space-y-4">
         <div className="flex items-center justify-between px-1">
           <h3 className="text-[11px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-2">
