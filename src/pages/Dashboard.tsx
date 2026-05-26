@@ -8,9 +8,6 @@ import {
   MessageSquare, Send, ClipboardList, Award, BarChart3, CreditCard
 } from "lucide-react";
 
-// Storage Utility Import
-import { uploadToGitHubStorage } from "@/utils/uploader";
-
 // Component Imports
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import AccountSettings from "@/components/dashboard/AccountSettings";
@@ -340,49 +337,81 @@ export default function Dashboard() {
     }
   };
 
+  // Completely migrated to direct Native Supabase Storage Bucket ("project-files")
   const handleFileUpload = async (id: string, file: File) => {
     if (!isAdmin) return;
     const versionName = prompt("Enter a name for this version (e.g., Draft 1, Final):") || "New Version";
     try {
       setLoading(true);
-      const directCdnUrl = await uploadToGitHubStorage(file, 'deliverables');
+      
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${id}/${Date.now()}_version.${fileExt}`;
+      
+      // Upload raw file object straight into the project-files bucket destination path
+      const { error: uploadError } = await supabase.storage
+        .from("project-files")
+        .upload(fileName, file, { cacheControl: '3600', upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Extract the publicly accessible direct URL link from the bucket
+      const { data: { publicUrl } } = supabase.storage
+        .from("project-files")
+        .getPublicUrl(fileName);
+
       const { error: versionError } = await supabase.from("project_versions").insert([{
         project_id: id,
-        file_url: directCdnUrl,
+        file_url: publicUrl,
         version_name: versionName
       }]);
       if (versionError) throw versionError;
 
       const { error: dbError } = await supabase.from("projects").update({ 
         status: "Completed",
-        file_url: directCdnUrl 
+        file_url: publicUrl 
       }).eq("id", id);
       if (dbError) throw dbError;
       
       fetchProjects(user, isAdmin);
-      alert("Deliverable file successfully committed to GitHub Storage array!");
+      alert("Deliverable file successfully uploaded to Supabase Storage Bucket!");
     } catch (err: any) {
       console.error("Upload failed:", err.message);
-      alert("Error uploading file to storage array: " + err.message);
+      alert("Error uploading file to storage bucket: " + err.message);
     } finally {
       setLoading(false);
     }
   };
 
+  // Completely migrated to direct Native Supabase Storage Bucket ("project-files") Multi-upload
   const handleMockupUpload = async (id: string, files: FileList) => {
     if (!isAdmin) return;
     try {
       setLoading(true);
-      const uploadPromises = Array.from(files).map(async (file) => {
-        const directCdnUrl = await uploadToGitHubStorage(file, 'products');
+      
+      const uploadPromises = Array.from(files).map(async (file, index) => {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${id}/mockup_${Date.now()}_${index}.${fileExt}`;
+        
+        // Upload individual mockup file into project-files bucket path
+        const { error: uploadError } = await supabase.storage
+          .from("project-files")
+          .upload(fileName, file, { cacheControl: '3600', upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from("project-files")
+          .getPublicUrl(fileName);
+
         return supabase.from("project_mockups").insert([{
           project_id: id,
-          file_url: directCdnUrl
+          file_url: publicUrl
         }]);
       });
+
       await Promise.all(uploadPromises);
       fetchMockups(id);
-      alert(`${files.length} mockups uploaded successfully to GitHub storage!`);
+      alert(`${files.length} mockups uploaded successfully to Supabase Storage Bucket!`);
     } catch (err: any) {
       alert("Upload failed: " + err.message);
     } finally {
@@ -495,7 +524,7 @@ export default function Dashboard() {
                 />
 
                 {!isAdmin && (
-                 <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <button
                       onClick={() => setActiveOverlay('questionnaire')}
                       className="flex items-center justify-center gap-2 p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-xl hover:bg-cyan-500/20 transition-all text-cyan-400 font-bold text-sm"
