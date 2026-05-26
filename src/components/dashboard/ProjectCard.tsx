@@ -46,7 +46,6 @@ export function ProjectCard({
   updateStatus,
   assignUser,
   handleDelete,
-  handleFileUpload,
   toggleComments,
   openCommentsId,
   comments,
@@ -60,17 +59,18 @@ export function ProjectCard({
   downloadFile,
   statusColors,
   mockups = [], 
-  handleMockupUpload,
   handleDeleteVersion
 }: ProjectCardProps) {
 
   const [showGallery, setShowGallery] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingVersion, setIsUploadingVersion] = useState(false);
+  const [isUploadingMockup, setIsUploadingMockup] = useState(false);
   
   // Independent dynamic self-handling fields to completely ensure smooth typing actions
   const [localTitle, setLocalTitle] = useState(project.title || "");
   const [localAmount, setLocalAmount] = useState(project.amount !== undefined && project.amount !== null ? project.amount : "0");
-
+  
   // Synchronize field states if data properties refresh from root queries
   useEffect(() => {
     setLocalTitle(project.title || "");
@@ -87,7 +87,6 @@ export function ProjectCard({
     setIsSaving(true);
     try {
       const parsedAmount = localAmount === "" ? 0 : parseInt(localAmount.toString().replace(/[^0-9]/g, ""));
-      
       // Updates exclusively write to 'amount' to avoid column mismatch cache faults
       const { error } = await supabase
         .from("projects")
@@ -105,6 +104,95 @@ export function ProjectCard({
       alert("Error saving properties: " + err.message);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // Direct Supabase storage bucket processing path for New Design Versions
+  const handleSupabaseVersionUpload = async (file: File) => {
+    if (!file) return;
+    setIsUploadingVersion(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${project.id}/${Date.now()}_version.${fileExt}`;
+      
+      // Push file straight to your project-files bucket destination
+      const { error: uploadError } = await supabase.storage
+        .from("project-files")
+        .upload(fileName, file, { cacheControl: '3600', upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Extract public URL asset pathway from the bucket directly
+      const { data: { publicUrl } } = supabase.storage
+        .from("project-files")
+        .getPublicUrl(fileName);
+
+      // Create tracking instance reference inside project_versions database table
+      const { error: versionError } = await supabase
+        .from("project_versions")
+        .insert({
+          project_id: project.id,
+          version_name: `Revision v${(versions?.length || 0) + 1}`,
+          file_url: publicUrl
+        });
+
+      if (versionError) throw versionError;
+
+      // Automatically assign the newly added item to the project's primary preview column
+      const { error: projectUpdateError } = await supabase
+        .from("projects")
+        .update({ file_url: publicUrl })
+        .eq("id", project.id);
+
+      if (projectUpdateError) throw projectUpdateError;
+
+      alert("Design asset version saved safely into your storage bucket!");
+      window.location.reload();
+    } catch (err: any) {
+      alert("Version storage upload configuration error: " + err.message);
+    } finally {
+      setIsUploadingVersion(false);
+    }
+  };
+
+  // Direct Supabase storage bucket multi-upload processing path for Premium Presentation Mockups
+  const handleSupabaseMockupUpload = async (files: FileList) => {
+    if (!files || files.length === 0) return;
+    setIsUploadingMockup(true);
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${project.id}/mockup_${Date.now()}_${i}.${fileExt}`;
+
+        // Upload loop for multiple files directly targeting the bucket partition path
+        const { error: uploadError } = await supabase.storage
+          .from("project-files")
+          .upload(fileName, file, { cacheControl: '3600', upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from("project-files")
+          .getPublicUrl(fileName);
+
+        // Store public reference path directly within the project_mockups relation records
+        const { error: mockupError } = await supabase
+          .from("project_mockups")
+          .insert({
+            project_id: project.id,
+            file_url: publicUrl
+          });
+
+        if (mockupError) throw mockupError;
+      }
+
+      alert("Premium presentation mockups successfully saved to your storage bucket!");
+      window.location.reload();
+    } catch (err: any) {
+      alert("Mockup storage handling configuration failure: " + err.message);
+    } finally {
+      setIsUploadingMockup(false);
     }
   };
 
@@ -305,15 +393,22 @@ export function ProjectCard({
               </button>
             ) : isAdmin && (
               <label className="w-full h-8 flex items-center justify-center gap-2 rounded-xl border border-dashed border-cyan-500/30 text-cyan-500/60 hover:text-cyan-500 text-[9px] cursor-pointer">
-                <ImageIcon size={12} /> Upload Mockups
+                {isUploadingMockup ? (
+                  <Loader2 size={12} className="animate-spin text-cyan-400" />
+                ) : (
+                  <>
+                    <ImageIcon size={12} /> Upload Mockups
+                  </>
+                )}
                 <input 
                   type="file" 
                   className="hidden" 
                   accept="image/*" 
                   multiple 
+                  disabled={isUploadingMockup}
                   onChange={(e) => {
                     if (e.target.files && e.target.files.length > 0) {
-                      handleMockupUpload(project.id, e.target.files);
+                      handleSupabaseMockupUpload(e.target.files);
                     }
                   }} 
                 />
@@ -340,8 +435,20 @@ export function ProjectCard({
 
           {isAdmin && (
             <label className="w-full h-8 flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border/60 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer text-[10px] font-bold text-muted-foreground hover:text-primary">
-              <Plus size={14} /> Upload New Version
-              <input type="file" className="hidden" accept="image/*,application/pdf" onChange={(e) => e.target.files && handleFileUpload(project.id, e.target.files[0])} />
+              {isUploadingVersion ? (
+                <Loader2 size={14} className="animate-spin text-primary" />
+              ) : (
+                <>
+                  <Plus size={14} /> Upload New Version
+                </>
+              )}
+              <input 
+                type="file" 
+                className="hidden" 
+                accept="image/*,application/pdf" 
+                disabled={isUploadingVersion}
+                onChange={(e) => e.target.files && handleSupabaseVersionUpload(e.target.files[0])} 
+              />
             </label>
           )}
 
@@ -416,6 +523,7 @@ export function ProjectCard({
                     src={m.file_url} 
                     className="w-full h-auto rounded-3xl shadow-2xl border border-white/5" 
                     alt={`Mockup ${index + 1}`} 
+                    onContextMenu={(e) => e.preventDefault()}
                   />
                   <div className="absolute bottom-4 right-4 flex gap-2">
                     {isAdmin && (
