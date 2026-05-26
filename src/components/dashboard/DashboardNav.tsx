@@ -42,7 +42,8 @@ export function DashboardNav({ activeSection, setActiveSection, isAdmin }: Dashb
     { id: "projects", label: "Project Core", icon: Briefcase, desc: "Active workspace matrices" },
     { id: "chat", label: "Chat Room", icon: MessageSquare, desc: "Message and send direct feedback" },
     { id: "payments", label: "Payments", icon: CreditCard, desc: "Transactions & premium invoices" },
-    { id: "billing", label: "Account Settings", icon: Settings, desc: "Update your profile and business info" },
+    // 🟢 FIXED ID FROM "billing" TO "settings" TO PREVENT CROSS-ROUTING ERROR
+    { id: "settings", label: "Account Settings", icon: Settings, desc: "Update your profile and business info" },
   ];
 
   return (
@@ -137,7 +138,7 @@ export function DashboardNav({ activeSection, setActiveSection, isAdmin }: Dashb
                     </div>
                   </div>
 
-                  {/* MODERNIZE HIGH-END INTERACTIVE LINK GRID */}
+                  {/* HIGH-END INTERACTIVE LINK GRID */}
                   <div className="space-y-2.5">
                     {navigationItems.map((item) => {
                       const IconComponent = item.icon;
