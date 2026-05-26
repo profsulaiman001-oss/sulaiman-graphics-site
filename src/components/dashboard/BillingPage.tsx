@@ -91,7 +91,6 @@ export function BillingPage() {
     }
 
     const paymentAmount = Number(project.amount) || 0;
-
     if (paymentAmount <= 0) {
       alert("This project ledger does not have any outstanding balance due.");
       return;
@@ -144,14 +143,13 @@ export function BillingPage() {
           amount_paid: finalAmountToChargeNaira,
           reference: referenceId
         });
-        
+
       window.location.reload();
     };
 
     try {
       // @ts-ignore
       const paystackInstance = new PaystackPop();
-      
       paystackInstance.new({
         key: paystackKey,
         email: userEmail,
