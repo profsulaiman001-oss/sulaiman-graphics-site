@@ -49,7 +49,6 @@ export default function Chat() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Fixes the page sliding down to the footer by locking the scroll inside the chat window container
   const scrollToBottom = () => {
     if (messagesContainerRef.current) {
       messagesContainerRef.current.scrollTo({
@@ -308,7 +307,6 @@ export default function Chat() {
     }
   };
 
-  // Voice Note Recorder Controls
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -459,7 +457,8 @@ export default function Chat() {
         </div>
       )}
 
-      <div className="flex-grow flex h-full min-h-0 w-full max-w-[1600px] mx-auto p-4 md:p-6 pb-2 md:pb-2 gap-6 relative overflow-hidden">
+      {/* Main layout wrapper matching full layout properties seamlessly */}
+      <div className="flex-grow flex h-full min-h-0 w-full mx-auto p-2 sm:p-4 md:p-6 gap-4 md:gap-6 relative overflow-hidden">
         
         {isAdmin && (
           <div className={`${mobileSidebarOpen ? 'flex' : 'hidden md:flex'} absolute inset-y-0 left-0 z-[45] md:relative w-full sm:w-80 md:w-1/4 flex-col bg-[#11141A] border border-gray-800 rounded-3xl overflow-hidden shadow-2xl`}>
@@ -541,7 +540,8 @@ export default function Chat() {
           </div>
         )}
 
-        <div className="flex-grow flex-[1] min-w-0 flex flex-col bg-[#11141A]/60 backdrop-blur-xl border border-gray-800 rounded-3xl overflow-hidden h-full shadow-2xl">
+        {/* Chat window stretches edge-to-edge automatically using w-full */}
+        <div className="flex-grow w-full flex flex-col bg-[#11141A]/60 backdrop-blur-xl border border-gray-800 rounded-3xl overflow-hidden h-full shadow-2xl">
           
           <div className="flex-shrink-0 p-5 border-b border-gray-800 flex justify-between items-center bg-[#11141A]/80 z-10">
             <div className="flex items-center gap-3 min-w-0">
