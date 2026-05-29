@@ -45,10 +45,18 @@ export default function Chat() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
+  // DOM Refs for strict containment scrolling
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Fixes the page sliding down to the footer by locking the scroll inside the chat window container
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
   };
 
   useEffect(() => {
@@ -294,7 +302,7 @@ export default function Chat() {
     } catch (error) {
       console.error("Upload error:", error);
       alert("Failed to upload file to storage. Please try again.");
-    } finally {
+    } friend {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
@@ -572,7 +580,11 @@ export default function Chat() {
             </div>
           </div>
 
-          <div className="flex-grow overflow-y-auto min-h-0 p-4 md:p-6 space-y-6 scroll-smooth custom-scrollbar bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')]">
+          {/* Assigned messagesContainerRef here to isolate the viewport scrolling inside this component block */}
+          <div 
+            ref={messagesContainerRef}
+            className="flex-grow overflow-y-auto min-h-0 p-4 md:p-6 space-y-6 scroll-smooth custom-scrollbar bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')]"
+          >
             {chatMessages?.map((msg: any) => {
               const isMe = msg.sender_email === guestEmail;
               const formattedTime = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -658,7 +670,6 @@ export default function Chat() {
                         <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{msg.message}</p>
                       )}
 
-                      {/* Hover Trigger Block option for deleting a message */}
                       <div className={`absolute top-1/2 -translate-y-1/2 ${isMe ? '-left-12' : '-right-12'} opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20`}>
                         {(isMe || isAdmin) && (
                           <button
