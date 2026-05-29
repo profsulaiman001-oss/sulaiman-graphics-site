@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Edit3, Trash2, Save, XCircle, LogOut, CheckCircle, 
   Clock, Loader2, Plus, HardDrive, Download, Settings, X, 
-  MessageSquare, Send, ClipboardList, Award, BarChart3, CreditCard
+  MessageSquare, Send, ClipboardList, Award, BarChart3, CreditCard, Home
 } from "lucide-react";
 
 // Component Imports
@@ -23,22 +23,18 @@ import { CertificateGenerator } from "./components/certificates/CertificateGener
 
 // Client Account Setup View Component Import
 import { ClientAccountSettings } from "@/components/dashboard/ClientAccountSettings";
-
 // Premium Payments View Import
 import { BillingPage } from "@/components/dashboard/BillingPage";
 
 // Premium Chat Application Page Route Import
 import ChatPage from "@/pages/Chat.tsx";
-
 // Page Imports for Client Buttons
 import Questionnaire from "@/pages/Questionnaire";
 import Agreement from "@/pages/Agreement";
-
 // Fixed imports for Admin usage
 import Receipt from "./Receipt";
 import Invoice from "./Invoice";
 import ViewQuestionnaires from "./ViewQuestionnaires";
-
 // Realtime Native Home Screen Push Notification Engine Import
 import { NotificationEngine } from "@/components/dashboard/NotificationEngine";
 
@@ -75,7 +71,6 @@ export default function Dashboard() {
   const [isCertOpen, setIsCertOpen] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
   const [activeOverlay, setActiveOverlay] = useState<string | null>(null);
-
   // Notification UI States
   const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
   const notificationRef = React.useRef<HTMLDivElement>(null);
@@ -299,7 +294,6 @@ export default function Dashboard() {
   };
 
   const startEdit = (project: any) => { if(isAdmin) { setEditingId(project.id); setEditTitle(project.title); } };
-  
   const saveEdit = async () => {
     if (!editingId || !isAdmin) return;
     const { error } = await supabase.from("projects").update({ title: editTitle }).eq("id", editingId);
@@ -337,28 +331,21 @@ export default function Dashboard() {
     }
   };
 
-  // Completely migrated to direct Native Supabase Storage Bucket ("project-files")
   const handleFileUpload = async (id: string, file: File) => {
     if (!isAdmin) return;
     const versionName = prompt("Enter a name for this version (e.g., Draft 1, Final):") || "New Version";
     try {
       setLoading(true);
-      
       const fileExt = file.name.split('.').pop();
       const fileName = `${id}/${Date.now()}_version.${fileExt}`;
-      
-      // Upload raw file object straight into the project-files bucket destination path
       const { error: uploadError } = await supabase.storage
         .from("project-files")
         .upload(fileName, file, { cacheControl: '3600', upsert: true });
-
       if (uploadError) throw uploadError;
 
-      // Extract the publicly accessible direct URL link from the bucket
       const { data: { publicUrl } } = supabase.storage
         .from("project-files")
         .getPublicUrl(fileName);
-
       const { error: versionError } = await supabase.from("project_versions").insert([{
         project_id: id,
         file_url: publicUrl,
@@ -382,17 +369,14 @@ export default function Dashboard() {
     }
   };
 
-  // Completely migrated to direct Native Supabase Storage Bucket ("project-files") Multi-upload
   const handleMockupUpload = async (id: string, files: FileList) => {
     if (!isAdmin) return;
     try {
       setLoading(true);
-      
       const uploadPromises = Array.from(files).map(async (file, index) => {
         const fileExt = file.name.split('.').pop();
         const fileName = `${id}/mockup_${Date.now()}_${index}.${fileExt}`;
         
-        // Upload individual mockup file into project-files bucket path
         const { error: uploadError } = await supabase.storage
           .from("project-files")
           .upload(fileName, file, { cacheControl: '3600', upsert: true });
@@ -408,7 +392,6 @@ export default function Dashboard() {
           file_url: publicUrl
         }]);
       });
-
       await Promise.all(uploadPromises);
       fetchMockups(id);
       alert(`${files.length} mockups uploaded successfully to Supabase Storage Bucket!`);
@@ -469,13 +452,14 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col relative w-full overflow-x-hidden">
+    /* CRITICAL FLEX WRAPPER TO LOCK VIEWPORT HEIGHT FOR STATIC APP LAYOUT */
+    <div className="h-[100dvh] bg-background text-foreground flex flex-col relative w-full overflow-hidden">
       
       {/* SILENT REALTIME NATIVE HOME SCREEN PUSH NOTIFICATION ENGINE INITIALIZATION */}
       <NotificationEngine userId={user?.id} userEmail={user?.email} />
 
-      {/* PINNED HEADER FRAME TO STOP SCROLL GAP DISAPPEARANCE */}
-      <div className="fixed top-0 left-0 right-0 z-[50] bg-background border-b border-border shadow-sm">
+      {/* FIXED STATIC HEADER */}
+      <header className="flex-shrink-0 bg-background border-b border-border shadow-sm z-[50]">
         <DashboardHeader 
           userEmail={user?.email || "User"}
           notificationsCount={notifications.length}
@@ -491,156 +475,196 @@ export default function Dashboard() {
           setActiveSection={setActiveSection}
           isAdmin={isAdmin}
         />
-      </div>
+      </header>
 
-      {/* Main content wrapper WITH TOP OFFSET FOR PINNED TRACK */}
-      <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl w-full pt-[110px]">
-        {showWelcome && <WelcomeNameModal onClose={() => setShowWelcome(false)} userName={isAdmin ? "Sulaiman" : "Client"} />}
-  
-        {isSettingsOpen && <AccountSettings onClose={() => setIsSettingsOpen(false)} userEmail={user?.email} />}
+      {/* ISOLATED SCROLL CONTEXT FOR MAIN VIEWPORTS */}
+      <main className="flex-1 overflow-y-auto w-full px-4 py-6 custom-scrollbar">
+        <div className="container mx-auto max-w-7xl w-full">
+          {showWelcome && <WelcomeNameModal onClose={() => setShowWelcome(false)} userName={isAdmin ? "Sulaiman" : "Client"} />}
+          {isSettingsOpen && <AccountSettings onClose={() => setIsSettingsOpen(false)} userEmail={user?.email} />}
 
-        {/* SECTION ONE: PROJECTS HUD */}
-        {activeSection === "projects" && (
-          <div className="pb-12">
-            <div className="mb-8">
-               <AnalyticsDashboard stats={stats} COLORS={COLORS} />
-            </div>
+          {/* SECTION ONE: PROJECTS HUD */}
+          {activeSection === "projects" && (
+            <div className="pb-10">
+              <div className="mb-6">
+                 <AnalyticsDashboard stats={stats} COLORS={COLORS} />
+              </div>
 
-            <div className="grid gap-6 md:grid-cols-3">
-              <div className="md:col-span-2 space-y-6">
-                <ProjectManagement 
-                  searchQuery={searchQuery}
-                  setSearchQuery={setSearchQuery}
-                  statusFilter={statusFilter}
-                  setStatusFilter={setStatusFilter}
-                  newTitle={newTitle}
-                  setNewTitle={setNewTitle}
-                  newClient={newClient}
-                  setNewClient={setNewClient}
-                  newAmount={newAmount}
-                  setNewAmount={setNewAmount}
-                  handleCreateProject={handleCreateProject}
-                  isAdmin={isAdmin} 
-                />
+              <div className="grid gap-6 md:grid-cols-3">
+                <div className="md:col-span-2 space-y-6">
+                  <ProjectManagement 
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    statusFilter={statusFilter}
+                    setStatusFilter={setStatusFilter}
+                    newTitle={newTitle}
+                    setNewTitle={setNewTitle}
+                    newClient={newClient}
+                    setNewClient={setNewClient}
+                    newAmount={newAmount}
+                    setNewAmount={setNewAmount}
+                    handleCreateProject={handleCreateProject}
+                    isAdmin={isAdmin} 
+                  />
 
-                {!isAdmin && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <button
-                      onClick={() => setActiveOverlay('questionnaire')}
-                      className="flex items-center justify-center gap-2 p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-xl hover:bg-cyan-500/20 transition-all text-cyan-400 font-bold text-sm"
-                    >
-                      <ClipboardList size={18} />
-                      Fill Questionnaire
-                    </button>
-                    <button
-                      onClick={() => setActiveOverlay('agreement')}
-                      className="flex items-center justify-center gap-2 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl hover:bg-blue-500/20 transition-all text-blue-400 font-bold text-sm"
-                    >
-                      <Award size={18} />
-                      Sign Agreement
-                    </button>
-                  </div>
-                )}
+                  {!isAdmin && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <button
+                        onClick={() => setActiveOverlay('questionnaire')}
+                        className="flex items-center justify-center gap-2 p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-xl hover:bg-cyan-500/20 transition-all text-cyan-400 font-bold text-sm"
+                      >
+                        <ClipboardList size={18} />
+                        Fill Questionnaire
+                      </button>
+                      <button
+                        onClick={() => setActiveOverlay('agreement')}
+                        className="flex items-center justify-center gap-2 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl hover:bg-blue-500/20 transition-all text-blue-400 font-bold text-sm"
+                      >
+                        <Award size={18} />
+                        Sign Agreement
+                      </button>
+                    </div>
+                  )}
+
+                  {isAdmin && (
+                    <OnboardClient 
+                      inviteEmail={inviteEmail}
+                      setInviteEmail={setInviteEmail}
+                      handleInviteClient={handleInviteClient}
+                      loading={inviteLoading}
+                    />
+                  )}
+                </div>
 
                 {isAdmin && (
-                  <OnboardClient 
-                    inviteEmail={inviteEmail}
-                    setInviteEmail={setInviteEmail}
-                    handleInviteClient={handleInviteClient}
-                    loading={inviteLoading}
-                  />
+                  <div>
+                    <div className="bg-card/30 border border-border/50 p-4 rounded-2xl">
+                      <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Quick Actions</h2>
+                      <AdminNav 
+                        setLocation={setLocation} 
+                        setIsCertOpen={setIsCertOpen} 
+                        setActiveOverlay={setActiveOverlay} 
+                      />
+                    </div>
+                  </div>
                 )}
               </div>
 
-              {isAdmin && (
-                <div>
-                  <div className="bg-card/30 border border-border/50 p-4 rounded-2xl">
-                    <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Quick Actions</h2>
-                    <AdminNav 
-                      setLocation={setLocation} 
-                      setIsCertOpen={setIsCertOpen} 
-                      setActiveOverlay={setActiveOverlay} 
-                    />
+              <div className="mt-10 w-full">
+                <h2 className="text-xl font-bold tracking-tight mb-6">
+                  {isAdmin ? "Project Status Workspace" : "Your Active Projects"}
+                </h2>
+                {filteredProjects.length === 0 ? (
+                  <div className="text-center py-16 border border-dashed border-border rounded-2xl bg-card/40">
+                    <ClipboardList className="mx-auto text-muted-foreground mb-4" size={32} />
+                    <h3 className="text-sm font-bold text-foreground">No Projects Found</h3>
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 justify-center items-stretch w-full">
+                    {filteredProjects.map((project: any) => (
+                      <div key={project.id} className="w-full flex flex-col">
+                        <ProjectCard 
+                          project={project}
+                          isAdmin={isAdmin}
+                          editingId={editingId}
+                          editTitle={editTitle}
+                          setEditTitle={setEditTitle}
+                          startEdit={startEdit}
+                          saveEdit={saveEdit}
+                          setEditingId={setEditingId}
+                          updateStatus={updateStatus}
+                          assignUser={assignUser}
+                          handleDelete={handleDelete}
+                          handleFileUpload={handleFileUpload}
+                          toggleComments={toggleComments}
+                          openCommentsId={openCommentsId}
+                          comments={commentsMap[project.id] || []}
+                          versions={versionsMap[project.id] || []}
+                          mockups={mockupsMap[project.id] || []}
+                          handleMockupUpload={handleMockupUpload}
+                          handleDeleteVersion={handleDeleteVersion}
+                          newComment={newComment}
+                          setNewComment={setNewComment}
+                          sendingComment={sendingComment}
+                          sendComment={sendComment}
+                          unreadCounts={unreadCounts}
+                          clientEmails={clientEmails}
+                          downloadFile={downloadFile}
+                          statusColors={statusColors}
+                          refreshWorkspace={() => fetchProjects(user, isAdmin)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
+          )}
 
-            <div className="mt-12 w-full">
-              <h2 className="text-xl font-bold tracking-tight mb-6">
-                {isAdmin ? "Project Status Workspace" : "Your Active Projects"}
-              </h2>
-              {filteredProjects.length === 0 ? (
-                <div className="text-center py-16 border border-dashed border-border rounded-2xl bg-card/40">
-                  <ClipboardList className="mx-auto text-muted-foreground mb-4" size={32} />
-                  <h3 className="text-sm font-bold text-foreground">No Projects Found</h3>
-                </div>
-              ) : (
-                <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 justify-center items-stretch w-full">
-                  {filteredProjects.map((project: any) => (
-                    <div key={project.id} className="w-full flex flex-col">
-                      <ProjectCard 
-                        project={project}
-                        isAdmin={isAdmin}
-                        editingId={editingId}
-                        editTitle={editTitle}
-                        setEditTitle={setEditTitle}
-                        startEdit={startEdit}
-                        saveEdit={saveEdit}
-                        setEditingId={setEditingId}
-                        updateStatus={updateStatus}
-                        assignUser={assignUser}
-                        handleDelete={handleDelete}
-                        handleFileUpload={handleFileUpload}
-                        toggleComments={toggleComments}
-                        openCommentsId={openCommentsId}
-                        comments={commentsMap[project.id] || []}
-                        versions={versionsMap[project.id] || []}
-                        mockups={mockupsMap[project.id] || []}
-                        handleMockupUpload={handleMockupUpload}
-                        handleDeleteVersion={handleDeleteVersion}
-                        newComment={newComment}
-                        setNewComment={setNewComment}
-                        sendingComment={sendingComment}
-                        sendComment={sendComment}
-                        unreadCounts={unreadCounts}
-                        clientEmails={clientEmails}
-                        downloadFile={downloadFile}
-                        statusColors={statusColors}
-                        refreshWorkspace={() => fetchProjects(user, isAdmin)}
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* SECTION TWO: PREMIUM LIVE CUSTOM CHAT PAGE COMPONENT */}
-        {activeSection === "chat" && (
-          <div className="w-full pb-12 animate-fadeIn">
-            <div className="w-full min-h-[70vh] bg-card/10 border border-border/50 rounded-2xl overflow-hidden p-2">
+          {/* SECTION TWO: PREMIUM LIVE CHAT PAGE */}
+          {activeSection === "chat" && (
+            <div className="w-full h-[calc(100dvh-150px)] animate-fadeIn">
               <ChatPage />
             </div>
-          </div>
-        )}
+          )}
 
-        {/* SECTION THREE: PREMIUM ISOLATED INVOICING & SETTLEMENT HUB */}
-        {(activeSection === "billing" || activeSection === "payments") && (
-          <div className="w-full pb-12 animate-fadeIn">
-            <BillingPage />
-          </div>
-        )}
+          {/* SECTION THREE: INVOICING & SETTLEMENT HUB */}
+          {(activeSection === "billing" || activeSection === "payments") && (
+            <div className="w-full pb-6 animate-fadeIn">
+              <BillingPage />
+            </div>
+          )}
 
-        {/* 🟢 NEW SECTION FOUR: SAFELY CONNECTING THE DRAWER ACCOUNT SETTINGS PAGE LOGIC */}
-        {activeSection === "settings" && (
-          <div className="w-full pb-12 animate-fadeIn">
-            <ClientAccountSettings userEmail={user?.email} />
-          </div>
-        )}
+          {/* SECTION FOUR: SETTINGS PAGE LOGIC */}
+          {activeSection === "settings" && (
+            <div className="w-full pb-6 animate-fadeIn">
+              <ClientAccountSettings userEmail={user?.email} />
+            </div>
+          )}
+        </div>
       </main>
 
+      {/* WHATSAPP-STYLE FIXED STATIC BOTTOM NAVIGATION BAR */}
+      <nav className="flex-shrink-0 bg-background/95 backdrop-blur-md border-t border-border h-[68px] w-full z-[50] flex items-center justify-around px-4 md:px-12 safe-bottom">
+        <button 
+          onClick={() => setActiveSection("projects")} 
+          className={`flex flex-col items-center justify-center flex-1 py-1 transition-all ${activeSection === "projects" ? "text-cyan-400 scale-105 font-medium" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          <Home size={20} className={activeSection === "projects" ? "stroke-[2.5px]" : "stroke-[2px]"} />
+          <span className="text-[10px] mt-1 tracking-wide">Workspace</span>
+        </button>
+
+        <button 
+          onClick={() => setActiveSection("chat")} 
+          className={`flex flex-col items-center justify-center flex-1 py-1 transition-all relative ${activeSection === "chat" ? "text-cyan-400 scale-105 font-medium" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          <MessageSquare size={20} className={activeSection === "chat" ? "stroke-[2.5px]" : "stroke-[2px]"} />
+          <span className="text-[10px] mt-1 tracking-wide">Messages</span>
+          {notifications.length > 0 && (
+            <span className="absolute top-0.5 right-6 w-4 h-4 bg-red-500 text-[9px] font-bold text-white rounded-full flex items-center justify-center animate-pulse">
+              {notifications.length}
+            </span>
+          )}
+        </button>
+
+        <button 
+          onClick={() => setActiveSection("billing")} 
+          className={`flex flex-col items-center justify-center flex-1 py-1 transition-all ${activeSection === "billing" || activeSection === "payments" ? "text-cyan-400 scale-105 font-medium" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          <CreditCard size={20} className={activeSection === "billing" || activeSection === "payments" ? "stroke-[2.5px]" : "stroke-[2px]"} />
+          <span className="text-[10px] mt-1 tracking-wide">Payments</span>
+        </button>
+
+        <button 
+          onClick={() => setActiveSection("settings")} 
+          className={`flex flex-col items-center justify-center flex-1 py-1 transition-all ${activeSection === "settings" ? "text-cyan-400 scale-105 font-medium" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          <Settings size={20} className={activeSection === "settings" ? "stroke-[2.5px]" : "stroke-[2px]"} />
+          <span className="text-[10px] mt-1 tracking-wide">Settings</span>
+        </button>
+      </nav>
+
+      {/* OVERLAY SYSTEM */}
       <AnimatePresence>
         {activeOverlay && (
           <motion.div 
@@ -677,12 +701,6 @@ export default function Dashboard() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      <footer className="border-t border-border py-6 mt-auto pb-12 md:pb-6">
-        <div className="container mx-auto px-4 text-center text-xs text-muted-foreground">
-          © {new Date().getFullYear()} Sulaiman Graphics. All rights reserved.
-        </div>
-      </footer>
       
       {isCertOpen && <CertificateGenerator onClose={() => setIsCertOpen(false)} />}
     </div>
