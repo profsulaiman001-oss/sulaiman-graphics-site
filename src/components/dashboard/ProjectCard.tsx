@@ -33,25 +33,19 @@ interface ProjectCardProps {
   clientEmails: string[];
   downloadFile: (url: string, filename: string) => void;
   statusColors: { [key: string]: string };
-  mockups?: any[];
-  handleMockupUpload?: (id: string, files: FileList) => void;
-  handleDeleteVersion?: (id: string) => void;
-  refreshWorkspace?: () => void;
+  mockups: any[];
+  handleMockupUpload: (id: string, files: FileList) => void;
+  handleDeleteVersion: (versionId: string) => void;
 }
 
 export function ProjectCard({
   project,
   isAdmin,
   editingId,
-  editTitle,
-  setEditTitle,
-  startEdit,
-  saveEdit,
   setEditingId,
   updateStatus,
   assignUser,
   handleDelete,
-  handleFileUpload,
   toggleComments,
   openCommentsId,
   comments,
@@ -64,345 +58,472 @@ export function ProjectCard({
   clientEmails,
   downloadFile,
   statusColors,
-  mockups = [],
-  handleMockupUpload,
-  handleDeleteVersion,
-  refreshWorkspace
+  mockups = [], 
+  handleDeleteVersion
 }: ProjectCardProps) {
-  const [localProjectPrice, setLocalProjectPrice] = useState<string | number>("");
-  const [isUpdatingPrice, setIsUpdatingPrice] = useState(false);
-  const [activeMockupFullscreen, setActiveMockupFullscreen] = useState<boolean>(false);
 
+  const [showGallery, setShowGallery] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingVersion, setIsUploadingVersion] = useState(false);
+  const [isUploadingMockup, setIsUploadingMockup] = useState(false);
+  
+  // Independent dynamic self-handling fields to completely ensure smooth typing actions
+  const [localTitle, setLocalTitle] = useState(project.title || "");
+  const [localAmount, setLocalAmount] = useState(project.amount !== undefined && project.amount !== null ? project.amount : "0");
+  
+  // Synchronize field states if data properties refresh from root queries
   useEffect(() => {
-    if (project && project.amount !== undefined) {
-      setLocalProjectPrice(project.amount);
-    }
+    setLocalTitle(project.title || "");
+    setLocalAmount(project.amount !== undefined && project.amount !== null ? project.amount : "0");
   }, [project]);
 
-  const handlePriceUpdateSubmit = async () => {
-    if (!project?.id || !isAdmin) return;
-    setIsUpdatingPrice(true);
+  const getProgress = (status: string) => {
+    if (status === "Completed") return 100;
+    if (status === "In Progress") return 65;
+    return 25;
+  };
+
+  const handleInlineSave = async () => {
+    setIsSaving(true);
     try {
+      const parsedAmount = localAmount === "" ? 0 : parseInt(localAmount.toString().replace(/[^0-9]/g, ""));
+      // Updates exclusively write to 'amount' to avoid column mismatch cache faults
       const { error } = await supabase
         .from("projects")
-        .update({ amount: Number(localProjectPrice) || 0 })
+        .update({
+          title: localTitle,
+          amount: parsedAmount
+        })
         .eq("id", project.id);
+
       if (error) throw error;
-      if (refreshWorkspace) refreshWorkspace();
-      alert("Project budget updated successfully!");
+      
+      setEditingId(null);
+      window.location.reload();
     } catch (err: any) {
-      alert("Failed to change budget: " + err.message);
+      alert("Error saving properties: " + err.message);
     } finally {
-      setIsUpdatingPrice(false);
+      setIsSaving(false);
     }
   };
 
+  // Direct Supabase storage bucket processing path for New Design Versions
+  const handleSupabaseVersionUpload = async (file: File) => {
+    if (!file) return;
+    setIsUploadingVersion(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${project.id}/${Date.now()}_version.${fileExt}`;
+      
+      // Push file straight to your project-files bucket destination
+      const { error: uploadError } = await supabase.storage
+        .from("project-files")
+        .upload(fileName, file, { cacheControl: '3600', upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Extract public URL asset pathway from the bucket directly
+      const { data: { publicUrl } } = supabase.storage
+        .from("project-files")
+        .getPublicUrl(fileName);
+
+      // Create tracking instance reference inside project_versions database table
+      const { error: versionError } = await supabase
+        .from("project_versions")
+        .insert({
+          project_id: project.id,
+          version_name: `Revision v${(versions?.length || 0) + 1}`,
+          file_url: publicUrl
+        });
+
+      if (versionError) throw versionError;
+
+      // Automatically assign the newly added item to the project's primary preview column
+      const { error: projectUpdateError } = await supabase
+        .from("projects")
+        .update({ file_url: publicUrl })
+        .eq("id", project.id);
+
+      if (projectUpdateError) throw projectUpdateError;
+
+      alert("Design asset version saved safely into your storage bucket!");
+      window.location.reload();
+    } catch (err: any) {
+      alert("Version storage upload configuration error: " + err.message);
+    } finally {
+      setIsUploadingVersion(false);
+    }
+  };
+
+  // Direct Supabase storage bucket multi-upload processing path for Premium Presentation Mockups
+  const handleSupabaseMockupUpload = async (files: FileList) => {
+    if (!files || files.length === 0) return;
+    setIsUploadingMockup(true);
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${project.id}/mockup_${Date.now()}_${i}.${fileExt}`;
+
+        // Upload loop for multiple files directly targeting the bucket partition path
+        const { error: uploadError } = await supabase.storage
+          .from("project-files")
+          .upload(fileName, file, { cacheControl: '3600', upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from("project-files")
+          .getPublicUrl(fileName);
+
+        // Store public reference path directly within the project_mockups relation records
+        const { error: mockupError } = await supabase
+          .from("project_mockups")
+          .insert({
+            project_id: project.id,
+            file_url: publicUrl
+          });
+
+        if (mockupError) throw mockupError;
+      }
+
+      alert("Premium presentation mockups successfully saved to your storage bucket!");
+      window.location.reload();
+    } catch (err: any) {
+      alert("Mockup storage handling configuration failure: " + err.message);
+    } finally {
+      setIsUploadingMockup(false);
+    }
+  };
+
+  const displayValue = Number(project.amount) || 0;
+
   return (
     <motion.div 
+      className="bg-card border border-border/60 rounded-3xl overflow-hidden flex flex-col shadow-sm hover:shadow-md transition-all duration-300 relative"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-card/40 backdrop-blur-md border border-border/60 rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden group hover:border-cyan-500/30 transition-all h-full pb-6"
     >
-      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-cyan-500/5 to-transparent rounded-bl-full pointer-events-none" />
-      
-      <div>
-        <div className="flex justify-between items-start mb-4 gap-2">
+      {/* HEADER ROW CONFIGURATOR */}
+      <div className="p-4 border-b border-border flex justify-between items-center bg-muted/10">
+        <div className="flex-1 min-w-0">
           {editingId === project.id ? (
-            <div className="flex gap-2 w-full max-w-[70%]">
-              <input 
-                type="text" 
-                value={editTitle} 
-                onChange={(e) => setEditTitle(e.target.value)}
-                className="bg-background border border-border px-3 py-1.5 rounded-xl text-xs w-full focus:outline-none focus:border-cyan-500 text-foreground font-semibold"
-              />
-              <button onClick={saveEdit} className="p-1.5 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30">
-                <Save size={14} />
-              </button>
-              <button onClick={() => setEditingId(null)} className="p-1.5 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30">
-                <XCircle size={14} />
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-1 max-w-[70%]">
-              <h3 className="font-bold text-sm tracking-tight text-foreground group-hover:text-cyan-400 transition-colors duration-300">
-                {project.title}
-              </h3>
-              <p className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
-                <Clock size={10} />
-                {new Date(project.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-              </p>
-            </div>
-          )}
-
-          <div className="flex items-center gap-1.5">
-            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${statusColors[project.status] || 'bg-muted text-muted-foreground'}`}>
-              {project.status}
-            </span>
-            {isAdmin && (
-              <button 
-                onClick={() => handleDelete(project.id)}
-                className="p-1.5 bg-red-500/10 text-red-400 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/20"
-              >
-                <Trash2 size={13} />
-              </button>
-            )}
-          </div>
-        </div>
-
-        {isAdmin && (
-          <div className="space-y-3 bg-background/50 border border-border/40 p-3 rounded-xl mb-4 text-xs">
-            <div className="flex flex-col gap-1">
-              <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Client Designation</span>
-              <select 
-                value={project.client_email || ""} 
-                onChange={(e) => assignUser(project.id, e.target.value)}
-                className="bg-card border border-border px-2.5 py-1.5 rounded-lg text-xs font-medium w-full text-foreground focus:outline-none focus:border-cyan-500"
-              >
-                <option value="">Unassigned Account Link</option>
-                {clientEmails.map((email) => (
-                  <option key={email} value={email}>{email}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Progress Status Selector</span>
-              <div className="flex gap-1.5">
-                {['Pending', 'In Progress', 'Completed'].map((status) => (
-                  <button
-                    key={status}
-                    onClick={() => updateStatus(project.id, status)}
-                    className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold flex-1 border transition-all ${project.status === status ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-400 scale-102' : 'bg-card border-border/50 text-muted-foreground hover:bg-background'}`}
-                  >
-                    {status}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-1 pt-1">
-              <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Project Budget / Pricing (₦)</span>
-              <div className="flex gap-2">
-                <input 
-                  type="number" 
-                  value={localProjectPrice} 
-                  onChange={(e) => setLocalProjectPrice(e.target.value)}
-                  placeholder="Enter budget value amount"
-                  className="bg-card border border-border px-2 py-1 rounded-lg text-xs w-full text-foreground font-semibold focus:outline-none"
-                />
-                <button 
-                  onClick={handlePriceUpdateSubmit}
-                  disabled={isUpdatingPrice}
-                  className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold text-[10px] px-3 py-1 rounded-lg transition-colors flex items-center justify-center min-w-[65px]"
-                >
-                  {isUpdatingPrice ? <Loader2 size={12} className="animate-spin" /> : "Update"}
-                </button>
-              </div>
-            </div>
-
-            <button 
-              onClick={() => startEdit(project)}
-              className="flex items-center justify-center gap-1.5 w-full py-1.5 bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground font-bold text-[10px] rounded-lg transition-colors border border-border/30"
-            >
-              <Edit3 size={12} /> Rename Workspace Title
-            </button>
-          </div>
-        )}
-
-        <div className="space-y-2 mb-4">
-          <div className="flex justify-between items-center bg-background/30 px-3 py-2 rounded-xl border border-border/30 text-xs">
-            <span className="text-muted-foreground font-medium">Accounting Value:</span>
-            <span className="font-extrabold text-cyan-400">₦{(Number(project.amount) || 0).toLocaleString()}</span>
-          </div>
-
-          {versions && versions.length > 0 && (
-            <div className="bg-background/40 border border-border/40 rounded-xl p-3 space-y-2">
-              <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block mb-1">Available Assets & History ({versions.length})</span>
-              <div className="max-h-[140px] overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
-                {versions.map((v: any) => (
-                  <div key={v.id} className="flex justify-between items-center bg-card/60 p-2 rounded-lg border border-border/40 hover:border-cyan-500/20 group/version transition-colors">
-                    <div className="flex flex-col">
-                      <span className="text-xs font-bold text-foreground truncate max-w-[140px]">{v.version_name}</span>
-                      <span className="text-[9px] text-muted-foreground">{new Date(v.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {isAdmin && handleDeleteVersion && (
-                        <button 
-                          onClick={() => handleDeleteVersion(v.id)}
-                          className="p-1 bg-red-500/10 text-red-400 rounded hover:bg-red-500/20 opacity-0 group-hover/version:opacity-100 transition-opacity"
-                        >
-                          <X size={10} />
-                        </button>
-                      )}
-                      <button 
-                        onClick={() => downloadFile(v.file_url, `${project.title}-${v.version_name}`)}
-                        className="p-1.5 bg-cyan-500/20 text-cyan-400 rounded hover:bg-cyan-500/30 transition-colors flex items-center justify-center"
-                      >
-                        <Download size={11} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {mockups && mockups.length > 0 && (
-            <button 
-              onClick={() => setActiveMockupFullscreen(true)}
-              className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 hover:from-blue-500/10 hover:to-cyan-500/20 border border-cyan-500/20 hover:border-cyan-500/40 rounded-xl transition-all text-left text-xs group/mockbtn"
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-cyan-500/10 rounded-lg text-cyan-400 group-hover/mockbtn:scale-105 transition-transform">
-                  <ImageIcon size={16} />
-                </div>
-                <div>
-                  <h4 className="font-bold text-foreground">Interactive Mockups</h4>
-                  <p className="text-[10px] text-muted-foreground font-medium">Review asset visualization drafts ({mockups.length})</p>
-                </div>
-              </div>
-              <span className="text-[10px] font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-full uppercase tracking-wider group-hover/mockbtn:bg-cyan-500/20 transition-colors">View</span>
-            </button>
-          )}
-        </div>
-      </div>
-
-      <div className="space-y-2 mt-auto">
-        <button
-          onClick={() => toggleComments(project.id)}
-          className="w-full flex items-center justify-center gap-2 py-3 border border-border/80 bg-background/40 hover:bg-background/80 rounded-xl font-bold text-xs text-foreground transition-all duration-300 relative group/msgbtn"
-        >
-          <MessageSquare size={14} className="text-muted-foreground group-hover/msgbtn:text-cyan-400 transition-colors" />
-          Project Activity Panel
-          {unreadCounts[project.id] > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white font-extrabold text-[10px] w-5 h-5 rounded-full flex items-center justify-center animate-pulse shadow-md border-2 border-background">
-              {unreadCounts[project.id]}
-            </span>
-          )}
-        </button>
-
-        {isAdmin ? (
-          <div className="grid grid-cols-2 gap-2 pt-1">
-            <label className="flex items-center justify-center gap-1.5 p-2.5 bg-cyan-500 hover:bg-cyan-600 text-white font-extrabold text-[11px] rounded-xl cursor-pointer transition-colors shadow-lg shadow-cyan-500/10 text-center select-none active:scale-98">
-              <Plus size={14} /> Deliver Asset
-              <input 
-                type="file" 
-                className="hidden" 
-                onChange={(e) => e.target.files?.[0] && handleFileUpload(project.id, e.target.files[0])} 
-              />
-            </label>
-            <label className="flex items-center justify-center gap-1.5 p-2.5 bg-blue-500 hover:bg-blue-600 text-white font-extrabold text-[11px] rounded-xl cursor-pointer transition-colors shadow-lg shadow-blue-500/10 text-center select-none active:scale-98">
-              <ImageIcon size={14} /> Add Mockup
-              <input 
-                type="file" 
-                multiple
-                className="hidden" 
-                onChange={(e) => e.target.files && handleMockupUpload && handleMockupUpload(project.id, e.target.files)} 
-              />
-            </label>
-          </div>
-        ) : (
-          project.file_url && (
-            <button
-              onClick={() => downloadFile(project.file_url, `${project.title}-final-delivery`)}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-extrabold text-xs rounded-xl shadow-xl shadow-cyan-500/10 transition-all duration-300 transform active:scale-98"
-            >
-              <Download size={14} /> Open & Download Latest Assets
-            </button>
-          )
-        )}
-      </div>
-
-      <AnimatePresence>
-        {openCommentsId === project.id && (
-          <motion.div 
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="w-full border-t border-border/60 mt-4 pt-4 overflow-hidden"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                <span>●</span> Discussion stream logs
-              </h4>
-            </div>
-
-            <div className="max-h-[180px] overflow-y-auto space-y-2.5 mb-3 p-2 bg-background/50 rounded-xl border border-border/40 custom-scrollbar">
-              {comments.length === 0 ? (
-                <p className="text-[11px] text-muted-foreground text-center py-6 font-medium italic">No dynamic log telemetry history established.</p>
-              ) : (
-                comments.map((c: any) => (
-                  <div key={c.id} className={`flex flex-col max-w-[85%] ${c.is_admin === isAdmin ? "ml-auto items-end" : "mr-auto items-start"}`}>
-                    <div className={`p-2.5 rounded-2xl text-xs font-medium leading-relaxed shadow-sm ${c.is_admin === isAdmin ? "bg-cyan-500 text-white rounded-br-none" : "bg-card border border-border/80 text-foreground rounded-bl-none"}`}>
-                      <p>{c.message}</p>
-                    </div>
-                    <span className="text-[8px] text-muted-foreground font-semibold mt-1 px-1">
-                      {c.is_admin ? "Sulaiman (Admin)" : "Client Portal"} • {new Date(c.created_at).toLocaleTimeString(undefined, {hour: '2-digit', minute:'2-digit'})}
-                    </span>
-                  </div>
-                ))
-              )}
-            </div>
-
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-1.5 w-full max-w-[160px]">
               <input
                 type="text"
-                placeholder="Submit message payload text..."
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && sendComment(project.id)}
-                className="flex-1 bg-background border border-border/80 px-3 py-2 rounded-xl text-xs text-foreground font-medium focus:outline-none focus:border-cyan-500 placeholder:text-muted-foreground"
+                autoFocus
+                placeholder="Project Title"
+                value={localTitle}
+                onChange={(e) => setLocalTitle(e.target.value)}
+                className="bg-background border border-border rounded-md px-2 py-1 text-xs focus:border-primary outline-none text-white w-full"
               />
-              <button
-                onClick={() => sendComment(project.id)}
-                disabled={sendingComment}
-                className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold text-xs p-2.5 rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center"
-              >
-                {sendingComment ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {activeMockupFullscreen && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/95 z-[99] flex flex-col justify-between p-4 backdrop-blur-md"
-          >
-            <div className="flex justify-between items-center py-2 px-1 border-b border-white/10">
-              <div>
-                <h3 className="text-white text-sm font-black tracking-tight">{project.title}</h3>
-                <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest">Interactive Multi-Mockup Viewport Matrix</p>
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  placeholder="Price Amount"
+                  value={localAmount}
+                  onChange={(e) => setLocalAmount(e.target.value)}
+                  className="bg-background border border-border rounded-md px-2 py-1 text-xs focus:border-primary outline-none text-white w-full"
+                />
+                <button 
+                  onClick={handleInlineSave} 
+                  disabled={isSaving}
+                  className="text-primary hover:text-primary/80 transition-colors shrink-0 p-1"
+                >
+                  {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                </button>
+                <button onClick={() => setEditingId(null)} className="text-red-500 shrink-0 p-1"><XCircle size={14} /></button>
               </div>
-              <button 
-                onClick={() => setActiveMockupFullscreen(false)}
-                className="p-3 bg-white/5 hover:bg-red-500/20 text-white hover:text-red-500 rounded-full transition-all border border-white/10"
-              >
-                <X size={20} />
-              </button>
             </div>
+          ) : (
+            <div className="flex flex-col">
+              <span className="font-bold text-xs text-foreground truncate">{project.title}</span>
+              <span className="text-[9px] text-muted-foreground truncate">{project.client_email || "Unassigned"}</span>
+              <span className="text-[10px] text-cyan-400 font-mono mt-0.5 font-bold">
+                ₦{displayValue.toLocaleString()}
+              </span>
+            </div>
+          )}
+        </div>
+        <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${statusColors[project.status] || "bg-card"}`}>
+          {project.status}
+        </span>
+      </div>
 
-            <div className="flex-1 overflow-y-auto py-8 space-y-12 max-w-2xl mx-auto w-full custom-scrollbar">
-              {mockups.map((m: any, index: number) => (
-                <div key={m.id} className="relative bg-neutral-900 border border-white/5 rounded-2xl overflow-hidden shadow-2xl flex flex-col group/imgview">
-                  <div className="p-3 bg-white/5 border-b border-white/5 text-white/50 text-[10px] font-bold flex justify-between items-center">
-                    <span>VISUAL RESTRUCTURING ARCHETYPE #{index + 1}</span>
-                    <span className="text-[9px] bg-white/10 px-2 py-0.5 rounded text-white font-mono">
-                      {new Date(m.created_at).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}
-                    </span>
+      {/* PREVIEW CONTAINER STAGE */}
+      <div className="flex-1 min-h-[220px] flex flex-col items-center justify-center relative overflow-hidden bg-muted/5">
+        <AnimatePresence mode="wait">
+          {openCommentsId === project.id ? (
+            <motion.div 
+              className="absolute inset-0 p-3 flex flex-col bg-card z-20"
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
+            >
+              <div className="flex-1 overflow-y-auto space-y-3 mb-2 pr-1 custom-scrollbar text-left">
+                {comments.length > 0 ? (
+                  comments.map((msg: any) => (
+                    <div key={msg.id} className={`flex flex-col ${msg.is_admin === isAdmin ? 'items-end' : 'items-start'}`}>
+                      <span className="text-[7px] font-bold text-muted-foreground mb-0.5 uppercase tracking-tighter">
+                        {msg.is_admin ? "Sulaiman Graphics" : "Client"}
+                      </span>
+                      <div className={`p-2 rounded-2xl max-w-[90%] text-[10px] leading-snug shadow-sm ${
+                        msg.is_admin === isAdmin ? 'bg-primary text-white' : 'bg-muted border border-border text-foreground'
+                      }`}>
+                        {msg.message}
+                      </div>
+                      <span className="text-[7px] text-muted-foreground mt-0.5 opacity-60">
+                        {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="h-full flex items-center justify-center text-muted-foreground text-[10px] italic">No messages yet.</div>
+                )}
+              </div>
+              
+              <div className="flex gap-1.5 border-t border-border pt-2">
+                <input
+                  type="text"
+                  placeholder="Reply..."
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && sendComment(project.id)}
+                  className="flex-1 bg-background border border-border rounded-lg px-3 text-[10px] text-white outline-none focus:border-primary transition-all"
+                />
+                <button onClick={() => sendComment(project.id)} disabled={sendingComment || !newComment.trim()} className="bg-primary text-white w-7 h-7 rounded-lg flex items-center justify-center disabled:opacity-50">
+                  {sendingComment ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+                </button>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div className="flex flex-col items-center justify-center p-4 w-full h-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              {project.file_url ? (
+                <div className="relative group w-full h-full flex items-center justify-center overflow-hidden rounded-xl">
+                  <img 
+                    src={project.file_url} 
+                    className="max-h-[200px] w-auto object-contain rounded-lg shadow-xl transition-transform duration-500 group-hover:scale-105" 
+                    alt="Preview" 
+                  />
+                </div>
+              ) : (
+                <>
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-3 shadow-inner bg-primary/10 text-primary`}>
+                    <Clock size={28} className="animate-pulse" />
                   </div>
+                  <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">
+                    Production
+                  </div>
+                </>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* METRICS TRACKING AND REVISIONS */}
+      <div className="px-4 py-2">
+        <div className="flex justify-between items-center mb-1">
+          <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-tighter">Project Status</span>
+          <span className="text-[8px] font-bold text-primary">{getProgress(project.status)}%</span>
+        </div>
+        <div className="h-1 w-full bg-muted rounded-full overflow-hidden">
+          <motion.div 
+            className="h-full bg-primary" 
+            initial={{ width: 0 }} 
+            animate={{ width: `${getProgress(project.status)}%` }} 
+            transition={{ duration: 0.8 }}
+          />
+        </div>
+
+        {/* VERSION HISTORY BLOCK */}
+        {versions && versions.length > 0 && (
+          <div className="mt-4 border-t border-border/30 pt-3">
+            <h4 className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-1.5">
+              <HardDrive size={10} />
+              Design Revisions
+            </h4>
+            <div className="space-y-1.5 max-h-[100px] overflow-y-auto custom-scrollbar">
+              {versions.map((v: any) => (
+                <div key={v.id} className="flex items-center justify-between bg-card/50 p-2 rounded-lg border border-border/30 group hover:border-primary/30 transition-colors">
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-bold text-foreground truncate max-w-[120px]">{v.version_name}</span>
+                    <span className="text-[7px] text-muted-foreground">{new Date(v.created_at).toLocaleDateString()}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {isAdmin && (
+                      <button 
+                        onClick={() => {
+                          if(confirm("Delete this design version?")) {
+                            handleDeleteVersion(v.id);
+                          }
+                        }}
+                        className="p-1.5 rounded-md text-red-500 hover:bg-red-500/10 transition-colors"
+                      >
+                        <Trash2 size={10} />
+                      </button>
+                    )}
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        downloadFile(v.file_url, `${project.title}-${v.version_name}`);
+                      }}
+                      className="p-1.5 bg-muted/50 rounded-md group-hover:bg-primary/20 group-hover:text-primary transition-colors"
+                    >
+                      <Download size={10} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* FOOTER CONTROLS ROW */}
+      <div className="p-4 bg-muted/5 border-t border-border">
+        <div className="flex flex-col gap-3">
+          
+          <div className="flex flex-col gap-2">
+            {mockups.length > 0 ? (
+              <button 
+                onClick={() => setShowGallery(true)}
+                className="w-full h-8 flex items-center justify-center gap-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-bold text-[10px] hover:bg-cyan-500/20 transition-all"
+              >
+                <Smartphone size={12} /> View {mockups.length} Premium Mockups
+              </button>
+            ) : isAdmin && (
+              <label className="w-full h-8 flex items-center justify-center gap-2 rounded-xl border border-dashed border-cyan-500/30 text-cyan-500/60 hover:text-cyan-500 text-[9px] cursor-pointer">
+                {isUploadingMockup ? (
+                  <Loader2 size={12} className="animate-spin text-cyan-400" />
+                ) : (
+                  <>
+                    <ImageIcon size={12} /> Upload Mockups
+                  </>
+                )}
+                <input 
+                  type="file" 
+                  className="hidden" 
+                  accept="image/*" 
+                  multiple 
+                  disabled={isUploadingMockup}
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files.length > 0) {
+                      handleSupabaseMockupUpload(e.target.files);
+                    }
+                  }} 
+                />
+              </label>
+            )}
+          </div>
+
+          {versions && versions.length > 0 ? (
+            <button 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                downloadFile(versions[0].file_url, `${project.title}-latest`);
+              }}
+              className="w-full h-8 flex items-center justify-center gap-2 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-[10px] shadow-lg shadow-primary/20 transition-all active:scale-95"
+            >
+              <Download size={12} /> Open & Download Latest Assets
+            </button>
+          ) : !isAdmin && (
+            <div className="w-full text-center text-muted-foreground text-[9px] py-2 border border-dashed border-border rounded-xl font-medium uppercase tracking-tight">
+              Design production in progress...
+            </div>
+          )}
+
+          {isAdmin && (
+            <label className="w-full h-8 flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border/60 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer text-[10px] font-bold text-muted-foreground hover:text-primary">
+              {isUploadingVersion ? (
+                <Loader2 size={14} className="animate-spin text-primary" />
+              ) : (
+                <>
+                  <Plus size={14} /> Upload New Version
+                </>
+              )}
+              <input 
+                type="file" 
+                className="hidden" 
+                accept="image/*,application/pdf" 
+                disabled={isUploadingVersion}
+                onChange={(e) => e.target.files && handleSupabaseVersionUpload(e.target.files[0])} 
+              />
+            </label>
+          )}
+
+          <div className="flex justify-between items-center">
+            <button 
+              onClick={() => toggleComments(project.id)} 
+              className="flex items-center gap-1.5 text-[10px] text-primary hover:text-primary/80 font-bold transition-all relative"
+            >
+              <MessageSquare size={13} />
+              Messages
+              {unreadCounts[project.id] > 0 && (
+                <span className="absolute -top-1.5 -right-2.5 w-3.5 h-3.5 bg-red-500 text-white text-[8px] rounded-full flex items-center justify-center border-2 border-card">
+                  {unreadCounts[project.id]}
+                </span>
+              )}
+            </button>
+
+            <div className="flex items-center gap-1.5">
+              {isAdmin && (
+                <>
+                  <select 
+                    value={project.client_email || ""} 
+                    onChange={(e) => assignUser(project.id, e.target.value)}
+                    className="bg-background border border-border rounded-lg px-2 py-1 text-[10px] text-white outline-none max-w-[100px]"
+                  >
+                    <option value="">Assign</option>
+                    {clientEmails.map(email => <option key={email} value={email}>{email}</option>)}
+                  </select>
+                  <select 
+                    value={project.status} 
+                    onChange={(e) => updateStatus(project.id, e.target.value)}
+                    className="bg-background border border-border rounded-lg px-2 py-1 text-[10px] text-white outline-none"
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="In Progress">Active</option>
+                    <option value="Completed">Done</option>
+                  </select>
+                  <button 
+                    onClick={() => {
+                      setLocalTitle(project.title || "");
+                      setLocalAmount(project.amount !== undefined && project.amount !== null ? project.amount : "0");
+                      setEditingId(project.id);
+                    }} 
+                    className="p-1.5 rounded-lg border border-border text-yellow-500 hover:bg-yellow-500/10 transition-colors"
+                  >
+                    <Edit3 size={12}/>
+                  </button>
+                  <button onClick={() => handleDelete(project.id)} className="p-1.5 rounded-lg border border-border text-red-500 hover:bg-red-500/10 transition-colors"><Trash2 size={12}/></button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* FULL GALLERY MODAL CONTAINER */}
+      <AnimatePresence>
+        {showGallery && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex flex-col p-4"
+          >
+            <div className="flex justify-between items-center mb-6">
+               <h3 className="text-white font-bold text-sm tracking-tight">{project.title} - Mockup Showcase</h3>
+               <button onClick={() => setShowGallery(false)} className="p-2 bg-white/10 rounded-full text-white active:scale-90 transition-all"><X size={24}/></button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto space-y-8 custom-scrollbar pb-20">
+              {mockups.map((m, index) => (
+                <div key={m.id} className="relative group max-w-4xl mx-auto">
                   <img 
                     src={m.file_url} 
-                    alt={`Preview Mockup draft presentation sequential layout`}
-                    className="w-full object-contain max-h-[70vh] bg-black"
-                    loading="lazy"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600";
-                    }}
+                    className="w-full h-auto rounded-3xl shadow-2xl border border-white/5" 
+                    alt={`Mockup ${index + 1}`} 
+                    onContextMenu={(e) => e.preventDefault()}
                   />
                   <div className="absolute bottom-4 right-4 flex gap-2">
                     {isAdmin && (
