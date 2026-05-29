@@ -533,7 +533,7 @@ export default function Chat() {
           </div>
         )}
 
-        <div className="flex-grow flex flex-col bg-[#11141A]/60 backdrop-blur-xl border border-gray-800 rounded-3xl overflow-hidden h-full shadow-2xl">
+        <div className="flex-grow flex-[1] min-w-0 flex flex-col bg-[#11141A]/60 backdrop-blur-xl border border-gray-800 rounded-3xl overflow-hidden h-full shadow-2xl">
           
           <div className="flex-shrink-0 p-5 border-b border-gray-800 flex justify-between items-center bg-[#11141A]/80 z-10">
             <div className="flex items-center gap-3 min-w-0">
@@ -589,9 +589,9 @@ export default function Chat() {
                   }`}>
                     {isMe ? (isAdmin ? 'SG' : 'ME') : (isAdmin ? 'C' : 'SG')}
                   </div>
-                  <div className="flex flex-col max-w-full relative group items-start">
+                  <div className="flex flex-col max-w-full min-w-0 relative group items-start">
                     <div 
-                      className={`relative transition-all duration-200 max-w-full overflow-hidden ${
+                      className={`relative transition-all duration-200 max-w-full overflow-hidden break-words ${
                         isMe 
                           ? 'bg-gradient-to-br from-cyan-600 to-blue-700 text-white rounded-2xl rounded-tr-none' 
                           : 'bg-[#1A1F29] border border-gray-800 text-gray-200 rounded-2xl rounded-tl-none'
@@ -655,7 +655,7 @@ export default function Chat() {
                           </div>
                         </div>
                       ) : (
-                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.message}</p>
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{msg.message}</p>
                       )}
 
                       {/* Hover Trigger Block option for deleting a message */}
