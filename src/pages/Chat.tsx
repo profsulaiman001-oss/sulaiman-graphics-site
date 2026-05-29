@@ -397,7 +397,7 @@ export default function Chat() {
   };
 
   return (
-    <div className="fixed inset-0 bg-[#0B0C10] text-gray-100 flex flex-col pt-20 z-[40] overflow-hidden">
+    <div className="w-full h-full min-h-0 flex flex-col bg-[#0B0C10] text-gray-100 overflow-hidden">
       
       <input 
         type="file" 
@@ -451,7 +451,7 @@ export default function Chat() {
         </div>
       )}
 
-      <div className="flex-grow flex h-full min-h-0 w-full max-w-[1600px] mx-auto p-4 md:p-6 gap-6 relative overflow-hidden">
+      <div className="flex-grow flex h-full min-h-0 w-full max-w-[1600px] mx-auto p-4 md:p-6 pb-2 md:pb-2 gap-6 relative overflow-hidden">
         
         {isAdmin && (
           <div className={`${mobileSidebarOpen ? 'flex' : 'hidden md:flex'} absolute inset-y-0 left-0 z-[45] md:relative w-full sm:w-80 md:w-1/4 flex-col bg-[#11141A] border border-gray-800 rounded-3xl overflow-hidden shadow-2xl`}>
@@ -561,7 +561,7 @@ export default function Chat() {
                 </div>
               </div>
             </div>
- 
+
             <div className="flex items-center gap-2">
                <button className="hidden sm:flex p-2.5 hover:bg-[#1A1F29] rounded-xl border border-gray-800 text-gray-400 transition-colors">
                 <Search className="w-5 h-5" />
@@ -579,7 +579,6 @@ export default function Chat() {
               const isImage = isImageMessage(msg.message);
               const isAudio = isAudioMessage(msg.message);
               const isFile = isLinkMessage(msg.message) && !isImage && !isAudio;
-
               return (
                 <div 
                   key={msg.id}
@@ -647,7 +646,7 @@ export default function Chat() {
                           </div>
                           <div className="min-w-0 flex-grow">
                             <p className="text-xs font-semibold truncate text-gray-200">
-                               {getFileNameFromUrl(msg.message)}
+                              {getFileNameFromUrl(msg.message)}
                             </p>
                             <p className="text-[10px] text-gray-500 uppercase tracking-wider mt-0.5">Click to view / download</p>
                           </div>
