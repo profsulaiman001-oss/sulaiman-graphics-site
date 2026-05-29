@@ -457,7 +457,6 @@ export default function Chat() {
         </div>
       )}
 
-      {/* Main layout wrapper matching full layout properties seamlessly */}
       <div className="flex-grow flex h-full min-h-0 w-full mx-auto p-2 sm:p-4 md:p-6 gap-4 md:gap-6 relative overflow-hidden">
         
         {isAdmin && (
@@ -540,7 +539,6 @@ export default function Chat() {
           </div>
         )}
 
-        {/* Chat window stretches edge-to-edge automatically using w-full */}
         <div className="flex-grow w-full flex flex-col bg-[#11141A]/60 backdrop-blur-xl border border-gray-800 rounded-3xl overflow-hidden h-full shadow-2xl">
           
           <div className="flex-shrink-0 p-5 border-b border-gray-800 flex justify-between items-center bg-[#11141A]/80 z-10">
@@ -600,9 +598,11 @@ export default function Chat() {
                   }`}>
                     {isMe ? (isAdmin ? 'SG' : 'ME') : (isAdmin ? 'C' : 'SG')}
                   </div>
-                  <div className="flex flex-col max-w-full min-w-0 relative group items-start">
+
+                  {/* FIX: Gave the tracking box container overflow-visible and clear spacing positioning */}
+                  <div className="flex flex-col max-w-full min-w-0 relative group items-start px-2 overflow-visible">
                     <div 
-                      className={`relative transition-all duration-200 max-w-full overflow-hidden break-words ${
+                      className={`relative transition-all duration-200 max-w-full break-words ${
                         isMe 
                           ? 'bg-gradient-to-br from-cyan-600 to-blue-700 text-white rounded-2xl rounded-tr-none' 
                           : 'bg-[#1A1F29] border border-gray-800 text-gray-200 rounded-2xl rounded-tl-none'
@@ -668,24 +668,26 @@ export default function Chat() {
                       ) : (
                         <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{msg.message}</p>
                       )}
-
-                      <div className={`absolute top-1/2 -translate-y-1/2 ${isMe ? '-left-12' : '-right-12'} opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20`}>
-                        {(isMe || isAdmin) && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (window.confirm("Are you sure you want to delete this message permanently?")) {
-                                deleteMessageMutation.mutate(msg.id);
-                              }
-                            }}
-                            className="p-2 bg-[#1A1F29] border border-gray-800 rounded-xl text-gray-500 hover:text-red-500 hover:border-red-500/50 shadow-2xl transition-all"
-                            title="Delete Message"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
                     </div>
+
+                    {/* FIX: Handled absolute positioning outside of the bubble boundaries + cross-device fallback setup */}
+                    <div className={`absolute top-1/2 -translate-y-1/2 ${isMe ? '-left-10' : '-right-10'} opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-200 z-30`}>
+                      {(isMe || isAdmin) && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm("Are you sure you want to delete this message permanently?")) {
+                              deleteMessageMutation.mutate(msg.id);
+                            }
+                          }}
+                          className="p-2 bg-[#1A1F29] border border-gray-800 rounded-xl text-gray-500 hover:text-red-500 hover:border-red-500/50 shadow-2xl transition-all"
+                          title="Delete Message"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        </button>
+                      )}
+                    </div>
+
                     <div className={`flex items-center gap-1.5 mt-1.5 ${isMe ? 'ml-auto flex-row-reverse' : ''}`}>
                       <span className="text-[10px] text-gray-600 font-medium">{formattedTime}</span>
                       {isMe && <CheckCircle2 className="w-3 h-3 text-cyan-500" />}
@@ -707,7 +709,7 @@ export default function Chat() {
 
           <div className="flex-shrink-0 p-4 md:p-5 border-t border-gray-800 bg-[#11141A]/80 z-10">
             <div className="flex items-center gap-3 bg-[#1A1F29] border border-gray-800 rounded-2xl px-4 py-2.5 focus-within:border-cyan-500/50 focus-within:shadow-[0_0_15px_rgba(6,182,212,0.1)] transition-all">
-              
+            
               <button 
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading || isRecording}
