@@ -302,7 +302,7 @@ export default function Chat() {
     } catch (error) {
       console.error("Upload error:", error);
       alert("Failed to upload file to storage. Please try again.");
-    } friend {
+    } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
@@ -580,7 +580,6 @@ export default function Chat() {
             </div>
           </div>
 
-          {/* Assigned messagesContainerRef here to isolate the viewport scrolling inside this component block */}
           <div 
             ref={messagesContainerRef}
             className="flex-grow overflow-y-auto min-h-0 p-4 md:p-6 space-y-6 scroll-smooth custom-scrollbar bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')]"
