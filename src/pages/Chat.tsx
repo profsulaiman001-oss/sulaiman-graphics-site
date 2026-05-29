@@ -42,87 +42,290 @@ export default function Chat() {
 
   // Voice Recording States
   const [isRecording, setIsRecording] = useState(false);
-  const [recordingDuration, setRecordingDuration] = useState(0);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   useEffect(() => {
-    async function checkUserIdentity() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setGuestEmail(user.email || "");
-        setGuestName(user.email?.split("@")[0] || "User");
-        setShowIdentityPopup(false);
-        if (user.email === "profsulaiman001@gmail.com") {
-          setIsAdmin(true);
-          setMobileSidebarOpen(true);
-        } else {
-          setIsAdmin(false);
-          setActiveClientEmail("profsulaiman001@gmail.com");
-          setMobileSidebarOpen(false);
-        }
+    const savedEmail = sessionStorage.getItem("chat_email");
+    const savedName = sessionStorage.getItem("chat_name");
+    
+    if (savedEmail && savedName) {
+      const formattedEmail = savedEmail.trim().toLowerCase();
+      setGuestEmail(formattedEmail);
+      setGuestName(savedName);
+      setShowIdentityPopup(false);
+      
+      if (formattedEmail === "profsulaiman001@gmail.com") {
+        setIsAdmin(true);
+      } else {
+        setIsAdmin(false);
+        setMobileSidebarOpen(false);
+        setActiveClientEmail("profsulaiman001@gmail.com"); 
       }
     }
-    checkUserIdentity();
   }, []);
 
   useEffect(() => {
-    if (!activeClientEmail) return;
+    const handleOutsideClick = () => setActiveMenuId(null);
+    window.addEventListener("click", handleOutsideClick);
+    return () => window.removeEventListener("click", handleOutsideClick);
+  }, []);
+
+  const handleIdentitySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!guestName.trim() || !guestEmail.trim()) return;
+
+    const formattedEmail = guestEmail.trim().toLowerCase();
+    sessionStorage.setItem("chat_email", formattedEmail);
+    sessionStorage.setItem("chat_name", guestName.trim());
+
+    setGuestEmail(formattedEmail);
+    setGuestName(guestName.trim());
+
+    if (formattedEmail === "profsulaiman001@gmail.com") {
+      setIsAdmin(true);
+    } else {
+      setIsAdmin(false);
+      setMobileSidebarOpen(false);
+      setActiveClientEmail("profsulaiman001@gmail.com"); 
+    }
+    
+    setShowIdentityPopup(false);
+  };
+
+  const { data: clients } = useQuery({
+    queryKey: ['chatClients'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('chat_clients') 
+        .select('email')
+        .order('created_at', { ascending: false });
+      
+      if (error) return [];
+      return data;
+    },
+    enabled: !showIdentityPopup && isAdmin, 
+  });
+
+  useEffect(() => {
+    if (isAdmin && clients?.length && !activeClientEmail) {
+      setActiveClientEmail(clients[0].email);
+    }
+  }, [clients, isAdmin, activeClientEmail]);
+
+  const addClientMutation = useMutation({
+    mutationFn: async (email: string) => {
+      const { error } = await supabase
+        .from('chat_clients')
+        .insert([{ email }]);
+      
+      if (error && error.code !== '23505') throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['chatClients'] });
+    }
+  });
+
+  const deleteClientMutation = useMutation({
+    mutationFn: async (email: string) => {
+      const savedEmail = sessionStorage.getItem("chat_email");
+      if (savedEmail !== "profsulaiman001@gmail.com") {
+        throw new Error("Unauthorized: Only the admin can delete clients.");
+      }
+
+      const { error } = await supabase
+        .from('chat_clients')
+        .delete()
+        .eq('email', email);
+      
+      if (error) throw error;
+    },
+    onSuccess: (_, deletedEmail) => {
+      queryClient.invalidateQueries({ queryKey: ['chatClients'] });
+      if (activeClientEmail === deletedEmail) {
+        setActiveClientEmail(null);
+      }
+    },
+    onError: (error: any) => {
+      alert(error.message || "Failed to delete client.");
+    }
+  });
+
+  const deleteMessageMutation = useMutation({
+    mutationFn: async (messageId: string) => {
+      const { error, count } = await supabase
+        .from('chat_messages')
+        .delete({ count: 'exact' })
+        .eq('id', messageId);
+      
+      if (error) throw error;
+      
+      if (count === 0) {
+        throw new Error("Database processed request but message was not removed. Double check your RLS policy permissions.");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['messages', activeClientEmail] });
+    },
+    onError: (error: any) => {
+      console.error("Supabase Deletion Failure:", error);
+      alert(error.message || "Failed to clear target message block.");
+    }
+  });
+
+  const handleAddClient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const email = newClientEmail.trim().toLowerCase();
+    if (!email) return;
+    
+    addClientMutation.mutate(email);
+    setActiveClientEmail(email);
+    setNewClientEmail("");
+  };
+
+  const { data: chatMessages } = useQuery({
+    queryKey: ['messages', activeClientEmail],
+    queryFn: async () => {
+      if (!activeClientEmail || !guestEmail) return [];
+      
+      const adminEmail = "profsulaiman001@gmail.com";
+      const userOne = guestEmail.trim().toLowerCase();
+      const userTwo = isAdmin ? activeClientEmail.trim().toLowerCase() : adminEmail;
+
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .or(`and(sender_email.eq."${userOne}",receiver_email.eq."${userTwo}"),and(sender_email.eq."${userTwo}",receiver_email.eq."${userOne}")`)
+        .order('created_at', { ascending: true });
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!activeClientEmail && !!guestEmail,
+  });
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [chatMessages]);
+
+  useEffect(() => {
+    if (!guestEmail) return;
+
     const channel = supabase
-      .channel("realtime-messages")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages" },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["messages", activeClientEmail] });
+      .channel('schema-db-changes')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'chat_messages' 
+      }, (payload) => {
+        queryClient.invalidateQueries({ queryKey: ['messages', activeClientEmail] });
+        queryClient.invalidateQueries({ queryKey: ['chatClients'] });
+
+        if (payload.eventType === 'INSERT') {
+          const newMessage = payload.new as any;
+          if (newMessage.receiver_email === guestEmail) {
+            const audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
+            audio.play().catch(() => {});
+            document.title = "🔴 New Message!";
+          }
         }
-      )
+      })
       .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [activeClientEmail, queryClient]);
+  }, [guestEmail, activeClientEmail, queryClient]);
 
-  // Recording timer logic
-  useEffect(() => {
-    if (isRecording) {
-      timerRef.current = setInterval(() => {
-        setRecordingDuration((prev) => prev + 1);
-      }, 1000);
-    } else {
-      if (timerRef.current) clearInterval(timerRef.current);
-      setRecordingDuration(0);
+  const sendMessageMutation = useMutation({
+    mutationFn: async (messageText: string) => {
+      const adminEmail = "profsulaiman001@gmail.com";
+      const sender = guestEmail.trim().toLowerCase();
+      const receiver = isAdmin ? activeClientEmail?.trim().toLowerCase() : adminEmail;
+
+      if (!receiver) throw new Error("No receiver specified.");
+      
+      const { error } = await supabase
+        .from('chat_messages')
+        .insert([{
+          sender_email: sender,
+          receiver_email: receiver,
+          message: messageText,
+          is_admin: isAdmin 
+        }]);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setMessage("");
+      queryClient.invalidateQueries({ queryKey: ['messages', activeClientEmail] });
     }
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [isRecording]);
+  });
 
+  const handleSend = () => {
+    if (!message.trim() || !activeClientEmail) return;
+    sendMessageMutation.mutate(message);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement> | File) => {
+    let file: File | undefined;
+    if (e instanceof File) {
+      file = e;
+    } else {
+      file = e.target.files?.[0];
+    }
+
+    if (!file || !activeClientEmail) return;
+    try {
+      setUploading(true);
+      const downloadUrl = await uploadToGitHubStorage(file);
+      if (!downloadUrl) {
+        throw new Error("Failed to receive download URL from storage server.");
+      }
+
+      sendMessageMutation.mutate(downloadUrl);
+
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("Failed to upload file to storage. Please try again.");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  // Voice Note Recorder Controls
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
-
       mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) audioChunksRef.current.push(event.data);
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
       };
 
       mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-        if (audioBlob.size > 0) {
-          await handleAudioUpload(audioBlob);
-        }
+        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        const voiceFile = new File([audioBlob], `voicenote_${Date.now()}.webm`, { type: "audio/webm" });
+        
+        await handleFileUpload(voiceFile);
         stream.getTracks().forEach(track => track.stop());
       };
 
       mediaRecorder.start();
       setIsRecording(true);
     } catch (err) {
-      console.error("Failed to access microphome standard peripherals:", err);
-      alert("Could not initialize microphone access. Please verify system level access bounds.");
+      console.error("Microphone hardware access denied:", err);
+      alert("Could not access microphone. Please enable permissions.");
     }
   };
 
@@ -133,485 +336,429 @@ export default function Chat() {
     }
   };
 
-  const handleAudioUpload = async (audioBlob: Blob) => {
-    setUploading(true);
-    try {
-      const audioFile = new File([audioBlob], `voice_note_${Date.now()}.wav`, { type: 'audio/wav' });
-      const publicUrl = await uploadToGitHubStorage(audioFile);
-      
-      sendMessageMutation.mutate({
-        text: "[Voice Message 🎙️]",
-        fileUrl: publicUrl,
-        fileType: "audio"
-      });
-    } catch (error: any) {
-      console.error("Audio recording payload transmission fault:", error);
-      alert("Failed to submit recorded voice note track: " + error.message);
-    } finally {
-      setUploading(false);
-    }
+  const getInitials = (email: string) => {
+    if (!email) return "CL";
+    return email.substring(0, 2).toUpperCase();
   };
 
-  const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-  };
-
-  const { data: clientsList = [], isLoading: loadingClients } = useQuery({
-    queryKey: ["chatClients"],
-    queryFn: async () => {
-      const { data: messagesData, error: msgError } = await supabase
-        .from("messages")
-        .select("sender_email, receiver_email")
-        .or(`sender_email.eq.profsulaiman001@gmail.com,receiver_email.eq.profsulaiman001@gmail.com`);
-
-      if (msgError) throw msgError;
-
-      const interactionEmails = new Set<string>();
-      messagesData?.forEach((m) => {
-        if (m.sender_email !== "profsulaiman001@gmail.com") interactionEmails.add(m.sender_email);
-        if (m.receiver_email !== "profsulaiman001@gmail.com") interactionEmails.add(m.receiver_email);
-      });
-
-      const { data: profilesData } = await supabase.from("profiles").select("email");
-      profilesData?.forEach((p) => {
-        if (p.email !== "profsulaiman001@gmail.com") interactionEmails.add(p.email);
-      });
-
-      return Array.from(interactionEmails).map((email) => ({ email }));
-    },
-    enabled: isAdmin,
-  });
-
-  const { data: messages = [], isLoading: loadingMessages } = useQuery({
-    queryKey: ["messages", activeClientEmail],
-    queryFn: async () => {
-      if (!activeClientEmail || !guestEmail) return [];
-      const { data, error } = await supabase
-        .from("messages")
-        .select("*")
-        .or(
-          `and(sender_email.eq.${guestEmail},receiver_email.eq.${activeClientEmail}),and(sender_email.eq.${activeClientEmail},receiver_email.eq.${guestEmail})`
-        )
-        .order("created_at", { ascending: true });
-
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!activeClientEmail && !!guestEmail,
-  });
-
-  const sendMessageMutation = useMutation({
-    mutationFn: async ({ text, fileUrl, fileType }: { text: string; fileUrl?: string; fileType?: string }) => {
-      if (!guestEmail || !activeClientEmail) throw new Error("Missing active communication endpoints");
-      const { error } = await supabase.from("messages").insert([
-        {
-          sender_email: guestEmail,
-          receiver_email: activeClientEmail,
-          message: text,
-          file_url: fileUrl || null,
-          file_type: fileType || null,
-          sender_name: guestName || guestEmail.split("@")[0],
-        },
-      ]);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      setMessage("");
-      queryClient.invalidateQueries({ queryKey: ["messages", activeClientEmail] });
-    },
-    onError: (err: any) => {
-      alert("Failed to deliver message payload: " + err.message);
-    },
-  });
-
-  const handleSend = () => {
-    if (isRecording) {
-      stopRecording();
-      return;
-    }
-    if (!message.trim()) return;
-    sendMessageMutation.mutate({ text: message.trim() });
-  };
-
-  const handleFileUploadClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploading(true);
-    try {
-      const publicUrl = await uploadToGitHubStorage(file);
-      let detectedType = "file";
-      if (file.type.startsWith("image/")) detectedType = "image";
-      else if (file.type.startsWith("video/")) detectedType = "video";
-      else if (file.type.startsWith("audio/")) detectedType = "audio";
-
-      sendMessageMutation.mutate({
-        text: `[Shared Attachment Asset: ${file.name}]`,
-        fileUrl: publicUrl,
-        fileType: detectedType
-      });
-    } catch (err: any) {
-      alert("Asset pipeline storage delivery fault: " + err.message);
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const deleteMessageMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("messages").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["messages", activeClientEmail] });
-      setActiveMenuId(null);
-    },
-  });
-
-  const filteredClients = clientsList.filter((c) =>
+  const filteredClients = clients?.filter((c: any) =>
     c.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (showIdentityPopup && !guestEmail) {
+  const isImageMessage = (text: string) => {
+    if (!text || typeof text !== "string" || !text.startsWith("http")) return false;
+    const lowerText = text.toLowerCase().split('?')[0];
     return (
-      <div className="h-full w-full flex items-center justify-center bg-[#070b12] px-4">
-        <div className="bg-[#0f172a] border border-gray-800 p-6 rounded-2xl w-full max-w-md shadow-2xl space-y-4">
-          <div className="text-center space-y-1">
-            <h3 className="text-lg font-black text-white tracking-tight flex items-center justify-center gap-2">
-              <Mail className="text-cyan-400 w-5 h-5" /> Communication Hub Authentication
-            </h3>
-            <p className="text-xs text-gray-400">Establish standard credentials metadata mapping context</p>
-          </div>
-          <div className="space-y-3">
-            <div>
-              <label className="text-[10px] uppercase font-black text-gray-400 tracking-wider block mb-1">Your Name</label>
-              <input
-                type="text"
-                placeholder="Ex. Alawiyya"
-                value={guestName}
-                onChange={(e) => setGuestName(e.target.value)}
-                className="w-full bg-[#070b12] border border-gray-800 text-sm p-2.5 rounded-xl text-white outline-none focus:border-cyan-500 transition-colors"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] uppercase font-black text-gray-400 tracking-wider block mb-1">Your Account Email</label>
-              <input
-                type="email"
-                placeholder="name@domain.com"
-                value={guestEmail}
-                onChange={(e) => setGuestEmail(e.target.value)}
-                className="w-full bg-[#070b12] border border-gray-800 text-sm p-2.5 rounded-xl text-white outline-none focus:border-cyan-500 transition-colors"
-              />
-            </div>
-            <button
-              onClick={() => {
-                if (!guestName.trim() || !guestEmail.trim()) {
-                  alert("Provide valid identity configuration arguments.");
-                  return;
-                }
-                setShowIdentityPopup(false);
-                if (guestEmail === "profsulaiman001@gmail.com") {
-                  setIsAdmin(true);
-                  setMobileSidebarOpen(true);
-                } else {
-                  setIsAdmin(false);
-                  setActiveClientEmail("profsulaiman001@gmail.com");
-                  setMobileSidebarOpen(false);
-                }
-              }}
-              className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 text-black font-black text-xs py-3 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-1.5"
-            >
-              Initialize Chat Stream <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </div>
+      lowerText.endsWith(".png") || 
+      lowerText.endsWith(".jpg") || 
+      lowerText.endsWith(".jpeg") || 
+      lowerText.endsWith(".gif") || 
+      lowerText.endsWith(".webp") ||
+      lowerText.includes("image")
     );
-  }
+  };
+
+  const isAudioMessage = (text: string) => {
+    if (!text || typeof text !== "string" || !text.startsWith("http")) return false;
+    const lowerText = text.toLowerCase().split('?')[0];
+    return (
+      lowerText.endsWith(".webm") ||
+      lowerText.endsWith(".mp3") ||
+      lowerText.endsWith(".wav") ||
+      lowerText.endsWith(".ogg") ||
+      lowerText.includes("voicenote")
+    );
+  };
+
+  const isLinkMessage = (text: string) => {
+    if (!text || typeof text !== "string") return false;
+    return text.startsWith("http");
+  };
+
+  const getFileNameFromUrl = (url: string) => {
+    try {
+      const decodedUrl = decodeURIComponent(url);
+      const parts = decodedUrl.split('/');
+      const lastPart = parts[parts.length - 1];
+      return lastPart.split('?')[0];
+    } catch {
+      return "Download File Attachment";
+    }
+  };
+
+  const handleDownloadFile = (url: string) => {
+    const link = document.createElement("a");
+    link.href = url;
+    link.target = "_blank";
+    link.setAttribute("download", getFileNameFromUrl(url));
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
-    /* LOCK INTERFACE CONTAINER FOR VERTICAL FLEX COMPONENT */
-    <div className="h-full w-full bg-[#070b12] flex overflow-hidden rounded-2xl border border-gray-800 relative">
+    <div className="fixed inset-0 bg-[#0B0C10] text-gray-100 flex flex-col pt-20 z-[40] overflow-hidden">
+      
       <input 
         type="file" 
+        accept="*" 
         ref={fileInputRef} 
-        onChange={handleFileChange} 
+        onChange={handleFileUpload} 
         className="hidden" 
       />
 
-      {/* SIDEBAR NAVIGATION PANEL */}
-      {isAdmin && (
-        <div
-          className={`${
-            mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
-          } lg:translate-x-0 fixed lg:static inset-y-0 left-0 w-72 bg-[#0b1324] border-r border-gray-800 flex flex-col z-30 transition-transform duration-300 ease-in-out h-full`}
-        >
-          {/* SEARCH BAR AT TOP */}
-          <div className="p-4 border-b border-gray-800/60 flex-shrink-0 space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                <Menu className="text-cyan-400 w-4 h-4" /> Active Communications
-              </h2>
-              <button onClick={() => setMobileSidebarOpen(false)} className="lg:hidden text-gray-400 hover:text-white">
-                <ArrowLeft className="w-4 h-4" />
-              </button>
+      {showIdentityPopup && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#0B0C10]/95 backdrop-blur-md p-4">
+          <div className="bg-[#11141A] border border-gray-800 rounded-3xl p-8 w-full max-w-md shadow-2xl">
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent mb-2">Welcome to Chat</h2>
+              <p className="text-sm text-gray-500">Please introduce yourself to continue</p>
             </div>
-            <div className="relative">
-              <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
-              <input
-                type="text"
-                placeholder="Search conversations..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-[#070b12] border border-gray-800 pl-9 pr-3 py-2 rounded-xl text-xs text-white placeholder-gray-500 outline-none focus:border-cyan-500 transition-colors"
-              />
-            </div>
-          </div>
 
-          {/* INTERNAL CLIENT LIST (SCROLL CONTENT) */}
-          <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
-            {loadingClients ? (
-              <div className="flex items-center justify-center py-8 text-xs text-gray-500 gap-1.5">
-                <Loader2 className="animate-spin text-cyan-400 w-4 h-4" /> Querying active streams...
+            <form onSubmit={handleIdentitySubmit} className="space-y-5">
+              <div className="relative">
+                <User className="absolute left-3 top-3.5 w-5 h-5 text-gray-600" />
+                <input 
+                  type="text" 
+                  placeholder="Your Name" 
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  className="w-full bg-[#1A1F29] border border-gray-800 rounded-xl py-3.5 pl-10 pr-4 text-sm text-gray-200 focus:outline-none focus:border-cyan-500/50 transition-colors"
+                  required
+                />
               </div>
-            ) : filteredClients.length === 0 ? (
-              <p className="text-[11px] text-gray-500 text-center py-8 font-medium">No active chat channels verified.</p>
-            ) : (
-              filteredClients.map((c) => {
-                const isActive = activeClientEmail === c.email;
-                return (
-                  <button
-                    key={c.email}
-                    onClick={() => {
-                      setActiveClientEmail(c.email);
-                      setMobileSidebarOpen(false);
-                    }}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all border text-left ${
-                      isActive
-                        ? "bg-cyan-500/10 border-cyan-500/30 text-white shadow-lg"
-                        : "bg-transparent border-transparent text-gray-400 hover:bg-gray-800/30 hover:text-gray-200"
-                    }`}
-                  >
-                    <div className={`p-2 rounded-lg ${isActive ? "bg-cyan-500 text-black font-bold" : "bg-gray-800 text-gray-400"}`}>
-                      <User className="w-4 h-4" />
-                    </div>
-                    <div className="truncate flex-1">
-                      <p className="text-xs font-bold text-gray-200 truncate">{c.email.split("@")[0]}</p>
-                      <p className="text-[10px] text-gray-500 truncate">{c.email}</p>
-                    </div>
-                  </button>
-                );
-              })
-            )}
-          </div>
 
-          {/* ADD CONVERSATION AT BOTTOM CONTROL VIEWPORT */}
-          <div className="p-3 border-t border-gray-800/60 flex-shrink-0 bg-[#070b12]">
-            <div className="flex gap-1.5">
-              <input
-                type="email"
-                placeholder="client@domain.com"
-                value={newClientEmail}
-                onChange={(e) => setNewClientEmail(e.target.value)}
-                className="flex-1 bg-[#0f172a] border border-gray-800 text-xs px-2.5 py-2 rounded-lg text-white outline-none focus:border-cyan-500 placeholder-gray-600 font-medium"
-              />
-              <button
-                onClick={() => {
-                  if (!newClientEmail.trim() || !newClientEmail.includes("@")) {
-                    alert("Provide valid email structure values.");
-                    return;
-                  }
-                  setActiveClientEmail(newClientEmail.trim());
-                  setNewClientEmail("");
-                }}
-                className="bg-cyan-500 hover:bg-cyan-600 text-black p-2 rounded-lg transition-colors flex items-center justify-center flex-shrink-0"
-                title="Initialize Client Tunnel Link"
+              <div className="relative">
+                <Mail className="absolute left-3 top-3.5 w-5 h-5 text-gray-600" />
+                <input 
+                  type="email" 
+                  placeholder="Your Email Address" 
+                  value={guestEmail}
+                  onChange={(e) => setGuestEmail(e.target.value)}
+                  className="w-full bg-[#1A1F29] border border-gray-800 rounded-xl py-3.5 pl-10 pr-4 text-sm text-gray-200 focus:outline-none focus:border-cyan-500/50 transition-colors"
+                  required
+                />
+              </div>
+
+              <button 
+                type="submit"
+                className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-black font-bold py-3.5 px-4 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 group"
               >
-                <UserPlus className="w-4 h-4" />
+                Enter Chat <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
-            </div>
+            </form>
           </div>
         </div>
       )}
 
-      {/* CHAT INTERACTIVE LOG ENVIRONMENT */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden bg-gradient-to-b from-[#070b12] to-[#0a1120]">
-        {activeClientEmail ? (
-          <>
-            {/* VIEWPORT STREAM HEADER LOGIC */}
-            <div className="p-4 border-b border-gray-800/60 bg-[#0b1324] flex items-center justify-between flex-shrink-0 z-10">
-              <div className="flex items-center gap-3 truncate">
-                {isAdmin && (
-                  <button
-                    onClick={() => setMobileSidebarOpen(true)}
-                    className="lg:hidden p-1.5 bg-gray-800 text-gray-300 rounded-lg hover:text-white"
-                  >
-                    <Menu className="w-4 h-4" />
-                  </button>
-                )}
-                <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-500 flex items-center justify-center text-black font-black text-xs shadow-md">
-                  {activeClientEmail.charAt(0).toUpperCase()}
-                </div>
-                <div className="truncate">
-                  <h4 className="text-xs font-black text-gray-200 tracking-tight truncate">{activeClientEmail}</h4>
-                  <p className="text-[9px] text-cyan-400 font-bold uppercase tracking-widest flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-ping" /> Connection Tunnel Active
-                  </p>
-                </div>
+      <div className="flex-grow flex h-full min-h-0 w-full max-w-[1600px] mx-auto p-4 md:p-6 gap-6 relative overflow-hidden">
+        
+        {isAdmin && (
+          <div className={`${mobileSidebarOpen ? 'flex' : 'hidden md:flex'} absolute inset-y-0 left-0 z-[45] md:relative w-full sm:w-80 md:w-1/4 flex-col bg-[#11141A] border border-gray-800 rounded-3xl overflow-hidden shadow-2xl`}>
+            <div className="p-5 flex-shrink-0 border-b border-gray-800">
+              <h1 className="text-xl font-bold mb-4 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Conversations</h1>
+              
+              <form onSubmit={handleAddClient} className="flex gap-2 mb-4">
+                <input 
+                  type="email" 
+                  placeholder="Type client email..." 
+                  value={newClientEmail}
+                  onChange={(e) => setNewClientEmail(e.target.value)}
+                  className="flex-grow bg-[#1A1F29] border border-gray-800 rounded-xl py-2.5 px-3 text-xs text-gray-200 focus:outline-none focus:border-cyan-500/30 transition-colors"
+                />
+                <button 
+                  type="submit"
+                  className="bg-gradient-to-r from-cyan-500 to-blue-500 p-2.5 rounded-xl text-black hover:opacity-90 transition-opacity"
+                >
+                  <UserPlus className="w-4 h-4" />
+                </button>
+              </form>
+
+              <div className="relative">
+                <Search className="absolute left-3 top-3 w-4 h-4 text-gray-500" />
+                <input 
+                  type="text" 
+                  placeholder="Search clients..." 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full bg-[#1A1F29] border border-gray-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-gray-200 focus:outline-none focus:border-cyan-500/30 transition-colors"
+                />
               </div>
             </div>
 
-            {/* MESSAGE INTERFACES STREAM ENVIRONMENT (SCROLL CONTAINER) */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
-              {loadingMessages ? (
-                <div className="h-full w-full flex items-center justify-center text-xs text-gray-500 gap-2 font-medium">
-                  <Loader2 className="animate-spin text-cyan-400 w-4 h-4" /> Syncing conversation telemetry matrix...
-                </div>
-              ) : messages.length === 0 ? (
-                <div className="h-full w-full flex flex-col items-center justify-center text-center p-6 space-y-2 opacity-60">
-                  <Mail className="w-8 h-8 text-gray-600" />
-                  <p className="text-xs text-gray-400 font-bold">Secure Tunnel Handshake Established</p>
-                  <p className="text-[10px] text-gray-500 max-w-[200px]">Send an asset delivery dispatch metadata link or communication message to initialize context logs.</p>
-                </div>
-              ) : (
-                messages.map((m: any) => {
-                  const isMe = m.sender_email === guestEmail;
-                  const showMenu = activeMenuId === m.id;
-                  
-                  return (
-                    <div key={m.id} className={`flex flex-col max-w-[80%] ${isMe ? "ml-auto items-end" : "mr-auto items-start"} animate-fadeIn relative group`}>
-                      <div className={`p-3 rounded-2xl text-xs leading-relaxed font-medium shadow-sm relative ${
-                        isMe 
-                          ? "bg-gradient-to-br from-cyan-500 to-blue-500 text-black font-semibold rounded-tr-none" 
-                          : "bg-[#0f172a] border border-gray-800 text-gray-200 rounded-tl-none"
-                      }`}>
-                        
-                        {/* Render File/Attachment Attachment Assets If Present */}
-                        {m.file_url && (
-                          <div className="mb-2 p-2 bg-black/20 rounded-xl border border-white/5 space-y-2">
-                            {m.file_type === "image" ? (
-                              <img src={m.file_url} alt="Shared attachment illustration asset" className="max-w-full rounded-lg max-h-48 object-cover" />
-                            ) : m.file_type === "audio" ? (
-                              <audio src={m.file_url} controls className="max-w-full accent-cyan-400 text-xs h-8" />
-                            ) : (
-                              <div className="flex items-center gap-2 p-1 text-inherit">
-                                <FileText className="w-4 h-4 flex-shrink-0" />
-                                <span className="text-[11px] font-bold truncate max-w-[120px]">External Document File</span>
-                              </div>
-                            )}
-                            <button 
-                              onClick={() => window.open(m.file_url, '_blank')}
-                              className="w-full py-1 bg-black/40 hover:bg-black/60 rounded text-[10px] font-bold flex items-center justify-center gap-1 text-inherit transition-colors"
-                            >
-                              <Download className="w-3 h-3" /> Fetch Asset Deliverable
-                            </button>
-                          </div>
-                        )}
-
-                        <p className="whitespace-pre-wrap break-words">{m.message}</p>
-
-                        {/* Options drop menu trigger */}
-                        {isMe && (
-                          <button 
-                            onClick={() => setActiveMenuId(showMenu ? null : m.id)}
-                            className="absolute -left-6 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <MoreVertical className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-
-                        {showMenu && (
-                          <div className="absolute right-0 top-full mt-1 bg-[#0f172a] border border-gray-800 rounded-lg shadow-xl z-20 overflow-hidden">
-                            <button 
-                              onClick={() => deleteMessageMutation.mutate(m.id)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] text-red-400 hover:bg-red-500/10 font-bold transition-colors w-full text-left"
-                            >
-                              <Trash2 className="w-3 h-3" /> Scrub Log Entry
-                            </button>
-                          </div>
-                        )}
+            <div className="flex-grow overflow-y-auto p-3 space-y-2 custom-scrollbar">
+              {filteredClients?.map((c: any) => {
+                const isActive = c.email === activeClientEmail;
+                return (
+                  <div 
+                    key={c.email}
+                    onClick={() => {
+                      setActiveClientEmail(c.email);
+                      setMobileSidebarOpen(false); 
+                    }}
+                    className={`flex items-center justify-between p-4 rounded-2xl cursor-pointer group transition-all ${
+                      isActive ? "bg-gradient-to-r from-cyan-600/10 to-transparent border border-cyan-500/20" : "hover:bg-[#1A1F29]/50 border border-transparent"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-11 h-11 flex-shrink-0 bg-gradient-to-br from-gray-700 to-gray-800 rounded-xl flex items-center justify-center border border-gray-700 text-white font-semibold">
+                        {getInitials(c.email)}
                       </div>
-
-                      <span className="text-[8px] text-gray-500 font-bold mt-1 px-1 flex items-center gap-1 select-none">
-                        {new Date(m.created_at).toLocaleTimeString(undefined, {hour: '2-digit', minute:'2-digit'})}
-                        {isMe && <CheckCircle2 className="w-2 h-2 text-cyan-400" />}
-                      </span>
+                      <div className="min-w-0">
+                        <h3 className="font-medium text-sm text-gray-100 truncate">{c.email}</h3>
+                        <p className="text-[10px] text-gray-500 truncate">Click to message</p>
+                      </div>
                     </div>
-                  );
-                })
+                    {isAdmin && (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm(`Remove ${c.email}?`)) deleteClientMutation.mutate(c.email);
+                        }}
+                        className="text-gray-600 hover:text-red-500 p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+              {filteredClients?.length === 0 && (
+                <div className="text-center py-10">
+                  <User className="w-10 h-10 text-gray-800 mx-auto mb-2 opacity-20" />
+                  <p className="text-xs text-gray-600">No clients found</p>
+                </div>
               )}
             </div>
+          </div>
+        )}
 
-            {/* INTERACTIVE COMPOSER PANEL (FIXED BASELINE AT THE ABSOLUTE BOTTOM) */}
-            <div className="p-4 border-t border-gray-800/60 bg-[#0b1324] flex-shrink-0 z-10">
-              <div className="flex items-center gap-2 max-w-4xl mx-auto relative">
-                
-                <button
-                  onClick={handleFileUploadClick}
-                  disabled={uploading}
-                  className="p-2.5 bg-[#0f172a] hover:bg-gray-800 border border-gray-800 text-gray-400 hover:text-cyan-400 rounded-xl transition-all flex-shrink-0 disabled:opacity-40"
-                  title="Upload Document Artifact"
+        <div className="flex-grow flex flex-col bg-[#11141A]/60 backdrop-blur-xl border border-gray-800 rounded-3xl overflow-hidden h-full shadow-2xl">
+          
+          <div className="flex-shrink-0 p-5 border-b border-gray-800 flex justify-between items-center bg-[#11141A]/80 z-10">
+            <div className="flex items-center gap-3 min-w-0">
+              {isAdmin && (
+                <button 
+                  className="md:hidden p-2.5 hover:bg-[#1A1F29] rounded-xl text-gray-400 border border-gray-800"
+                  onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
                 >
-                  {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Paperclip className="w-4 h-4" />}
+                  {mobileSidebarOpen ? <ArrowLeft className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                 </button>
-
-                <div className="flex-1 bg-[#0f172a] border border-gray-800 rounded-xl flex items-center px-3 py-1.5 min-w-0 transition-all focus-within:border-cyan-500/50">
-                  {isRecording ? (
-                    <div className="flex items-center justify-between w-full text-xs text-red-400 font-bold animate-pulse py-1">
-                      <div className="flex items-center gap-2">
-                        <Square className="w-3 h-3 fill-red-500 text-red-500 cursor-pointer" onClick={stopRecording} />
-                        <span>Capturing Live Audio Stream Telemetry...</span>
-                      </div>
-                      <span className="font-mono text-gray-300">{formatDuration(recordingDuration)}</span>
-                    </div>
-                  ) : (
-                    <input
-                      type="text"
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                      placeholder="Type your message..." 
-                      className="flex-grow bg-transparent border-none outline-none text-sm text-gray-200 placeholder-gray-600 min-w-0 py-1"
-                    />
-                  )}
-                  
-                  {!message.trim() && !isRecording && (
-                    <button
-                      onClick={startRecording}
-                      disabled={uploading}
-                      className="text-gray-500 hover:text-cyan-400 p-1 transition-colors flex-shrink-0 disabled:opacity-30"
-                      title="Record Voice Note"
-                    >
-                      <Mic className="w-5 h-5" />
-                    </button>
-                  )}
-                  
-                  {(message.trim() || isRecording) && (
-                    <button 
-                      onClick={handleSend}
-                      disabled={sendMessageMutation.isPending || uploading || (!message.trim() && !isRecording)}
-                      className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-black font-bold h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-xl transition-all disabled:opacity-30 disabled:grayscale"
-                    >
-                      <Send className="w-4 h-4" />
-                    </button>
-                  )}
+              )}
+              <div className="w-11 h-11 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center font-bold text-black shadow-lg shadow-cyan-500/20 flex-shrink-0">
+                {isAdmin ? getInitials(activeClientEmail || "C") : "SG"}
+              </div>
+              <div className="min-w-0">
+                <h2 className="font-bold text-gray-100 truncate text-sm sm:text-base">
+                  {isAdmin ? activeClientEmail : "Sulaiman Graphics"}
+                </h2>
+                <div className="flex items-center gap-1.5">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+                  </span>
+                  <p className="text-[10px] sm:text-xs text-cyan-500 font-medium uppercase tracking-wider">Active Now</p>
                 </div>
               </div>
             </div>
-          </>
-        ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-center p-6 opacity-40">
-            <User className="w-12 h-12 text-gray-600 mb-2" />
-            <p className="text-sm font-black text-white uppercase tracking-wider">No Channel Instance Engaged</p>
-            <p className="text-xs text-gray-400 max-w-xs">Select or register an active user profile node from the tracking sidebar index stream parameters.</p>
+ 
+            <div className="flex items-center gap-2">
+               <button className="hidden sm:flex p-2.5 hover:bg-[#1A1F29] rounded-xl border border-gray-800 text-gray-400 transition-colors">
+                <Search className="w-5 h-5" />
+              </button>
+              <button className="p-2.5 hover:bg-[#1A1F29] rounded-xl border border-gray-800 text-gray-400 transition-colors">
+                <MoreVertical className="w-5 h-5" />
+              </button>
+            </div>
           </div>
-        )}
+
+          <div className="flex-grow overflow-y-auto min-h-0 p-4 md:p-6 space-y-6 scroll-smooth custom-scrollbar bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')]">
+            {chatMessages?.map((msg: any) => {
+              const isMe = msg.sender_email === guestEmail;
+              const formattedTime = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              const isImage = isImageMessage(msg.message);
+              const isAudio = isAudioMessage(msg.message);
+              const isFile = isLinkMessage(msg.message) && !isImage && !isAudio;
+
+              return (
+                <div 
+                  key={msg.id}
+                  className={`flex items-end gap-3 max-w-[90%] sm:max-w-[75%] ${isMe ? 'ml-auto flex-row-reverse' : ''}`}
+                >
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-[10px] font-bold shadow-md ${
+                    isMe ? 'bg-gradient-to-br from-cyan-500 to-blue-600 text-black' : 'bg-gray-800 text-gray-400'
+                  }`}>
+                    {isMe ? (isAdmin ? 'SG' : 'ME') : (isAdmin ? 'C' : 'SG')}
+                  </div>
+                  <div className="flex flex-col max-w-full relative group items-start">
+                    <div 
+                      className={`relative transition-all duration-200 max-w-full overflow-hidden ${
+                        isMe 
+                          ? 'bg-gradient-to-br from-cyan-600 to-blue-700 text-white rounded-2xl rounded-tr-none' 
+                          : 'bg-[#1A1F29] border border-gray-800 text-gray-200 rounded-2xl rounded-tl-none'
+                      } ${isImage ? 'p-1.5' : isAudio ? 'p-2' : 'px-4 py-3'} shadow-xl`}
+                    >
+                      {isImage ? (
+                        <div className="relative group/img overflow-hidden rounded-xl">
+                          <img 
+                            src={msg.message} 
+                            alt="Attachment" 
+                            className="max-w-full sm:max-w-sm rounded-xl object-cover max-h-72 hover:scale-[1.02] transition-transform cursor-pointer"
+                            onClick={() => window.open(msg.message, '_blank')}
+                          />
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                             <button 
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 window.open(msg.message, '_blank');
+                               }}
+                               className="p-2.5 bg-white/10 backdrop-blur-md rounded-xl text-white hover:bg-white/20 transition-colors"
+                               title="View Full Size"
+                             >
+                               <ArrowRight className="w-5 h-5 -rotate-45" />
+                             </button>
+                             <button 
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 handleDownloadFile(msg.message);
+                               }}
+                               className="p-2.5 bg-cyan-500 text-black rounded-xl hover:bg-cyan-400 transition-colors"
+                               title="Download Image"
+                             >
+                               <Download className="w-5 h-5" />
+                             </button>
+                          </div>
+                        </div>
+                      ) : isAudio ? (
+                        <div className="w-[230px] sm:w-[280px] max-w-full flex items-center px-1 py-0.5 overflow-hidden rounded-xl">
+                          <audio 
+                            src={msg.message} 
+                            controls 
+                            className="w-full max-w-full block h-10 accent-cyan-500"
+                          />
+                        </div>
+                      ) : isFile ? (
+                        <div 
+                          onClick={() => handleDownloadFile(msg.message)}
+                          className="flex items-center gap-3 w-64 sm:w-72 bg-black/20 border border-white/5 p-3 rounded-xl cursor-pointer select-none hover:bg-black/40 transition-all group/file"
+                        >
+                          <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center flex-shrink-0 text-cyan-400 border border-cyan-500/20 group-hover/file:bg-cyan-500/20 transition-colors">
+                            <FileText className="w-5 h-5" />
+                          </div>
+                          <div className="min-w-0 flex-grow">
+                            <p className="text-xs font-semibold truncate text-gray-200">
+                               {getFileNameFromUrl(msg.message)}
+                            </p>
+                            <p className="text-[10px] text-gray-500 uppercase tracking-wider mt-0.5">Click to view / download</p>
+                          </div>
+                          <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0 text-gray-400 group-hover/file:text-cyan-400 group-hover/file:bg-white/10 transition-all">
+                            <Download className="w-4 h-4" />
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.message}</p>
+                      )}
+
+                      {/* Hover Trigger Block option for deleting a message */}
+                      <div className={`absolute top-1/2 -translate-y-1/2 ${isMe ? '-left-12' : '-right-12'} opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20`}>
+                        {(isMe || isAdmin) && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (window.confirm("Are you sure you want to delete this message permanently?")) {
+                                deleteMessageMutation.mutate(msg.id);
+                              }
+                            }}
+                            className="p-2 bg-[#1A1F29] border border-gray-800 rounded-xl text-gray-500 hover:text-red-500 hover:border-red-500/50 shadow-2xl transition-all"
+                            title="Delete Message"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div className={`flex items-center gap-1.5 mt-1.5 ${isMe ? 'ml-auto flex-row-reverse' : ''}`}>
+                      <span className="text-[10px] text-gray-600 font-medium">{formattedTime}</span>
+                      {isMe && <CheckCircle2 className="w-3 h-3 text-cyan-500" />}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            
+            {chatMessages?.length === 0 && (
+              <div className="flex flex-col items-center justify-center h-full opacity-30 select-none">
+                <Mail className="w-16 h-16 mb-4" />
+                <p className="text-sm font-medium">No messages yet. Start a conversation!</p>
+              </div>
+            )}
+            
+            <div ref={messagesEndRef} className="h-4 flex-shrink-0" />
+          </div>
+
+          <div className="flex-shrink-0 p-4 md:p-5 border-t border-gray-800 bg-[#11141A]/80 z-10">
+            <div className="flex items-center gap-3 bg-[#1A1F29] border border-gray-800 rounded-2xl px-4 py-2.5 focus-within:border-cyan-500/50 focus-within:shadow-[0_0_15px_rgba(6,182,212,0.1)] transition-all">
+              
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading || isRecording}
+                className="text-gray-500 hover:text-cyan-500 p-1 disabled:opacity-30 transition-colors flex-shrink-0"
+              >
+                {uploading ? (
+                  <Loader2 className="w-5 h-5 animate-spin text-cyan-500" />
+                ) : (
+                  <Paperclip className="w-5 h-5" />
+                )}
+              </button>
+              
+              {isRecording ? (
+                <div className="flex-grow flex items-center justify-between px-2 text-sm text-red-500 font-medium animate-pulse">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-red-500" />
+                    Recording voice note...
+                  </div>
+                  <button 
+                    onClick={stopRecording}
+                    className="p-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 rounded-lg transition-colors flex items-center justify-center"
+                    title="Stop and Send"
+                  >
+                    <Square className="w-3.5 h-3.5 fill-red-500" />
+                  </button>
+                </div>
+              ) : (
+                <input 
+                  type="text" 
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                  placeholder="Type your message..." 
+                  className="flex-grow bg-transparent border-none outline-none text-sm text-gray-200 placeholder-gray-600 min-w-0 py-1"
+                />
+              )}
+              
+              {!message.trim() && !isRecording && (
+                <button
+                  onClick={startRecording}
+                  disabled={uploading}
+                  className="text-gray-500 hover:text-cyan-400 p-1 transition-colors flex-shrink-0 disabled:opacity-30"
+                  title="Record Voice Note"
+                >
+                  <Mic className="w-5 h-5" />
+                </button>
+              )}
+              
+              {(message.trim() || isRecording) && (
+                <button 
+                  onClick={handleSend}
+                  disabled={sendMessageMutation.isPending || uploading || !message.trim()}
+                  className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-black font-bold h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-xl transition-all disabled:opacity-30 disabled:grayscale"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
