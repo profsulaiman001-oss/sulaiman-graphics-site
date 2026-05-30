@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import { 
   Edit3, Trash2, Save, XCircle, CheckCircle, Clock, Loader2, Download, 
-  MessageSquare, HardDrive, Send, Plus, Smartphone, Image as ImageIcon, X 
+  MessageSquare, HardDrive, Send, Plus, Smartphone, Image as ImageIcon, X, MapPin
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
@@ -77,12 +77,51 @@ export function ProjectCard({
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [touchEndX, setTouchEndX] = useState<number | null>(null);
 
+  // States for Tap-to-Pin Visual Feedback Revisions
+  const [pins, setPins] = useState<any[]>([]);
+  const [loadingPins, setLoadingPins] = useState(false);
+  const [newPinCoords, setNewPinCoords] = useState<{ x: number; y: number } | null>(null);
+  const [newPinNote, setNewPinNote] = useState("");
+  const [savingPin, setSavingPin] = useState(false);
+  const [activePinId, setActivePinId] = useState<string | null>(null);
+
   // Synchronize field states if data properties refresh from root queries
   useEffect(() => {
     setLocalTitle(project.title || "");
     setLocalAmount(project.amount !== undefined && project.amount !== null ? project.amount : "0");
     setCurrentVersionUrl(project.file_url || "");
   }, [project]);
+
+  // Determine current display identity matching selected file layout path
+  const activeVersionObj = versions?.find(v => v.file_url === currentVersionUrl);
+  const activeVersionLabel = activeVersionObj ? activeVersionObj.version_name : "Latest Preview";
+
+  // Fetch contextual visual revision pins for the active version item
+  useEffect(() => {
+    if (activeVersionObj?.id) {
+      fetchPins(activeVersionObj.id);
+    } else {
+      setPins([]);
+    }
+  }, [activeVersionObj?.id]);
+
+  const fetchPins = async (versionId: string) => {
+    setLoadingPins(true);
+    try {
+      const { data, error } = await supabase
+        .from("project_pins")
+        .select("*")
+        .eq("version_id", versionId)
+        .order("created_at", { ascending: true });
+      if (!error && data) {
+        setPins(data);
+      }
+    } catch (err) {
+      console.error("Error loading revision pins:", err);
+    } finally {
+      setLoadingPins(false);
+    }
+  };
 
   const getProgress = (status: string) => {
     if (status === "Completed") return 100;
@@ -205,31 +244,88 @@ export function ProjectCard({
     const isLeftSwipe = distance > minSwipeDistance;
     const isRightSwipe = distance < -minSwipeDistance;
 
-    // Find currently active revision index mapping
     const currentIndex = versions.findIndex(v => v.file_url === currentVersionUrl);
     
     if (isLeftSwipe) {
-      // Advance to next design revision item in chronological array
       const nextIndex = currentIndex + 1;
       if (nextIndex < versions.length) {
         setCurrentVersionUrl(versions[nextIndex].file_url);
       }
     } else if (isRightSwipe) {
-      // Recede to previous design revision item in chronological array
       const prevIndex = currentIndex - 1;
       if (prevIndex >= 0) {
         setCurrentVersionUrl(versions[prevIndex].file_url);
       }
     }
 
-    // Clear position references safely
     setTouchStartX(null);
     setTouchEndX(null);
   };
 
-  // Determine current display identity matching selected file layout path
-  const activeVersionObj = versions?.find(v => v.file_url === currentVersionUrl);
-  const activeVersionLabel = activeVersionObj ? activeVersionObj.version_name : "Latest Preview";
+  // Click handler to register spatial placement percentages on full screen design
+  const handleImageClickForPin = (e: React.MouseEvent<HTMLImageElement>) => {
+    // Only allow clients to drop revisions pins to keep feedback linear
+    if (isAdmin) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+    setNewPinCoords({ x, y });
+    setNewPinNote("");
+  };
+
+  const handleSavePin = async () => {
+    if (!newPinCoords || !newPinNote.trim() || !activeVersionObj?.id) return;
+    setSavingPin(true);
+    try {
+      const { error } = await supabase
+        .from("project_pins")
+        .insert({
+          project_id: project.id,
+          version_id: activeVersionObj.id,
+          x_coordinate: newPinCoords.x,
+          y_coordinate: newPinCoords.y,
+          note: newPinNote.trim()
+        });
+
+      if (error) throw error;
+
+      // Automatically post pin alert to comment workspace timeline for centralized logs
+      await supabase
+        .from("project_comments")
+        .insert({
+          project_id: project.id,
+          message: `📌 [Revision ${activeVersionLabel}] Pin Marker #${pins.length + 1}: "${newPinNote.trim()}"`,
+          is_admin: false
+        });
+
+      setNewPinCoords(null);
+      setNewPinNote("");
+      fetchPins(activeVersionObj.id);
+    } catch (err: any) {
+      alert("Failed to drop revision marker: " + err.message);
+    } finally {
+      setSavingPin(false);
+    }
+  };
+
+  const handleDeletePin = async (pinId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const { error } = await supabase
+        .from("project_pins")
+        .delete()
+        .eq("id", pinId);
+      if (error) throw error;
+      if (activeVersionObj?.id) {
+        fetchPins(activeVersionObj.id);
+      }
+      setActivePinId(null);
+    } catch (err: any) {
+      alert("Could not remove pin: " + err.message);
+    }
+  };
 
   const displayValue = Number(project.amount) || 0;
 
@@ -340,12 +436,19 @@ export function ProjectCard({
             >
               {currentVersionUrl ? (
                 <div className="relative group w-full h-full flex flex-col items-center justify-center overflow-hidden rounded-xl">
-                  <img 
-                    src={currentVersionUrl} 
-                    onClick={() => setShowFullPreview(true)}
-                    className="max-h-[180px] w-auto object-contain rounded-lg shadow-xl transition-transform duration-500 group-hover:scale-105" 
-                    alt="Preview" 
-                  />
+                  <div className="relative">
+                    <img 
+                      src={currentVersionUrl} 
+                      onClick={() => setShowFullPreview(true)}
+                      className="max-h-[180px] w-auto object-contain rounded-lg shadow-xl transition-transform duration-500 group-hover:scale-105" 
+                      alt="Preview" 
+                    />
+                    {pins.length > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-red-500 text-white font-mono font-bold text-[8px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shadow-md">
+                        <MapPin size={8} /> {pins.length}
+                      </span>
+                    )}
+                  </div>
                   {versions && versions.length > 1 && (
                     <div className="mt-2 text-[8px] bg-muted px-2 py-0.5 rounded-full font-mono text-muted-foreground tracking-tight select-none">
                       ← Swipe to switch ({activeVersionLabel}) →
@@ -561,39 +664,131 @@ export function ProjectCard({
         </div>
       </div>
 
-      {/* FULL PREVIEW MODAL (LIGHTBOX FOR COMPONENT VERSIONS) */}
+      {/* FULL PREVIEW MODAL WITH TAP-TO-PIN REVISIONS INTERACTION */}
       <AnimatePresence>
         {showFullPreview && currentVersionUrl && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[110] bg-black/95 backdrop-blur-2xl flex flex-col p-4 justify-between"
-            onClick={() => setShowFullPreview(false)}
+            className="fixed inset-0 z-[110] bg-black/95 backdrop-blur-2xl flex flex-col p-4 justify-between overflow-y-auto"
+            onClick={() => {
+              setShowFullPreview(false);
+              setNewPinCoords(null);
+              setActivePinId(null);
+            }}
           >
-            <div className="flex justify-between items-center w-full max-w-4xl mx-auto" onClick={(e) => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div className="flex justify-between items-center w-full max-w-4xl mx-auto mb-4" onClick={(e) => e.stopPropagation()}>
               <div>
                 <h3 className="text-white font-bold text-sm tracking-tight">{project.title}</h3>
-                <p className="text-cyan-400 font-mono text-[10px] mt-0.5">{activeVersionLabel}</p>
+                <p className="text-cyan-400 font-mono text-[10px] mt-0.5">
+                  {activeVersionLabel} {!isAdmin && "• Tap anywhere on asset to drop revision pins"}
+                </p>
               </div>
               <button 
-                onClick={() => setShowFullPreview(false)} 
+                onClick={() => {
+                  setShowFullPreview(false);
+                  setNewPinCoords(null);
+                  setActivePinId(null);
+                }} 
                 className="p-2 bg-white/10 rounded-full text-white active:scale-90 transition-all"
               >
                 <X size={20}/>
               </button>
             </div>
 
-            <div className="flex-1 flex items-center justify-center p-2 max-w-4xl mx-auto w-full" onClick={(e) => e.stopPropagation()}>
-              <img 
-                src={currentVersionUrl} 
-                className="max-h-[75vh] w-auto max-w-full object-contain rounded-2xl shadow-2xl border border-white/5" 
-                alt="Premium Full View"
-                onContextMenu={(e) => e.preventDefault()}
-              />
+            {/* Interactive Workspace Area */}
+            <div className="flex-1 flex items-center justify-center p-2 max-w-4xl mx-auto w-full relative" onClick={(e) => e.stopPropagation()}>
+              <div className="relative inline-block max-h-[70vh] max-w-full">
+                <img 
+                  src={currentVersionUrl} 
+                  onClick={handleImageClickForPin}
+                  className={`max-h-[70vh] w-auto max-w-full object-contain rounded-2xl shadow-2xl border border-white/5 ${!isAdmin ? 'cursor-crosshair' : 'cursor-default'}`} 
+                  alt="Premium Full View"
+                  onContextMenu={(e) => e.preventDefault()}
+                />
+
+                {/* Render Stored Database Pin Indicators */}
+                {pins.map((pin, idx) => (
+                  <div
+                    key={pin.id}
+                    className="absolute z-30"
+                    style={{ left: `${pin.x_coordinate}%`, top: `${pin.y_coordinate}%` }}
+                  >
+                    <button
+                      onClick={() => setActivePinId(activePinId === pin.id ? null : pin.id)}
+                      className="w-5 h-5 -translate-x-1/2 -translate-y-1/2 bg-red-500 border-2 border-white rounded-full flex items-center justify-center text-[9px] font-bold text-white shadow-lg animate-pulse"
+                    >
+                      {idx + 1}
+                    </button>
+                    
+                    <AnimatePresence>
+                      {activePinId === pin.id && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.9, y: 5 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.9, y: 5 }}
+                          className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-card border border-border rounded-xl p-2.5 shadow-xl min-w-[150px] max-w-[220px] text-left z-40 text-xs"
+                        >
+                          <p className="text-white text-[10px] leading-normal font-medium">{pin.note}</p>
+                          <div className="mt-2 flex justify-between items-center border-t border-border/40 pt-1.5 text-[8px] text-muted-foreground">
+                            <span>Pin #{idx + 1}</span>
+                            {isAdmin && (
+                              <button
+                                onClick={(e) => handleDeletePin(pin.id, e)}
+                                className="flex items-center gap-0.5 text-green-400 hover:text-green-300 font-bold uppercase tracking-tighter"
+                              >
+                                Mark Resolved
+                              </button>
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                ))}
+
+                {/* Temporary Creation Pin State UI */}
+                {newPinCoords && (
+                  <div 
+                    className="absolute z-40"
+                    style={{ left: `${newPinCoords.x}%`, top: `${newPinCoords.y}%` }}
+                  >
+                    <div className="w-5 h-5 -translate-x-1/2 -translate-y-1/2 bg-cyan-400 border-2 border-white rounded-full flex items-center justify-center text-[10px] text-black font-bold shadow-xl animate-bounce" />
+                    
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-card border border-border p-3 rounded-2xl shadow-2xl min-w-[200px] flex flex-col gap-2">
+                      <span className="text-[9px] uppercase tracking-wider text-cyan-400 font-bold">New Revision Note</span>
+                      <input
+                        type="text"
+                        placeholder="Describe change here..."
+                        value={newPinNote}
+                        onChange={(e) => setNewPinNote(e.target.value)}
+                        className="bg-background border border-border rounded-lg p-2 text-[10px] text-white outline-none focus:border-cyan-400 w-full"
+                      />
+                      <div className="flex gap-1.5 justify-end">
+                        <button 
+                          onClick={() => setNewPinCoords(null)}
+                          className="px-2 py-1 bg-muted hover:bg-muted/80 text-white rounded-md text-[9px] font-bold"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleSavePin}
+                          disabled={savingPin || !newPinNote.trim()}
+                          className="px-2.5 py-1 bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-black font-bold rounded-md text-[9px] flex items-center gap-1"
+                        >
+                          {savingPin ? <Loader2 size={10} className="animate-spin" /> : "Save Pin"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="w-full max-w-4xl mx-auto flex flex-col items-center gap-3 pb-4" onClick={(e) => e.stopPropagation()}>
+            {/* Actions Footer */}
+            <div className="w-full max-w-4xl mx-auto flex flex-col items-center gap-2 mt-4" onClick={(e) => e.stopPropagation()}>
               <button 
                 onClick={() => downloadFile(currentVersionUrl, `${project.title}-${activeVersionLabel}`)}
                 className="w-full sm:w-auto px-6 h-10 bg-primary rounded-xl text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xl active:scale-95 transition-all"
