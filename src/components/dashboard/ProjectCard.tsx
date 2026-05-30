@@ -63,18 +63,25 @@ export function ProjectCard({
 }: ProjectCardProps) {
 
   const [showGallery, setShowGallery] = useState(false);
+  const [showFullPreview, setShowFullPreview] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingVersion, setIsUploadingVersion] = useState(false);
   const [isUploadingMockup, setIsUploadingMockup] = useState(false);
   
-  // Independent dynamic self-handling fields to completely ensure smooth typing actions
+  // Dynamic self-handling fields to ensure smooth typing actions
   const [localTitle, setLocalTitle] = useState(project.title || "");
   const [localAmount, setLocalAmount] = useState(project.amount !== undefined && project.amount !== null ? project.amount : "0");
   
+  // Track the currently viewed revision image context via swipe index tracking
+  const [currentVersionUrl, setCurrentVersionUrl] = useState(project.file_url || "");
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [touchEndX, setTouchEndX] = useState<number | null>(null);
+
   // Synchronize field states if data properties refresh from root queries
   useEffect(() => {
     setLocalTitle(project.title || "");
     setLocalAmount(project.amount !== undefined && project.amount !== null ? project.amount : "0");
+    setCurrentVersionUrl(project.file_url || "");
   }, [project]);
 
   const getProgress = (status: string) => {
@@ -87,7 +94,6 @@ export function ProjectCard({
     setIsSaving(true);
     try {
       const parsedAmount = localAmount === "" ? 0 : parseInt(localAmount.toString().replace(/[^0-9]/g, ""));
-      // Updates exclusively write to 'amount' to avoid column mismatch cache faults
       const { error } = await supabase
         .from("projects")
         .update({
@@ -95,7 +101,6 @@ export function ProjectCard({
           amount: parsedAmount
         })
         .eq("id", project.id);
-
       if (error) throw error;
       
       setEditingId(null);
@@ -107,7 +112,6 @@ export function ProjectCard({
     }
   };
 
-  // Direct Supabase storage bucket processing path for New Design Versions
   const handleSupabaseVersionUpload = async (file: File) => {
     if (!file) return;
     setIsUploadingVersion(true);
@@ -115,19 +119,15 @@ export function ProjectCard({
       const fileExt = file.name.split('.').pop();
       const fileName = `${project.id}/${Date.now()}_version.${fileExt}`;
       
-      // Push file straight to your project-files bucket destination
       const { error: uploadError } = await supabase.storage
         .from("project-files")
         .upload(fileName, file, { cacheControl: '3600', upsert: true });
-
       if (uploadError) throw uploadError;
 
-      // Extract public URL asset pathway from the bucket directly
       const { data: { publicUrl } } = supabase.storage
         .from("project-files")
         .getPublicUrl(fileName);
 
-      // Create tracking instance reference inside project_versions database table
       const { error: versionError } = await supabase
         .from("project_versions")
         .insert({
@@ -135,15 +135,12 @@ export function ProjectCard({
           version_name: `Revision v${(versions?.length || 0) + 1}`,
           file_url: publicUrl
         });
-
       if (versionError) throw versionError;
 
-      // Automatically assign the newly added item to the project's primary preview column
       const { error: projectUpdateError } = await supabase
         .from("projects")
         .update({ file_url: publicUrl })
         .eq("id", project.id);
-
       if (projectUpdateError) throw projectUpdateError;
 
       alert("Design asset version saved safely into your storage bucket!");
@@ -155,7 +152,6 @@ export function ProjectCard({
     }
   };
 
-  // Direct Supabase storage bucket multi-upload processing path for Premium Presentation Mockups
   const handleSupabaseMockupUpload = async (files: FileList) => {
     if (!files || files.length === 0) return;
     setIsUploadingMockup(true);
@@ -165,25 +161,21 @@ export function ProjectCard({
         const fileExt = file.name.split('.').pop();
         const fileName = `${project.id}/mockup_${Date.now()}_${i}.${fileExt}`;
 
-        // Upload loop for multiple files directly targeting the bucket partition path
         const { error: uploadError } = await supabase.storage
           .from("project-files")
           .upload(fileName, file, { cacheControl: '3600', upsert: true });
-
         if (uploadError) throw uploadError;
 
         const { data: { publicUrl } } = supabase.storage
           .from("project-files")
           .getPublicUrl(fileName);
 
-        // Store public reference path directly within the project_mockups relation records
         const { error: mockupError } = await supabase
           .from("project_mockups")
           .insert({
             project_id: project.id,
             file_url: publicUrl
           });
-
         if (mockupError) throw mockupError;
       }
 
@@ -195,6 +187,49 @@ export function ProjectCard({
       setIsUploadingMockup(false);
     }
   };
+
+  // Logic to process swipe behaviors across design revision files
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEndX(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStartX || !touchEndX || !versions || versions.length <= 1) return;
+    
+    const minSwipeDistance = 50;
+    const distance = touchStartX - touchEndX;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    // Find currently active revision index mapping
+    const currentIndex = versions.findIndex(v => v.file_url === currentVersionUrl);
+    
+    if (isLeftSwipe) {
+      // Advance to next design revision item in chronological array
+      const nextIndex = currentIndex + 1;
+      if (nextIndex < versions.length) {
+        setCurrentVersionUrl(versions[nextIndex].file_url);
+      }
+    } else if (isRightSwipe) {
+      // Recede to previous design revision item in chronological array
+      const prevIndex = currentIndex - 1;
+      if (prevIndex >= 0) {
+        setCurrentVersionUrl(versions[prevIndex].file_url);
+      }
+    }
+
+    // Clear position references safely
+    setTouchStartX(null);
+    setTouchEndX(null);
+  };
+
+  // Determine current display identity matching selected file layout path
+  const activeVersionObj = versions?.find(v => v.file_url === currentVersionUrl);
+  const activeVersionLabel = activeVersionObj ? activeVersionObj.version_name : "Latest Preview";
 
   const displayValue = Number(project.amount) || 0;
 
@@ -295,14 +330,27 @@ export function ProjectCard({
               </div>
             </motion.div>
           ) : (
-            <motion.div className="flex flex-col items-center justify-center p-4 w-full h-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              {project.file_url ? (
-                <div className="relative group w-full h-full flex items-center justify-center overflow-hidden rounded-xl">
+            <motion.div 
+              className="flex flex-col items-center justify-center p-4 w-full h-full select-none cursor-pointer" 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
+              {currentVersionUrl ? (
+                <div className="relative group w-full h-full flex flex-col items-center justify-center overflow-hidden rounded-xl">
                   <img 
-                    src={project.file_url} 
-                    className="max-h-[200px] w-auto object-contain rounded-lg shadow-xl transition-transform duration-500 group-hover:scale-105" 
+                    src={currentVersionUrl} 
+                    onClick={() => setShowFullPreview(true)}
+                    className="max-h-[180px] w-auto object-contain rounded-lg shadow-xl transition-transform duration-500 group-hover:scale-105" 
                     alt="Preview" 
                   />
+                  {versions && versions.length > 1 && (
+                    <div className="mt-2 text-[8px] bg-muted px-2 py-0.5 rounded-full font-mono text-muted-foreground tracking-tight select-none">
+                      ← Swipe to switch ({activeVersionLabel}) →
+                    </div>
+                  )}
                 </div>
               ) : (
                 <>
@@ -343,7 +391,15 @@ export function ProjectCard({
             </h4>
             <div className="space-y-1.5 max-h-[100px] overflow-y-auto custom-scrollbar">
               {versions.map((v: any) => (
-                <div key={v.id} className="flex items-center justify-between bg-card/50 p-2 rounded-lg border border-border/30 group hover:border-primary/30 transition-colors">
+                <div 
+                  key={v.id} 
+                  onClick={() => setCurrentVersionUrl(v.file_url)}
+                  className={`flex items-center justify-between p-2 rounded-lg border transition-colors cursor-pointer group ${
+                    currentVersionUrl === v.file_url 
+                      ? 'bg-primary/10 border-primary/40' 
+                      : 'bg-card/50 border-border/30 hover:border-primary/30'
+                  }`}
+                >
                   <div className="flex flex-col">
                     <span className="text-[9px] font-bold text-foreground truncate max-w-[120px]">{v.version_name}</span>
                     <span className="text-[7px] text-muted-foreground">{new Date(v.created_at).toLocaleDateString()}</span>
@@ -351,7 +407,8 @@ export function ProjectCard({
                   <div className="flex items-center gap-1">
                     {isAdmin && (
                       <button 
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           if(confirm("Delete this design version?")) {
                             handleDeleteVersion(v.id);
                           }
@@ -421,11 +478,11 @@ export function ProjectCard({
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                downloadFile(versions[0].file_url, `${project.title}-latest`);
+                downloadFile(currentVersionUrl, `${project.title}-${activeVersionLabel}`);
               }}
               className="w-full h-8 flex items-center justify-center gap-2 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-[10px] shadow-lg shadow-primary/20 transition-all active:scale-95"
             >
-              <Download size={12} /> Open & Download Latest Assets
+              <Download size={12} /> Open & Download {activeVersionLabel} Assets
             </button>
           ) : !isAdmin && (
             <div className="w-full text-center text-muted-foreground text-[9px] py-2 border border-dashed border-border rounded-xl font-medium uppercase tracking-tight">
@@ -504,6 +561,53 @@ export function ProjectCard({
         </div>
       </div>
 
+      {/* FULL PREVIEW MODAL (LIGHTBOX FOR COMPONENT VERSIONS) */}
+      <AnimatePresence>
+        {showFullPreview && currentVersionUrl && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[110] bg-black/95 backdrop-blur-2xl flex flex-col p-4 justify-between"
+            onClick={() => setShowFullPreview(false)}
+          >
+            <div className="flex justify-between items-center w-full max-w-4xl mx-auto" onClick={(e) => e.stopPropagation()}>
+              <div>
+                <h3 className="text-white font-bold text-sm tracking-tight">{project.title}</h3>
+                <p className="text-cyan-400 font-mono text-[10px] mt-0.5">{activeVersionLabel}</p>
+              </div>
+              <button 
+                onClick={() => setShowFullPreview(false)} 
+                className="p-2 bg-white/10 rounded-full text-white active:scale-90 transition-all"
+              >
+                <X size={20}/>
+              </button>
+            </div>
+
+            <div className="flex-1 flex items-center justify-center p-2 max-w-4xl mx-auto w-full" onClick={(e) => e.stopPropagation()}>
+              <img 
+                src={currentVersionUrl} 
+                className="max-h-[75vh] w-auto max-w-full object-contain rounded-2xl shadow-2xl border border-white/5" 
+                alt="Premium Full View"
+                onContextMenu={(e) => e.preventDefault()}
+              />
+            </div>
+
+            <div className="w-full max-w-4xl mx-auto flex flex-col items-center gap-3 pb-4" onClick={(e) => e.stopPropagation()}>
+              <button 
+                onClick={() => downloadFile(currentVersionUrl, `${project.title}-${activeVersionLabel}`)}
+                className="w-full sm:w-auto px-6 h-10 bg-primary rounded-xl text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xl active:scale-95 transition-all"
+              >
+                <Download size={14} /> Download This Version
+              </button>
+              <p className="text-center text-white/20 text-[8px] uppercase tracking-[0.2em] font-bold">
+                Premium Production Asset • Sulaiman Graphics
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* FULL GALLERY MODAL CONTAINER */}
       <AnimatePresence>
         {showGallery && (
@@ -557,4 +661,4 @@ export function ProjectCard({
       </AnimatePresence>
     </motion.div>
   );
-  }
+}
